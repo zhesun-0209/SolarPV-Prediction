@@ -1,0 +1,49 @@
+# config/default.yaml
+
+# Data & output paths
+data_path: '/path/to/data.csv'
+save_dir:   '/path/to/outputs'
+
+# Model selection & ablation
+model: 'Transformer'      # options: Transformer, LSTM, GRU, TCN, RF, GBR, XGB, LGBM
+past_hours: 72
+future_hours: 24
+use_feature: true         # use exogenous features
+use_time: true            # include time encodings
+use_forecast: true        # include weather forecasts
+use_stats: true           # include statistical features
+use_meta: true            # use dynamic meta-weight
+
+# Data split ratios
+train_ratio: 0.8          # fraction for training set
+val_ratio:   0.1          # fraction for validation set (test = 1 - train - val)
+
+# Plotting options
+plot_days: 7              # number of days to plot in forecast
+
+# Model-specific parameters
+model_params:
+  # Transformer / DL defaults
+  d_model:       64
+  n_heads:       4
+  n_layers:      2
+  hidden_dim:    64
+  dropout:       0.1
+  tcn_channels:  [64, 64]
+  kernel_size:   3
+
+  # ML defaults
+  n_estimators:  100
+  max_depth:     null
+  learning_rate: 0.1
+  random_state:  42
+
+# Training parameters
+train_params:
+  batch_size:           32
+  epochs:               50
+  learning_rate:        1e-3
+  weight_decay:         1e-4
+  early_stop_patience:  10
+  loss_type:           'mse'
+  future_hours:         24    # needed for DL meta-weighting
