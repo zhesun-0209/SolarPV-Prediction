@@ -7,8 +7,7 @@ import os
 import pandas as pd
 import numpy as np
 import torch
-from eval.plot_utils import plot_forecast, plot_training_curve
-
+from eval.plot_utils import plot_forecast, plot_training_curve, plot_val_loss_over_time
 
 def save_results(
     model,
@@ -30,7 +29,7 @@ def save_results(
       - 'y_true':      ndarray (n_samples, horizon)
       - 'dates':       list of end-of-window datetimes
       - 'hours':       ndarray (n_samples, horizon), optional
-      - 'epoch_logs':  list of dicts {'epoch','train_loss','val_loss'}
+      - 'epoch_logs':  list of dicts {'epoch','train_loss','val_loss','epoch_time','cum_time'}
 
     Args:
         model: trained model
@@ -47,15 +46,15 @@ def save_results(
 
     # 1) summary.csv
     summary = {
-        'model':         model_name,
-        'use_feature':   config.get('use_feature', True),
-        'past_hours':    config['past_hours'],
-        'future_hours':  config['future_hours'],
-        'test_loss':     metrics.get('test_loss'),
-        'train_time_sec':metrics.get('train_time_sec'),
-        'param_count':   metrics.get('param_count'),
-        'rmse':          metrics.get('rmse', np.nan),
-        'mae':           metrics.get('mae', np.nan)
+        'model':          model_name,
+        'use_feature':    config.get('use_feature', True),
+        'past_hours':     config['past_hours'],
+        'future_hours':   config['future_hours'],
+        'test_loss':      metrics.get('test_loss'),
+        'train_time_sec': metrics.get('train_time_sec'),
+        'param_count':    metrics.get('param_count'),
+        'rmse':           metrics.get('rmse', np.nan),
+        'mae':            metrics.get('mae', np.nan)
     }
     pd.DataFrame([summary]).to_csv(
         os.path.join(model_dir, 'summary.csv'), index=False
@@ -65,20 +64,19 @@ def save_results(
     preds = metrics['predictions']
     yts   = metrics['y_true']
     hrs   = metrics.get('hours')
-    dates = metrics.get('dates', dates)
+    dates_list = metrics.get('dates', dates)
     records = []
     n_samples, horizon = preds.shape
     for i in range(n_samples):
-        # compute full datetime index for this window
-        start_dt = pd.to_datetime(dates[i]) - pd.Timedelta(hours=horizon-1)
-        times = [start_dt + pd.Timedelta(hours=h) for h in range(horizon)]
-        for h, dt in enumerate(times):
+        start_dt = pd.to_datetime(dates_list[i]) - pd.Timedelta(hours=horizon-1)
+        for h in range(horizon):
+            dt = start_dt + pd.Timedelta(hours=h)
             records.append({
-                'window_index':     i,
+                'window_index':      i,
                 'forecast_datetime': dt,
-                'hour':             int(hrs[i,h]) if hrs is not None else dt.hour,
-                'true':             float(yts[i,h]),
-                'predicted':        float(preds[i,h])
+                'hour':              int(hrs[i, h]) if hrs is not None else dt.hour,
+                'y_true':            float(yts[i, h]),
+                'y_pred':            float(preds[i, h])
             })
     pd.DataFrame(records).to_csv(
         os.path.join(model_dir, 'predictions.csv'), index=False
@@ -93,9 +91,10 @@ def save_results(
     # 4) plot figures
     plot_forecast(
         dates, metrics['y_true'], metrics['predictions'], model_dir,
-        model_name=model_name, days=config.get('plot_days', 7)
+        model_name=model_name
     )
     if 'epoch_logs' in metrics:
         plot_training_curve(metrics['epoch_logs'], model_dir, model_name=model_name)
+        plot_val_loss_over_time(metrics['epoch_logs'], model_dir, model_name=model_name)
 
     print(f"[INFO] Results saved in {model_dir}")
