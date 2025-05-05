@@ -40,7 +40,7 @@ def train_dl_model(
 
     Returns:
         model: trained PyTorch model
-        metrics: dict with test_loss, epoch_logs, param_count
+        metrics: dict with test_loss, epoch_logs, param_count, predictions, y_true, dates
     """
     # Unpack data
     Xh_tr, Xf_tr, y_tr, hrs_tr, _ = train_data
@@ -48,7 +48,7 @@ def train_dl_model(
     Xh_te, Xf_te, y_te, hrs_te, dates_te = test_data
     _, _, scaler_target = scalers
 
-    # Build DataLoader
+    # Build DataLoaders
     def make_loader(Xh, Xf, y, hrs, bs, shuffle=False):
         tensors = [torch.tensor(Xh, dtype=torch.float32),
                    torch.tensor(hrs, dtype=torch.long)]
@@ -82,21 +82,22 @@ def train_dl_model(
     model.to(device)
 
     # Setup optimizer, scheduler, early stopping
-    opt     = get_optimizer(model,
-                            config['train_params']['learning_rate'],
-                            config['train_params']['weight_decay'])
+    opt     = get_optimizer(
+        model,
+        config['train_params']['learning_rate'],
+        config['train_params']['weight_decay']
+    )
     sched   = get_scheduler(opt, config['train_params'])
     stopper = EarlyStopping(config['train_params']['early_stop_patience'])
 
-    # Loss functions
+    # Loss and meta-weight setup
     mse_fn   = torch.nn.MSELoss()
     use_meta = config.get('use_meta', False)
-    # initialize hour weights if meta
     hour_weights = torch.ones(config['future_hours'], device=device) if use_meta else None
 
     logs = []
     total_time = 0.0
-    # training loop
+    # Training loop
     for ep in range(1, config['train_params']['epochs'] + 1):
         epoch_start = time.time()
         model.train()
@@ -111,11 +112,9 @@ def train_dl_model(
                 xh, hrs, yb = xh.to(device), hrs.to(device), yb.to(device)
                 preds = model(xh)
 
+            loss = mse_fn(preds, yb)
             if use_meta:
-                weights = hour_weights[hrs]
-                loss = torch.mean(weights * (preds - yb) ** 2)
-            else:
-                loss = mse_fn(preds, yb)
+                loss = torch.mean(hour_weights[hrs] * (preds - yb) ** 2)
 
             opt.zero_grad()
             loss.backward()
@@ -123,7 +122,7 @@ def train_dl_model(
             train_loss += loss.item()
         train_loss /= len(train_loader)
 
-        # validation
+        # Validation
         model.eval()
         val_loss = 0.0
         hour_errors = defaultdict(list) if use_meta else None
@@ -137,7 +136,6 @@ def train_dl_model(
                     xh, hrs, yb = batch
                     xh, hrs, yb = xh.to(device), hrs.to(device), yb.to(device)
                     preds = model(xh)
-
                 val_loss += mse_fn(preds, yb).item()
                 if use_meta:
                     err = torch.abs(preds - yb)
@@ -146,36 +144,37 @@ def train_dl_model(
                             hour_errors[int(hrs[i, j])].append(err[i, j].item())
         val_loss /= len(val_loader)
 
-        # epoch timing
+        # Timing
         epoch_time = time.time() - epoch_start
         total_time += epoch_time
 
-        # update scheduler and dynamic weights
+        # Update scheduler and meta weights
         sched.step(val_loss)
         if use_meta:
-            new_w = compute_dynamic_hour_weights(
+            hour_weights = compute_dynamic_hour_weights(
                 hour_errors,
                 alpha=config['model_params'].get('meta_alpha', 3.0),
-                threshold=config['model_params'].get('meta_threshold', 0.005)
+                threshold=config['model_params'].get('meta_threshold', 0.005),
+                save_dir=config['save_dir'],
+                epoch=ep
             )
-            hour_weights = new_w.to(device)
 
         logs.append({
-            'epoch':      ep,
+            'epoch': ep,
             'train_loss': train_loss,
-            'val_loss':   val_loss,
+            'val_loss': val_loss,
             'epoch_time': epoch_time,
-            'cum_time':   total_time
+            'cum_time': total_time
         })
 
         if stopper.step(val_loss, model):
             print(f"Early stopping at epoch {ep}")
             break
 
-    # load best model
+    # Load best model
     model.load_state_dict(stopper.best_state)
 
-    # test inference
+    # Test Inference
     model.eval()
     test_loss = 0.0
     all_preds = []
@@ -187,28 +186,29 @@ def train_dl_model(
                 preds = model(xh, xf)
             else:
                 xh, hrs, yb = batch
-                xh = xh.to(device)
-                preds = model(xh)
+                preds = model(xh.to(device))
 
+            loss_term = mse_fn(preds, yb.to(device))
             if use_meta:
-                weights = hour_weights[hrs]
-                test_loss += torch.mean(weights * (preds - yb.to(device))**2).item()
-            else:
-                test_loss += mse_fn(preds, yb.to(device)).item()
+                loss_term = torch.mean(hour_weights[hrs] * (preds - yb.to(device))**2)
+            test_loss += loss_term.item()
             all_preds.append(preds.cpu().numpy())
     test_loss /= len(test_loader)
     preds_arr = np.vstack(all_preds)
 
-    # inverse scale
+    # Inverse scaling
     y_flat = y_te.reshape(-1, 1)
-    p_flat = preds_arr.reshape(-1,1)
+    p_flat = preds_arr.reshape(-1, 1)
     y_inv  = scaler_target.inverse_transform(y_flat).flatten()
     p_inv  = scaler_target.inverse_transform(p_flat).flatten()
-    raw_mse = np.mean((y_inv - p_inv)**2)
+    raw_mse = np.mean((y_inv - p_inv) ** 2)
 
     metrics = {
         'test_loss':   raw_mse,
         'epoch_logs':  logs,
-        'param_count': count_parameters(model)
+        'param_count': count_parameters(model),
+        'predictions': preds_arr,
+        'y_true':      y_te,
+        'dates':       dates_te
     }
     return model, metrics
