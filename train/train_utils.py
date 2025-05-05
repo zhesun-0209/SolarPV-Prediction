@@ -6,10 +6,10 @@ Helper utilities for training and evaluation:
   - Early stopping
   - Model parameter counting
   - Dynamic hour-wise weight computation for meta-weighted loss
-  - Plotting dynamic hour-wise weights
+  - Plotting dynamic hour-wise weights per epoch
 """
 import torch
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 def get_optimizer(
@@ -102,7 +102,9 @@ def count_parameters(model: torch.nn.Module) -> int:
 def compute_dynamic_hour_weights(
     hour_errors: Dict[int, List[float]],
     alpha: float = 3.0,
-    threshold: float = 0.005
+    threshold: float = 0.005,
+    save_dir: Optional[str] = None,
+    epoch: Optional[int] = None
 ) -> torch.Tensor:
     """
     Compute dynamic hour-wise weights based on validation errors.
@@ -112,11 +114,14 @@ def compute_dynamic_hour_weights(
       2. Zero out entries below `threshold`.
       3. Normalize non-zero values to mean=1.
       4. Scale by `alpha`.
+      5. Optionally plot weights for the epoch.
 
     Args:
         hour_errors: mapping from hour to list of error values
         alpha: scaling factor for weight magnitudes
         threshold: errors below this are ignored
+        save_dir: root directory to save plots (if provided)
+        epoch: epoch number for naming plot file
 
     Returns:
         A Tensor of shape (24,) containing the weight for each hour.
@@ -132,22 +137,32 @@ def compute_dynamic_hour_weights(
         hour_avg = hour_avg / nonzero.mean()
     else:
         hour_avg = torch.ones(24)
-    return hour_avg * alpha
+    weights = hour_avg * alpha
+    # Optional plotting
+    if save_dir and epoch is not None:
+        plot_hour_weights(weights, save_dir, epoch)
+    return weights
 
 
 def plot_hour_weights(
     weights: torch.Tensor,
-    save_path: str
+    save_dir: str,
+    epoch: int
 ) -> None:
     """
-    Plot and save dynamic hour-wise weight bar chart.
+    Plot and save dynamic hour-wise weight bar chart for a given epoch.
 
     Args:
         weights: Tensor of shape (24,) with hour weights.
-        save_path: File path to save the PNG plot.
+        save_dir: root directory where 'hour_weights/' subfolder will be created
+        epoch: epoch number for filename
     """
     import matplotlib.pyplot as plt
     import os
+
+    out_dir = os.path.join(save_dir, 'hour_weights')
+    os.makedirs(out_dir, exist_ok=True)
+    save_path = os.path.join(out_dir, f'epoch_{epoch:03d}.png')
 
     hours = list(range(24))
     plt.figure(figsize=(8, 3))
@@ -155,10 +170,8 @@ def plot_hour_weights(
     plt.xticks(hours)
     plt.xlabel("Hour of Day")
     plt.ylabel("Weight")
-    plt.title("Dynamic Hour Weights")
+    plt.title(f"Dynamic Hour Weights - Epoch {epoch}")
     plt.grid(True, linestyle='--', alpha=0.3)
     plt.tight_layout()
-
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path)
     plt.close()
