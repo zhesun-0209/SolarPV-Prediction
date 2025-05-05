@@ -1,9 +1,10 @@
+#!/usr/bin/env python3
 """
 train/train_dl.py
 
 Deep learning training pipeline for solar power forecasting.
 Supports dynamic meta-weighted loss and various architectures (Transformer, LSTM, GRU, TCN).
-Saves dynamic hour-weight plots during training when use_meta=True.
+Records per-epoch timing and validation loss over time for plotting.
 """
 import os
 import time
@@ -13,7 +14,7 @@ from collections import defaultdict
 from torch.utils.data import DataLoader, TensorDataset
 from train.train_utils import (
     get_optimizer, get_scheduler, EarlyStopping,
-    count_parameters, compute_dynamic_hour_weights, plot_hour_weights
+    count_parameters, compute_dynamic_hour_weights
 )
 from models.transformer import Transformer
 from models.rnn_models import LSTM, GRU
@@ -31,7 +32,7 @@ def train_dl_model(
     Train and evaluate a deep learning model with optional dynamic meta-weighted loss.
 
     Args:
-        config: configuration dict, must include 'save_dir'
+        config: configuration dict
         train_data: (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr)
         val_data:   (Xh_va, Xf_va, y_va, hrs_va, dates_va)
         test_data:  (Xh_te, Xf_te, y_te, hrs_te, dates_te)
@@ -47,7 +48,7 @@ def train_dl_model(
     Xh_te, Xf_te, y_te, hrs_te, dates_te = test_data
     _, _, scaler_target = scalers
 
-    # Build DataLoaders
+    # Build DataLoader
     def make_loader(Xh, Xf, y, hrs, bs, shuffle=False):
         tensors = [torch.tensor(Xh, dtype=torch.float32),
                    torch.tensor(hrs, dtype=torch.long)]
@@ -90,16 +91,14 @@ def train_dl_model(
     # Loss functions
     mse_fn   = torch.nn.MSELoss()
     use_meta = config.get('use_meta', False)
-    hour_weights = torch.ones(config['train_params']['future_hours'], device=device) if use_meta else None
-
-    # Directory for saving hour weight plots
-    if use_meta:
-        hw_dir = os.path.join(config['save_dir'], model_name, 'hour_weights')
-        os.makedirs(hw_dir, exist_ok=True)
+    # initialize hour weights if meta
+    hour_weights = torch.ones(config['future_hours'], device=device) if use_meta else None
 
     logs = []
+    total_time = 0.0
+    # training loop
     for ep in range(1, config['train_params']['epochs'] + 1):
-        # Training loop
+        epoch_start = time.time()
         model.train()
         train_loss = 0.0
         for batch in train_loader:
@@ -124,7 +123,7 @@ def train_dl_model(
             train_loss += loss.item()
         train_loss /= len(train_loader)
 
-        # Validation loop
+        # validation
         model.eval()
         val_loss = 0.0
         hour_errors = defaultdict(list) if use_meta else None
@@ -147,7 +146,11 @@ def train_dl_model(
                             hour_errors[int(hrs[i, j])].append(err[i, j].item())
         val_loss /= len(val_loader)
 
-        # Scheduler and meta-weight update
+        # epoch timing
+        epoch_time = time.time() - epoch_start
+        total_time += epoch_time
+
+        # update scheduler and dynamic weights
         sched.step(val_loss)
         if use_meta:
             new_w = compute_dynamic_hour_weights(
@@ -156,20 +159,23 @@ def train_dl_model(
                 threshold=config['model_params'].get('meta_threshold', 0.005)
             )
             hour_weights = new_w.to(device)
-            # Save weight plot every 10 epochs and first epoch
-            if ep == 1 or ep % 10 == 0:
-                plot_path = os.path.join(hw_dir, f'epoch_{ep:03d}.png')
-                plot_hour_weights(hour_weights, plot_path)
 
-        logs.append({'epoch': ep, 'train_loss': train_loss, 'val_loss': val_loss})
+        logs.append({
+            'epoch':      ep,
+            'train_loss': train_loss,
+            'val_loss':   val_loss,
+            'epoch_time': epoch_time,
+            'cum_time':   total_time
+        })
+
         if stopper.step(val_loss, model):
             print(f"Early stopping at epoch {ep}")
             break
 
-    # Load best model state
+    # load best model
     model.load_state_dict(stopper.best_state)
 
-    # Test inference
+    # test inference
     model.eval()
     test_loss = 0.0
     all_preds = []
@@ -193,16 +199,16 @@ def train_dl_model(
     test_loss /= len(test_loader)
     preds_arr = np.vstack(all_preds)
 
-    # Inverse scale predictions & targets
+    # inverse scale
     y_flat = y_te.reshape(-1, 1)
-    p_flat = preds_arr.reshape(-1, 1)
-    y_inv = scaler_target.inverse_transform(y_flat).flatten()
-    p_inv = scaler_target.inverse_transform(p_flat).flatten()
-    raw_mse = np.mean((y_inv - p_inv) ** 2)
+    p_flat = preds_arr.reshape(-1,1)
+    y_inv  = scaler_target.inverse_transform(y_flat).flatten()
+    p_inv  = scaler_target.inverse_transform(p_flat).flatten()
+    raw_mse = np.mean((y_inv - p_inv)**2)
 
     metrics = {
-        'test_loss': raw_mse,
-        'epoch_logs': logs,
+        'test_loss':   raw_mse,
+        'epoch_logs':  logs,
         'param_count': count_parameters(model)
     }
     return model, metrics
