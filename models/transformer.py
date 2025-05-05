@@ -43,12 +43,12 @@ class Transformer(nn.Module):
         # Transformer encoder
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
-            nhead=config['num_heads'],
+            nhead=config['n_heads'],
             dim_feedforward=d_model * 4,
             dropout=config['dropout'],
             batch_first=True
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=config['num_layers'])
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=config['n_layers'])
 
         # Output head
         total_seq = config['past_hours'] + (config['future_hours'] if config.get('use_forecast', False) else 0)
