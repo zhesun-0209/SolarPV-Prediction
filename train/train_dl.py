@@ -122,7 +122,7 @@ def train_dl_model(
 
             loss = mse_fn(preds, yb)
             if use_meta:
-                loss = torch.mean(hour_weights[hrs] * (preds - yb) ** 2)
+                loss = torch.mean(hour_weights[hrs.to(device)] * (preds - yb) ** 2)
 
             opt.zero_grad()
             loss.backward()
@@ -165,7 +165,7 @@ def train_dl_model(
                 hour_errors,
                 alpha=mp.get('meta_alpha', 3.0),
                 threshold=mp.get('meta_threshold', 0.005)
-            )
+            ).to(device)
 
         logs.append({
             'epoch':      ep,
@@ -190,15 +190,16 @@ def train_dl_model(
         for batch in test_loader:
             if Xf_te is not None:
                 xh, xf, hrs, yb = batch
-                xh, xf = xh.to(device), xf.to(device)
+                xh, xf, hrs = xh.to(device), xf.to(device), hrs.to(device)
                 preds = model(xh, xf)
             else:
                 xh, hrs, yb = batch
-                preds = model(xh.to(device))
+                xh, hrs = xh.to(device), hrs.to(device)
+                preds = model(xh)
 
             loss_term = mse_fn(preds, yb.to(device))
             if use_meta:
-                loss_term = torch.mean(hour_weights[hrs] * (preds - yb.to(device))**2)
+                loss_term = torch.mean(hour_weights[hrs.to(device)] * (preds - yb.to(device))**2)
             test_loss += loss_term.item()
             all_preds.append(preds.cpu().numpy())
 
