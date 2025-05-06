@@ -60,8 +60,8 @@ class EarlyStopping:
     """
     def __init__(
         self,
-        patience: int = 10,
-        delta: float = 1e-4
+        patience: int = 20,
+        delta: float = 1e-5
     ):
         self.patience = patience
         self.delta = delta
