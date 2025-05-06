@@ -42,12 +42,13 @@ def train_dl_model(
         model:        trained PyTorch model
         metrics:      dict with { test_loss, epoch_logs, param_count, predictions, y_true, dates }
     """
+    # Unpack
     Xh_tr, Xf_tr, y_tr, hrs_tr, _ = train_data
     Xh_va, Xf_va, y_va, hrs_va, _ = val_data
     Xh_te, Xf_te, y_te, hrs_te, dates_te = test_data
     _, _, scaler_target = scalers
 
-    # DataLoaders
+    # Build DataLoaders
     def make_loader(Xh, Xf, y, hrs, bs, shuffle=False):
         tensors = [torch.tensor(Xh, dtype=torch.float32),
                    torch.tensor(hrs, dtype=torch.long)]
@@ -57,33 +58,41 @@ def train_dl_model(
         return DataLoader(TensorDataset(*tensors), batch_size=bs, shuffle=shuffle)
 
     bs = config['train_params']['batch_size']
-    train_loader = make_loader(Xh_tr, Xf_tr, y_tr, hrs_tr, bs, True)
+    train_loader = make_loader(Xh_tr, Xf_tr, y_tr, hrs_tr, bs, shuffle=True)
     val_loader   = make_loader(Xh_va, Xf_va, y_va, hrs_va, bs)
     test_loader  = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
 
-    # Model instantiation
+    # Merge top‐level flags into model_params for constructor
+    mp = config['model_params'].copy()
+    mp['use_forecast'] = config.get('use_forecast', False)
+    mp['past_hours']   = config['past_hours']
+    mp['future_hours'] = config['future_hours']
+
+    # Instantiate model
     model_name = config['model']
     hist_dim = Xh_tr.shape[2]
     fcst_dim = Xf_tr.shape[2] if Xf_tr is not None else 0
 
     if model_name == 'Transformer':
-        model = Transformer(hist_dim, fcst_dim, config['model_params'])
+        model = Transformer(hist_dim, fcst_dim, mp)
     elif model_name == 'LSTM':
-        model = LSTM(hist_dim, fcst_dim, config['model_params'])
+        model = LSTM(hist_dim, fcst_dim, mp)
     elif model_name == 'GRU':
-        model = GRU(hist_dim, fcst_dim, config['model_params'])
+        model = GRU(hist_dim, fcst_dim, mp)
     elif model_name == 'TCN':
-        model = TCNModel(hist_dim, fcst_dim, config['model_params'])
+        model = TCNModel(hist_dim, fcst_dim, mp)
     else:
-        raise ValueError(f"Unsupported model: {model_name}")
+        raise ValueError(f"Unsupported DL model: {model_name}")
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
 
     # Optimizer, scheduler, early stopping
-    opt     = get_optimizer(model,
-                            config['train_params']['learning_rate'],
-                            config['train_params']['weight_decay'])
+    opt     = get_optimizer(
+        model,
+        config['train_params']['learning_rate'],
+        config['train_params']['weight_decay']
+    )
     sched   = get_scheduler(opt, config['train_params'])
     stopper = EarlyStopping(config['train_params']['early_stop_patience'])
 
