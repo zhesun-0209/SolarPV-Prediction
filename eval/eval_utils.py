@@ -66,7 +66,7 @@ def save_results(
     # ===== 1. Save summary.csv =====
     summary = {
         'model':           config['model'],
-        'use_feature':     config.get('use_feature', True),
+        'use_hist_weather':     config.get('use_hist_weather', True),
         'past_hours':      config['past_hours'],
         'future_hours':    config['future_hours'],
         'test_loss':       metrics.get('test_loss'),
