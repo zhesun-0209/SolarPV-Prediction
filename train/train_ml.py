@@ -11,7 +11,6 @@ import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from models.ml_models import train_rf, train_gbr, train_xgb, train_lgbm
 
-
 def train_ml_model(
     config: dict,
     Xh_train: np.ndarray,
@@ -42,6 +41,14 @@ def train_ml_model(
 
     name   = config['model']
     params = config['model_params']
+    
+    if 'learning_rate' in params:
+        params['learning_rate'] = float(params['learning_rate'])
+    if 'n_estimators' in params:
+        params['n_estimators'] = int(params['n_estimators'])
+    if 'max_depth' in params and params['max_depth'] is not None:
+        params['max_depth'] = int(params['max_depth'])
+
     if name == 'RF':
         trainer = train_rf
     elif name == 'GBR':
@@ -68,7 +75,7 @@ def train_ml_model(
     train_preds_flat = model.predict(X_train_flat)
     train_mse = mean_squared_error(y_train_flat.flatten(), train_preds_flat.flatten())
 
-    fh = config['train_params']['future_hours']
+    fh = int(config['train_params']['future_hours'])  # 强制转换
     y_matrix = y_test_flat.reshape(-1, fh)
     p_matrix = preds_flat.reshape(-1, fh)
 
@@ -88,3 +95,4 @@ def train_ml_model(
         'epoch_logs':     [{'epoch': 1, 'train_loss': train_mse, 'val_loss': mse}]
     }
     return model, metrics
+
