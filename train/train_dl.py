@@ -32,23 +32,22 @@ def train_dl_model(
     Train and evaluate a deep learning model with optional dynamic meta-weighted loss.
 
     Args:
-        config: configuration dict
-        train_data: (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr)
-        val_data:   (Xh_va, Xf_va, y_va, hrs_va, dates_va)
-        test_data:  (Xh_te, Xf_te, y_te, hrs_te, dates_te)
-        scalers:    (scaler_hist, scaler_fcst, scaler_target)
+        config:       configuration dict
+        train_data:   (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr)
+        val_data:     (Xh_va, Xf_va, y_va, hrs_va, dates_va)
+        test_data:    (Xh_te, Xf_te, y_te, hrs_te, dates_te)
+        scalers:      (scaler_hist, scaler_fcst, scaler_target)
 
     Returns:
-        model: trained PyTorch model
-        metrics: dict with test_loss, epoch_logs, param_count, predictions, y_true, dates
+        model:        trained PyTorch model
+        metrics:      dict with { test_loss, epoch_logs, param_count, predictions, y_true, dates }
     """
-    # Unpack data
     Xh_tr, Xf_tr, y_tr, hrs_tr, _ = train_data
     Xh_va, Xf_va, y_va, hrs_va, _ = val_data
     Xh_te, Xf_te, y_te, hrs_te, dates_te = test_data
     _, _, scaler_target = scalers
 
-    # Build DataLoaders
+    # DataLoaders
     def make_loader(Xh, Xf, y, hrs, bs, shuffle=False):
         tensors = [torch.tensor(Xh, dtype=torch.float32),
                    torch.tensor(hrs, dtype=torch.long)]
@@ -58,11 +57,11 @@ def train_dl_model(
         return DataLoader(TensorDataset(*tensors), batch_size=bs, shuffle=shuffle)
 
     bs = config['train_params']['batch_size']
-    train_loader = make_loader(Xh_tr, Xf_tr, y_tr, hrs_tr, bs, shuffle=True)
+    train_loader = make_loader(Xh_tr, Xf_tr, y_tr, hrs_tr, bs, True)
     val_loader   = make_loader(Xh_va, Xf_va, y_va, hrs_va, bs)
     test_loader  = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
 
-    # Instantiate model
+    # Model instantiation
     model_name = config['model']
     hist_dim = Xh_tr.shape[2]
     fcst_dim = Xf_tr.shape[2] if Xf_tr is not None else 0
@@ -81,27 +80,25 @@ def train_dl_model(
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
 
-    # Setup optimizer, scheduler, early stopping
-    opt     = get_optimizer(
-        model,
-        config['train_params']['learning_rate'],
-        config['train_params']['weight_decay']
-    )
+    # Optimizer, scheduler, early stopping
+    opt     = get_optimizer(model,
+                            config['train_params']['learning_rate'],
+                            config['train_params']['weight_decay'])
     sched   = get_scheduler(opt, config['train_params'])
     stopper = EarlyStopping(config['train_params']['early_stop_patience'])
 
-    # Loss and meta-weight setup
     mse_fn   = torch.nn.MSELoss()
     use_meta = config.get('use_meta', False)
     hour_weights = torch.ones(config['future_hours'], device=device) if use_meta else None
 
     logs = []
     total_time = 0.0
-    # Training loop
+
     for ep in range(1, config['train_params']['epochs'] + 1):
         epoch_start = time.time()
         model.train()
         train_loss = 0.0
+
         for batch in train_loader:
             if Xf_tr is not None:
                 xh, xf, hrs, yb = batch
@@ -120,6 +117,7 @@ def train_dl_model(
             loss.backward()
             opt.step()
             train_loss += loss.item()
+
         train_loss /= len(train_loader)
 
         # Validation
@@ -136,45 +134,44 @@ def train_dl_model(
                     xh, hrs, yb = batch
                     xh, hrs, yb = xh.to(device), hrs.to(device), yb.to(device)
                     preds = model(xh)
+
                 val_loss += mse_fn(preds, yb).item()
                 if use_meta:
                     err = torch.abs(preds - yb)
                     for i in range(err.size(0)):
                         for j in range(err.size(1)):
                             hour_errors[int(hrs[i, j])].append(err[i, j].item())
+
         val_loss /= len(val_loader)
 
-        # Timing
+        # Timing & scheduler
         epoch_time = time.time() - epoch_start
         total_time += epoch_time
-
-        # Update scheduler and meta weights
         sched.step(val_loss)
+
         if use_meta:
             hour_weights = compute_dynamic_hour_weights(
                 hour_errors,
                 alpha=config['model_params'].get('meta_alpha', 3.0),
-                threshold=config['model_params'].get('meta_threshold', 0.005),
-                save_dir=config['save_dir'],
-                epoch=ep
+                threshold=config['model_params'].get('meta_threshold', 0.005)
             )
 
         logs.append({
-            'epoch': ep,
+            'epoch':      ep,
             'train_loss': train_loss,
-            'val_loss': val_loss,
+            'val_loss':   val_loss,
             'epoch_time': epoch_time,
-            'cum_time': total_time
+            'cum_time':   total_time
         })
 
         if stopper.step(val_loss, model):
             print(f"Early stopping at epoch {ep}")
             break
 
-    # Load best model
+    # Restore best
     model.load_state_dict(stopper.best_state)
 
-    # Test Inference
+    # Test inference
     model.eval()
     test_loss = 0.0
     all_preds = []
@@ -193,6 +190,7 @@ def train_dl_model(
                 loss_term = torch.mean(hour_weights[hrs] * (preds - yb.to(device))**2)
             test_loss += loss_term.item()
             all_preds.append(preds.cpu().numpy())
+
     test_loss /= len(test_loader)
     preds_arr = np.vstack(all_preds)
 
