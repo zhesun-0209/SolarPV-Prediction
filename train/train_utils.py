@@ -45,8 +45,7 @@ def get_scheduler(
         optimizer,
         mode='min',
         factor=0.5,
-        patience=patience,
-        verbose=True
+        patience=patience
     )
 
 
