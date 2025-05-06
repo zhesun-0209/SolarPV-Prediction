@@ -55,7 +55,8 @@ class Transformer(nn.Module):
         self.head = nn.Sequential(
             nn.Linear(total_seq * d_model, config['hidden_dim']),
             nn.ReLU(),
-            nn.Linear(config['hidden_dim'], config['future_hours'])
+            nn.Linear(config['hidden_dim'], config['future_hours']),
+            nn.Softplus()
         )
 
     def forward(
