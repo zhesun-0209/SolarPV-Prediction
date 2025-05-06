@@ -40,8 +40,8 @@ def train_dl_model(
         scalers:      (scaler_hist, scaler_fcst, scaler_target)
 
     Returns:
-        model:        trained PyTorch model
-        metrics:      dict with test metrics and predictions (inverse-transformed)
+        model:   trained PyTorch model
+        metrics: dict with test metrics and inverse-transformed predictions
     """
     # Unpack data and scalers
     Xh_tr, Xf_tr, y_tr, hrs_tr, _ = train_data
@@ -49,7 +49,9 @@ def train_dl_model(
     Xh_te, Xf_te, y_te, hrs_te, dates_te = test_data
     _, _, scaler_target = scalers
 
-    # Create DataLoaders
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Build DataLoaders
     def make_loader(Xh, Xf, y, hrs, bs, shuffle=False):
         tensors = [torch.tensor(Xh, dtype=torch.float32),
                    torch.tensor(hrs, dtype=torch.long)]
@@ -60,14 +62,16 @@ def train_dl_model(
 
     bs = int(config['train_params']['batch_size'])
     train_loader = make_loader(Xh_tr, Xf_tr, y_tr, hrs_tr, bs, shuffle=True)
-    val_loader = make_loader(Xh_va, Xf_va, y_va, hrs_va, bs)
-    test_loader = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
+    val_loader   = make_loader(Xh_va, Xf_va, y_va, hrs_va, bs)
+    test_loader  = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
 
     # Initialize model
     mp = config['model_params'].copy()
-    mp['use_forecast'] = config.get('use_forecast', False)
-    mp['past_hours'] = config['past_hours']
-    mp['future_hours'] = config['future_hours']
+    mp.update({
+        'use_forecast': config.get('use_forecast', False),
+        'past_hours': config['past_hours'],
+        'future_hours': config['future_hours']
+    })
 
     model_name = config['model']
     hist_dim = Xh_tr.shape[2]
@@ -84,10 +88,9 @@ def train_dl_model(
     else:
         raise ValueError(f"Unsupported DL model: {model_name}")
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
 
-    # Setup training components
+    # Optimizer, scheduler, early stopping
     train_params = config['train_params']
     opt = get_optimizer(model, lr=float(train_params['learning_rate']),
                         weight_decay=float(train_params['weight_decay']))
@@ -101,11 +104,10 @@ def train_dl_model(
     logs = []
     total_time = 0.0
 
-    # Training loop
     for ep in range(1, int(train_params['epochs']) + 1):
-        epoch_start = time.time()
         model.train()
         train_loss = 0.0
+        epoch_start = time.time()
 
         for batch in train_loader:
             if Xf_tr is not None:
@@ -151,11 +153,8 @@ def train_dl_model(
                             hour_errors[int(hrs[i, j])].append(err[i, j].item())
 
         val_loss /= len(val_loader)
-
-        # Scheduler and hour-wise weight update
-        epoch_time = time.time() - epoch_start
-        total_time += epoch_time
         sched.step(val_loss)
+        total_time += time.time() - epoch_start
 
         if use_meta:
             hour_weights = compute_dynamic_hour_weights(
@@ -168,7 +167,7 @@ def train_dl_model(
             'epoch': ep,
             'train_loss': train_loss,
             'val_loss': val_loss,
-            'epoch_time': epoch_time,
+            'epoch_time': total_time,
             'cum_time': total_time
         })
 
@@ -176,10 +175,11 @@ def train_dl_model(
             print(f"Early stopping at epoch {ep}")
             break
 
-    # Restore best model
     model.load_state_dict(stopper.best_state)
 
-    # Test inference
+    # ===========================
+    # ✅ Test & inverse transform
+    # ===========================
     model.eval()
     test_loss = 0.0
     all_preds = []
@@ -193,23 +193,19 @@ def train_dl_model(
                 xh, hrs, yb = batch
                 xh, hrs = xh.to(device), hrs.to(device)
                 preds = model(xh)
-
-            loss_term = mse_fn(preds, yb.to(device))
-            if use_meta:
-                loss_term = torch.mean(hour_weights[hrs.to(device)] * (preds - yb.to(device)) ** 2)
-            test_loss += loss_term.item()
             all_preds.append(preds.cpu().numpy())
 
-    test_loss /= len(test_loader)
-    preds_arr = np.vstack(all_preds)
+    preds_arr = np.vstack(all_preds)                # (N, H)
+    y_true_arr = y_te.cpu().numpy()                 # (N, H)
 
-    # Inverse transform
-    y_flat = y_te.reshape(-1, 1)
     p_flat = preds_arr.reshape(-1, 1)
-    y_inv = scaler_target.inverse_transform(y_flat).flatten()
-    p_inv = scaler_target.inverse_transform(p_flat).flatten()
+    y_flat = y_true_arr.reshape(-1, 1)
 
-    # Metrics
+    # ✅ Inverse-transform
+    p_inv = scaler_target.inverse_transform(p_flat).flatten()
+    y_inv = scaler_target.inverse_transform(y_flat).flatten()
+
+    # Final metrics
     raw_mse = np.mean((y_inv - p_inv) ** 2)
     raw_rmse = np.sqrt(raw_mse)
     raw_mae = np.mean(np.abs(y_inv - p_inv))
@@ -222,8 +218,8 @@ def train_dl_model(
         'param_count': count_parameters(model),
         'predictions': p_inv.reshape(y_te.shape),
         'y_true': y_inv.reshape(y_te.shape),
-        'dates': dates_te,
-        'inverse_transformed': True  # important flag
+        'dates': dates_te
     }
 
     return model, metrics
+
