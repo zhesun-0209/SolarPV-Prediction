@@ -35,7 +35,7 @@ class RNNBase(nn.Module):
             self.rnn = nn.GRU(hidden, hidden, num_layers=layers,
                               batch_first=True, dropout=config['dropout'])
 
-        # Output head
+        # Output head with Softplus
         self.head = nn.Sequential(
             nn.Linear(hidden, config['future_hours']),
             nn.Softplus()
