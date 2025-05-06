@@ -86,8 +86,8 @@ def main():
     # Merge CLI overrides into model_params
     mp = config.setdefault("model_params", {})
     if args.d_model:       mp["d_model"]       = args.d_model
-    if args.n_heads:       mp["num_heads"]     = args.n_heads
-    if args.n_layers:      mp["num_layers"]    = args.n_layers
+    if args.n_heads:       mp["n_heads"]     = args.n_heads
+    if args.n_layers:      mp["n_layers"]    = args.n_layers
     if args.hidden_dim:    mp["hidden_dim"]    = args.hidden_dim
     if args.dropout:       mp["dropout"]       = args.dropout
     if args.tcn_channels:  mp["tcn_channels"]  = eval(args.tcn_channels)
