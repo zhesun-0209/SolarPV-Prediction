@@ -199,6 +199,7 @@ def main():
                 cfg,
                 Xh_tr, Xf_tr, y_tr,
                 Xh_te, Xf_te, y_te,
+                dates_te,            
                 scaler_target
             )
         metrics["train_time_sec"] = round(time.time() - start, 2)
