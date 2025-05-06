@@ -8,7 +8,7 @@ BASE_CONFIG="config/default.yaml"
 BASE_SAVE_DIR=$(python -c "import yaml; print(yaml.safe_load(open('$BASE_CONFIG'))['save_dir'])")
 MODELS=("RF" "GBR" "XGB" "LGBM")
 
-FLAGS=("use_feature" "use_time" "use_forecast" "use_stats")
+FLAGS=("use_hist_weather" "use_time" "use_forecast" "use_stats")
 
 run_experiment() {
   local MODEL=$1
@@ -36,11 +36,11 @@ run_experiment() {
 for MODEL in "${MODELS[@]}"; do
 
   # 1. All False
-  FLAG_VALUES="use_feature=false use_time=false use_forecast=false use_stats=false"
+  FLAG_VALUES="use_hist_weather=false use_time=false use_forecast=false use_stats=false"
   run_experiment "$MODEL" "$FLAG_VALUES" "ALL_FALSE"
 
   # 2. All True
-  FLAG_VALUES="use_feature=true use_time=true use_forecast=true use_stats=true"
+  FLAG_VALUES="use_hist_weather=true use_time=true use_forecast=true use_stats=true"
   run_experiment "$MODEL" "$FLAG_VALUES" "ALL_TRUE"
 
   # 3. Each single-flag True (others False)
