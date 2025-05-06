@@ -6,6 +6,7 @@ Deep learning training pipeline for solar power forecasting.
 Supports dynamic meta-weighted loss and various architectures (Transformer, LSTM, GRU, TCN).
 Records per-epoch timing and validation loss over time for plotting.
 """
+
 import os
 import time
 import torch
@@ -57,7 +58,7 @@ def train_dl_model(
         tensors.append(torch.tensor(y, dtype=torch.float32))
         return DataLoader(TensorDataset(*tensors), batch_size=bs, shuffle=shuffle)
 
-    bs = config['train_params']['batch_size']
+    bs = int(config['train_params']['batch_size'])
     train_loader = make_loader(Xh_tr, Xf_tr, y_tr, hrs_tr, bs, shuffle=True)
     val_loader   = make_loader(Xh_va, Xf_va, y_va, hrs_va, bs)
     test_loader  = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
@@ -88,13 +89,14 @@ def train_dl_model(
     model.to(device)
 
     # Optimizer, scheduler, early stopping
+    train_params = config['train_params']
     opt     = get_optimizer(
         model,
-        config['train_params']['learning_rate'],
-        config['train_params']['weight_decay']
+        lr=float(train_params['learning_rate']),
+        weight_decay=float(train_params['weight_decay'])
     )
-    sched   = get_scheduler(opt, config['train_params'])
-    stopper = EarlyStopping(config['train_params']['early_stop_patience'])
+    sched   = get_scheduler(opt, train_params)
+    stopper = EarlyStopping(int(train_params['early_stop_patience']))
 
     mse_fn   = torch.nn.MSELoss()
     use_meta = config.get('use_meta', False)
@@ -103,7 +105,7 @@ def train_dl_model(
     logs = []
     total_time = 0.0
 
-    for ep in range(1, config['train_params']['epochs'] + 1):
+    for ep in range(1, int(train_params['epochs']) + 1):
         epoch_start = time.time()
         model.train()
         train_loss = 0.0
@@ -149,7 +151,7 @@ def train_dl_model(
                     err = torch.abs(preds - yb)
                     for i in range(err.size(0)):
                         for j in range(err.size(1)):
-                            hour_errors[int(hrs[i, j])].append(err[i, j].item())
+                            hour_errors[int(hrs[i, j])] = hour_errors.get(int(hrs[i, j]), []) + [err[i, j].item()]
 
         val_loss /= len(val_loader)
 
@@ -161,8 +163,8 @@ def train_dl_model(
         if use_meta:
             hour_weights = compute_dynamic_hour_weights(
                 hour_errors,
-                alpha=config['model_params'].get('meta_alpha', 3.0),
-                threshold=config['model_params'].get('meta_threshold', 0.005)
+                alpha=mp.get('meta_alpha', 3.0),
+                threshold=mp.get('meta_threshold', 0.005)
             )
 
         logs.append({
