@@ -38,7 +38,10 @@ class TCNModel(nn.Module):
         if self.use_fcst:
             self.fcst_proj = nn.Linear(fcst_dim * future_hours, channels[-1])
         # Final prediction head
-        self.head = nn.Linear(channels[-1], future_hours)
+        self.head = nn.Sequential(
+            nn.Linear(channels[-1], future_hours),
+            nn.Softplus()
+        )
 
     def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:
         # hist: (B, past_hours, hist_dim) -> (B, hist_dim, past_hours)
