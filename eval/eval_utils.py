@@ -8,6 +8,7 @@ import os
 import pandas as pd
 import numpy as np
 from eval.plot_utils import plot_forecast, plot_training_curve, plot_val_loss_over_time
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
 def save_results(
@@ -47,6 +48,19 @@ def save_results(
         preds = scaler.inverse_transform(preds.reshape(-1, 1)).reshape(preds.shape)
         yts   = scaler.inverse_transform(yts.reshape(-1, 1)).reshape(yts.shape)
 
+    # ===== [NEW] Compute normalized errors using train-set scaler (if needed) =====
+    if scaler is not None:
+        # Fit scaler on flattened y_true (real values), get normalization transform
+        norm_scaler = scaler  # We assume same scaler used for train/val/test
+        preds_norm = norm_scaler.transform(preds.reshape(-1, 1)).flatten()
+        yts_norm   = norm_scaler.transform(yts.reshape(-1, 1)).flatten()
+
+        norm_mse  = mean_squared_error(yts_norm, preds_norm)
+        norm_rmse = np.sqrt(norm_mse)
+        norm_mae  = mean_absolute_error(yts_norm, preds_norm)
+    else:
+        norm_mse = norm_rmse = norm_mae = np.nan
+
     # ===== 1. Save summary.csv =====
     summary = {
         'model':           config['model'],
@@ -58,6 +72,9 @@ def save_results(
         'param_count':     metrics.get('param_count'),
         'rmse':            metrics.get('rmse', np.nan),
         'mae':             metrics.get('mae', np.nan),
+        'norm_test_loss':  norm_mse,
+        'norm_rmse':       norm_rmse,
+        'norm_mae':        norm_mae,
     }
     pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
 
