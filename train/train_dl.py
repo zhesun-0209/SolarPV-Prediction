@@ -20,7 +20,6 @@ from models.transformer import Transformer
 from models.rnn_models import LSTM, GRU
 from models.tcn import TCNModel
 
-
 def train_dl_model(
     config: dict,
     train_data: tuple,
@@ -92,8 +91,12 @@ def train_dl_model(
 
     mse_fn = torch.nn.MSELoss()
     use_meta = config.get('use_meta', False)
-    hour_weights = torch.ones(config['future_hours'], device=device) if use_meta else None
+    alpha = train_params.get('alpha', 3.0)
+    peak_start = train_params.get('peak_start', 10)
+    peak_end = train_params.get('peak_end', 14)
+    threshold = train_params.get('hour_weight_threshold', 0.005)
 
+    hour_weights = torch.ones(config['future_hours'], device=device) if use_meta else None
     logs = []
     total_time = 0.0
 
@@ -150,7 +153,10 @@ def train_dl_model(
         total_time += time.time() - start
 
         if use_meta:
-            hour_weights = compute_dynamic_hour_weights(hour_errors).to(device)
+            hour_weights = compute_dynamic_hour_weights(
+                hour_errors, alpha=alpha, threshold=threshold,
+                save_dir=config['save_dir'], epoch=ep
+            ).to(device)
 
         logs.append({
             'epoch': ep,
