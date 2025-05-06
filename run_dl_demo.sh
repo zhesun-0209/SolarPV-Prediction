@@ -6,7 +6,7 @@ set -e
 
 BASE_CONFIG="config/default.yaml"
 BASE_SAVE_DIR=$(python -c "import yaml; print(yaml.safe_load(open('$BASE_CONFIG'))['save_dir'])")
-MODELS=("Transformer")
+MODELS=("Transformer" "LSTM" "GRU" "TCN")
 
 # Meta-loss params
 ALPHA=3.0
