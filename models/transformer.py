@@ -48,9 +48,8 @@ class Transformer(nn.Module):
             dropout=config['dropout'],
             batch_first=True
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=config['n_layers'])
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=config['num_layers'])
 
-        # Output head
         total_seq = config['past_hours'] + (config['future_hours'] if config.get('use_forecast', False) else 0)
         self.head = nn.Sequential(
             nn.Linear(total_seq * d_model, config['hidden_dim']),
