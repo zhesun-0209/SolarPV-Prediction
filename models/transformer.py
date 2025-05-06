@@ -43,7 +43,7 @@ class Transformer(nn.Module):
         # Transformer encoder
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
-            nhead=config['n_heads'],
+            nhead=config['num_heads'],
             dim_feedforward=d_model * 4,
             dropout=config['dropout'],
             batch_first=True
