@@ -44,8 +44,8 @@ def main():
     parser.add_argument("--plot_days",     type=int,   help="Override plot_days")
     # DL model_params
     parser.add_argument("--d_model",       type=int,   help="Override model_params.d_model")
-    parser.add_argument("--num_heads",       type=int,   help="Override model_params.n_heads")
-    parser.add_argument("--num_layers",      type=int,   help="Override model_params.n_layers")
+    parser.add_argument("--num_heads",     type=int,   help="Override model_params.num_heads")
+    parser.add_argument("--num_layers",    type=int,   help="Override model_params.num_layers")
     parser.add_argument("--hidden_dim",    type=int,   help="Override model_params.hidden_dim")
     parser.add_argument("--dropout",       type=float, help="Override model_params.dropout")
     parser.add_argument("--tcn_channels",  type=str,   help="Override model_params.tcn_channels (e.g. \"[64,64]\")")
@@ -86,8 +86,8 @@ def main():
     # Merge CLI overrides into model_params
     mp = config.setdefault("model_params", {})
     if args.d_model:       mp["d_model"]       = args.d_model
-    if args.num_heads:       mp["num_heads"]     = args.num_heads
-    if args.num_layers:      mp["num_layers"]    = args.num_layers
+    if args.num_heads:     mp["num_heads"]     = args.num_heads
+    if args.num_layers:    mp["num_layers"]    = args.num_layers
     if args.hidden_dim:    mp["hidden_dim"]    = args.hidden_dim
     if args.dropout:       mp["dropout"]       = args.dropout
     if args.tcn_channels:  mp["tcn_channels"]  = eval(args.tcn_channels)
@@ -135,9 +135,24 @@ def main():
          Xh_va, Xf_va, y_va, hrs_va, dates_va,
          Xh_te, Xf_te, y_te, hrs_te, dates_te) = splits
 
-        # Prepare save dir per model & project
+        # --- Prepare save dir per project/model/flags ---
+        # build a string of ablation flags, e.g. "feattrue_timetrue_fcsttrue_statstrue_metatrue"
+        flags = "_".join([
+            f"feat{str(config['use_feature']).lower()}",
+            f"time{str(config['use_time']).lower()}",
+            f"fcst{str(config['use_forecast']).lower()}",
+            f"stats{str(config['use_stats']).lower()}",
+            f"meta{str(config['use_meta']).lower()}",
+        ])
+        # choose 'dl' or 'ml' subfolder
+        mode = "dl" if config["model"] in ["Transformer", "LSTM", "GRU", "TCN"] else "ml"
         proj_save_dir = os.path.join(
-            config["save_dir"], config["model"], f"Project_{pid}"
+            config["save_dir"],
+            "project",
+            mode,
+            config["model"],
+            flags,
+            f"Project_{pid}"
         )
         os.makedirs(proj_save_dir, exist_ok=True)
         cfg = deepcopy(config)
