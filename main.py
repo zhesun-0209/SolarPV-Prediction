@@ -43,7 +43,7 @@ def main():
     parser.add_argument("--model", type=str)
     parser.add_argument("--past_hours", type=int)
     parser.add_argument("--future_hours", type=int)
-    parser.add_argument("--use_feature", type=str, choices=["true", "false"])
+    parser.add_argument("--use_hist_weather", type=str, choices=["true", "false"])
     parser.add_argument("--use_time", type=str, choices=["true", "false"])
     parser.add_argument("--use_forecast", type=str, choices=["true", "false"])
     parser.add_argument("--use_stats", type=str, choices=["true", "false"])
@@ -93,7 +93,7 @@ def main():
     if args.model: config["model"] = args.model
     if args.past_hours: config["past_hours"] = args.past_hours
     if args.future_hours: config["future_hours"] = args.future_hours
-    if args.use_feature: config["use_feature"] = str2bool(args.use_feature)
+    if args.use_hist_weather: config["use_hist_weather"] = str2bool(args.use_hist_weather)
     if args.use_time: config["use_time"] = str2bool(args.use_time)
     if args.use_forecast: config["use_forecast"] = str2bool(args.use_forecast)
     if args.use_stats: config["use_stats"] = str2bool(args.use_stats)
@@ -134,7 +134,7 @@ def main():
 
     # === Compose flag tag to name subfolders ===
     flag_tag = (
-        f"feat{config['use_feature']}_"
+        f"feat{config['use_hist_weather']}_"
         f"time{config['use_time']}_"
         f"fcst{config['use_forecast']}_"
         f"stats{config['use_stats']}_"
