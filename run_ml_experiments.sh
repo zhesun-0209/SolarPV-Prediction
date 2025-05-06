@@ -6,8 +6,11 @@
 
 set -e
 
+# Path to YAML config
 BASE_CONFIG="config/default.yaml"
-BASE_SAVE_DIR="/path/to/outputs"
+
+# Use Python to extract save_dir from YAML
+BASE_SAVE_DIR=$(python -c "import yaml; print(yaml.safe_load(open('$BASE_CONFIG'))['save_dir'])")
 
 MODELS=("RF" "GBR" "XGB" "LGBM")
 
