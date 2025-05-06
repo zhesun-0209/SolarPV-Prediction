@@ -15,7 +15,7 @@ PEAK_END=14
 THRESHOLD=0.005
 
 # Define ablation flag names
-FLAGS=("use_feature" "use_time" "use_forecast" "use_stats" "use_meta")
+FLAGS=("use_hist_weather" "use_time" "use_forecast" "use_stats" "use_meta")
 
 # Function to construct command from a set of flag values
 run_experiment() {
@@ -47,11 +47,11 @@ run_experiment() {
 for MODEL in "${MODELS[@]}"; do
 
   # 1. All False
-  FLAG_VALUES="use_feature=false use_time=false use_forecast=false use_stats=false use_meta=false"
+  FLAG_VALUES="use_hist_weather=false use_time=false use_forecast=false use_stats=false use_meta=false"
   run_experiment "$MODEL" "$FLAG_VALUES" "ALL_FALSE"
 
   # 2. All True
-  FLAG_VALUES="use_feature=true use_time=true use_forecast=true use_stats=true use_meta=true"
+  FLAG_VALUES="use_hist_weather=true use_time=true use_forecast=true use_stats=true use_meta=true"
   run_experiment "$MODEL" "$FLAG_VALUES" "ALL_TRUE"
 
   # 3. Each single-flag True (others False)
