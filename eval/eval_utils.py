@@ -45,16 +45,16 @@ def save_results(
     scaler = config.get("scaler_target", None)
     already_inverse = metrics.get("inverse_transformed", False)
     if scaler is not None and not already_inverse:
-        preds = scaler.inverse_transform(preds.reshape(-1, 1)).reshape(preds.shape)
-        yts   = scaler.inverse_transform(yts.reshape(-1, 1)).reshape(yts.shape)
+        preds = scaler.inverse_transform(pd.DataFrame(preds.reshape(-1, 1), columns=['target'])).values.reshape(preds.shape)
+        yts   = scaler.inverse_transform(pd.DataFrame(yts.reshape(-1, 1), columns=['target'])).values.reshape(yts.shape)
 
     # ===== [NEW] Compute normalized errors using train-set scaler (if needed) =====
     if scaler is not None:
         # Fit scaler on flattened y_true (real values), get normalization transform
         norm_scaler = scaler  # We assume same scaler used for train/val/test
-        preds_norm = norm_scaler.transform(preds.reshape(-1, 1)).flatten()
-        yts_norm   = norm_scaler.transform(yts.reshape(-1, 1)).flatten()
-
+        preds_norm = norm_scaler.transform(pd.DataFrame(preds.reshape(-1, 1), columns=['target'])).values.flatten()
+        yts_norm   = norm_scaler.transform(pd.DataFrame(yts.reshape(-1, 1), columns=['target'])).values.flatten()
+        
         norm_mse  = mean_squared_error(yts_norm, preds_norm)
         norm_rmse = np.sqrt(norm_mse)
         norm_mae  = mean_absolute_error(yts_norm, preds_norm)
