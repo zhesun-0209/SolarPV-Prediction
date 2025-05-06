@@ -52,8 +52,8 @@ def save_results(
     if scaler is not None:
         # Fit scaler on flattened y_true (real values), get normalization transform
         norm_scaler = scaler  # We assume same scaler used for train/val/test
-        preds_norm = norm_scaler.transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).values.flatten()
-        yts_norm   = norm_scaler.transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).values.flatten()
+        preds_norm = norm_scaler.transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
+        yts_norm   = norm_scaler.transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
   
         norm_mse  = mean_squared_error(yts_norm, preds_norm)
         norm_rmse = np.sqrt(norm_mse)
