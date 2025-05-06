@@ -217,14 +217,20 @@ def train_dl_model(
     raw_rmse = np.sqrt(raw_mse)
     raw_mae  = np.mean(np.abs(y_inv - p_inv))
 
+    # Compute unscaled error metrics
+    raw_mse  = np.mean((y_inv - p_inv) ** 2)
+    raw_rmse = np.sqrt(raw_mse)
+    raw_mae  = np.mean(np.abs(y_inv - p_inv))
+    
+    # Return model and metrics dictionary with inverse-transformed predictions
     metrics = {
         'test_loss':   raw_mse,
-        'rmse':        raw_rmse,        
-        'mae':         raw_mae,           
+        'rmse':        raw_rmse,
+        'mae':         raw_mae,
         'epoch_logs':  logs,
         'param_count': count_parameters(model),
-        'predictions': preds_arr,
-        'y_true':      y_te,
+        'predictions': p_inv.reshape(y_te.shape),  # unnormalized predictions
+        'y_true':      y_inv.reshape(y_te.shape),  # unnormalized targets
         'dates':       dates_te
     }
     return model, metrics
