@@ -18,8 +18,8 @@ def plot_forecast(
 
     Args:
         dates:      list of datetime objects (end of each window)
-        y_true:     array shape (n_windows, horizon) of true values
-        y_pred:     array shape (n_windows, horizon) of predictions
+        y_true:     array shape (n_windows, horizon) of true values (in kWh)
+        y_pred:     array shape (n_windows, horizon) of predictions (in kWh)
         save_dir:   directory to save the figure
         model_name: optional label for the title
         days:       number of days to display (None shows all)
@@ -44,11 +44,12 @@ def plot_forecast(
         max_points = days * 24
         df = df.iloc[:max_points]
 
+    # Plot
     plt.figure(figsize=(15, 5))
     plt.plot(df.index, df['true'], label='True')
     plt.plot(df.index, df['pred'], '--', label='Predicted')
     plt.xlabel('Datetime')
-    plt.ylabel('Electricity Generated')
+    plt.ylabel('Electricity Generated (kWh)')  # ✅ 明确单位
     title = 'Forecast vs True'
     if model_name:
         title = f'{model_name} ' + title
@@ -86,7 +87,7 @@ def plot_training_curve(
     plt.plot(epochs, train_losses, label='Train Loss')
     plt.plot(epochs, val_losses,   label='Val Loss')
     plt.xlabel('Epoch')
-    plt.ylabel('Loss')
+    plt.ylabel('Loss (MSE)')
     title = 'Training Curve'
     if model_name:
         title = f'{model_name} ' + title
@@ -120,7 +121,7 @@ def plot_val_loss_over_time(
     plt.figure(figsize=(10, 5))
     plt.plot(times, val_losses, marker='o')
     plt.xlabel('Cumulative Training Time (s)')
-    plt.ylabel('Validation Loss')
+    plt.ylabel('Validation Loss (MSE)')
     title = 'Validation Loss over Time'
     if model_name:
         title = f'{model_name} ' + title
