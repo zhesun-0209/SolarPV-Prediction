@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from eval.plot_utils import plot_forecast, plot_training_curve, plot_val_loss_over_time
 
+
 def save_results(
     model,
     metrics: dict,
@@ -19,7 +20,7 @@ def save_results(
 ):
     """
     Save summary.csv, predictions.csv, training_log.csv, and generate plots
-    directly under config['save_dir'].
+    under config['save_dir'].
 
     Args:
       - model: trained DL or sklearn model
@@ -29,7 +30,7 @@ def save_results(
           'dates'(n), 'epoch_logs' (list of dicts with 'epoch','train_loss','val_loss','epoch_time','cum_time')
       - dates: fallback list of datetimes
       - y_true / Xh_test / Xf_test: unused here
-      - config: contains 'save_dir','model','plot_days','use_feature','past_hours','future_hours'
+      - config: includes 'save_dir','model','plot_days','scaler_target'
     """
     save_dir = config["save_dir"]
     os.makedirs(save_dir, exist_ok=True)
@@ -49,8 +50,14 @@ def save_results(
     pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
 
     # 2) predictions.csv
-    preds      = metrics['predictions']
-    yts        = metrics['y_true']
+    preds = metrics['predictions']
+    yts   = metrics['y_true']
+
+    scaler = config.get('scaler_target', None)
+    if scaler is not None:
+        preds = scaler.inverse_transform(preds.reshape(-1, 1)).reshape(preds.shape)
+        yts   = scaler.inverse_transform(yts.reshape(-1, 1)).reshape(yts.shape)
+
     hrs        = metrics.get('hours')
     dates_list = metrics.get('dates', dates)
     records = []
@@ -77,7 +84,7 @@ def save_results(
     # 4) plots
     days = config.get('plot_days', None)
     plot_forecast(
-        metrics['dates'], metrics['y_true'], metrics['predictions'],
+        dates_list, yts, preds,
         save_dir, model_name=config['model'], days=days
     )
     if 'epoch_logs' in metrics:
