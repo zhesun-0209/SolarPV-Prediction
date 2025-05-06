@@ -28,10 +28,8 @@ from train.train_dl import train_dl_model
 from train.train_ml import train_ml_model
 from eval.eval_utils import save_results
 
-
 def str2bool(v: str) -> bool:
     return v.lower() in ("true", "1", "yes")
-
 
 def main():
     parser = argparse.ArgumentParser(description="Solar Power Forecasting Pipeline")
@@ -84,29 +82,29 @@ def main():
         config = yaml.safe_load(f)
 
     # Override config from CLI
-    if args.data_path:    config["data_path"]    = args.data_path
-    if args.save_dir:     config["save_dir"]     = args.save_dir
-    if args.model:        config["model"]        = args.model
-    if args.past_hours:   config["past_hours"]   = args.past_hours
+    if args.data_path: config["data_path"] = args.data_path
+    if args.save_dir: config["save_dir"] = args.save_dir
+    if args.model: config["model"] = args.model
+    if args.past_hours: config["past_hours"] = args.past_hours
     if args.future_hours: config["future_hours"] = args.future_hours
-    if args.use_feature:  config["use_feature"]  = str2bool(args.use_feature)
-    if args.use_time:     config["use_time"]     = str2bool(args.use_time)
+    if args.use_feature: config["use_feature"] = str2bool(args.use_feature)
+    if args.use_time: config["use_time"] = str2bool(args.use_time)
     if args.use_forecast: config["use_forecast"] = str2bool(args.use_forecast)
-    if args.use_stats:    config["use_stats"]    = str2bool(args.use_stats)
-    if args.use_meta:     config["use_meta"]     = str2bool(args.use_meta)
-    if args.train_ratio:  config["train_ratio"]  = args.train_ratio
-    if args.val_ratio:    config["val_ratio"]    = args.val_ratio
-    if args.plot_days:    config["plot_days"]    = args.plot_days
+    if args.use_stats: config["use_stats"] = str2bool(args.use_stats)
+    if args.use_meta: config["use_meta"] = str2bool(args.use_meta)
+    if args.train_ratio: config["train_ratio"] = args.train_ratio
+    if args.val_ratio: config["val_ratio"] = args.val_ratio
+    if args.plot_days: config["plot_days"] = args.plot_days
 
     # Override model_params
     mp = config.setdefault("model_params", {})
-    if args.d_model:      mp["d_model"]      = args.d_model
-    if args.num_heads:    mp["num_heads"]    = args.num_heads
-    if args.num_layers:   mp["num_layers"]   = args.num_layers
-    if args.hidden_dim:   mp["hidden_dim"]   = args.hidden_dim
-    if args.dropout:      mp["dropout"]      = args.dropout
+    if args.d_model: mp["d_model"] = args.d_model
+    if args.num_heads: mp["num_heads"] = args.num_heads
+    if args.num_layers: mp["num_layers"] = args.num_layers
+    if args.hidden_dim: mp["hidden_dim"] = args.hidden_dim
+    if args.dropout: mp["dropout"] = args.dropout
     if args.tcn_channels: mp["tcn_channels"] = eval(args.tcn_channels)
-    if args.kernel_size:  mp["kernel_size"]  = args.kernel_size
+    if args.kernel_size: mp["kernel_size"] = args.kernel_size
     if args.n_estimators: mp["n_estimators"] = args.n_estimators
     if args.max_depth is not None: mp["max_depth"] = args.max_depth
     if args.ml_learning_rate is not None: mp["learning_rate"] = args.ml_learning_rate
@@ -114,17 +112,15 @@ def main():
 
     # Override train_params
     tp = config.setdefault("train_params", {})
-    if args.batch_size:          tp["batch_size"]          = args.batch_size
-    if args.epochs:              tp["epochs"]              = args.epochs
-    if args.learning_rate:       tp["learning_rate"]       = args.learning_rate
-    if args.weight_decay:        tp["weight_decay"]        = args.weight_decay
+    if args.batch_size: tp["batch_size"] = args.batch_size
+    if args.epochs: tp["epochs"] = args.epochs
+    if args.learning_rate: tp["learning_rate"] = args.learning_rate
+    if args.weight_decay: tp["weight_decay"] = args.weight_decay
     if args.early_stop_patience: tp["early_stop_patience"] = args.early_stop_patience
-    if args.loss_type:           tp["loss_type"]           = args.loss_type
+    if args.loss_type: tp["loss_type"] = args.loss_type
 
-    # Load and preprocess
+    # Load raw data once
     df = load_raw_data(config["data_path"])
-    df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target = \
-        preprocess_features(df, config)
 
     flag_tag = (
         f"feat{config['use_feature']}_"
@@ -137,31 +133,34 @@ def main():
     is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
     alg_type = "dl" if is_dl else "ml"
 
-    for pid in df_clean["ProjectID"].unique():
-        df_proj = df_clean[df_clean["ProjectID"] == pid]
+    for pid in df["ProjectID"].unique():
+        df_proj = df[df["ProjectID"] == pid]
         if df_proj.empty:
             print(f"[WARN] Project {pid} has no data, skipping")
             continue
 
+        # 👇 每个项目单独预处理
+        df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target = \
+            preprocess_features(df_proj, config)
+
         Xh, Xf, y, hrs, dates = create_sliding_windows(
-            df_proj,
-            past_hours   = config["past_hours"],
-            future_hours = config["future_hours"],
-            hist_feats   = hist_feats,
-            fcst_feats   = fcst_feats
+            df_clean,
+            past_hours=config["past_hours"],
+            future_hours=config["future_hours"],
+            hist_feats=hist_feats,
+            fcst_feats=fcst_feats
         )
         splits = split_data(
             Xh, Xf, y, hrs, dates,
             train_ratio=config["train_ratio"],
-            val_ratio=  config["val_ratio"]
+            val_ratio=config["val_ratio"]
         )
         Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
         Xh_va, Xf_va, y_va, hrs_va, dates_va, \
         Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
 
-        base = config["save_dir"]
         proj_dir = os.path.join(
-            base,
+            config["save_dir"],
             f"Project_{pid}",
             alg_type,
             config["model"].lower(),
@@ -187,7 +186,7 @@ def main():
                 cfg,
                 Xh_tr, Xf_tr, y_tr,
                 Xh_te, Xf_te, y_te,
-                scaler_target  # ✅ ensure inverse normalization
+                scaler_target
             )
         metrics["train_time_sec"] = round(time.time() - start, 2)
 
@@ -203,7 +202,6 @@ def main():
             cfg
         )
         print(f"[INFO] Project {pid} | {cfg['model']} done, test_loss={metrics['test_loss']:.4f}")
-
 
 if __name__ == "__main__":
     main()
