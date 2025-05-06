@@ -192,6 +192,7 @@ def main():
         metrics["train_time_sec"] = round(time.time() - start, 2)
 
         # --- Save results ---
+        cfg['scaler_target'] = scaler_target
         save_results(
             model,
             metrics,
