@@ -23,48 +23,88 @@ def load_raw_data(path: str) -> pd.DataFrame:
     df['Datetime'] = pd.to_datetime(df[['Year', 'Month', 'Day', 'Hour']])
     return df
 
+# def preprocess_features(df: pd.DataFrame, config: dict):
+#     df_clean = df.dropna(subset=[TARGET_COL]).copy()
+
+#     hist_feats = []
+#     fcst_feats = []
+
+#     if config.get('use_hist_weather', True):
+#         hist_feats += BASE_HIST_FEATURES
+
+#     if config.get('use_time', False):
+#         for col in ('Month_cos', 'Hour_sin', 'Hour_cos'):
+#             if col not in hist_feats:
+#                 hist_feats.append(col)
+
+#     if config.get('use_stats', False):
+#         hist_feats += BASE_STAT_FEATURES
+
+#     if config.get('use_forecast', False):
+#         fcst_feats += BASE_FCST_FEATURES
+
+#     # Drop rows with missing values in all relevant features
+#     na_check_feats = hist_feats + fcst_feats + [TARGET_COL]
+#     df_clean = df_clean.dropna(subset=na_check_feats).reset_index(drop=True)
+
+#     if hist_feats:
+#         scaler_hist = MinMaxScaler()
+#         df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
+#     else:
+#         scaler_hist = None
+
+#     scaler_target = MinMaxScaler()
+#     df_clean[[TARGET_COL]] = scaler_target.fit_transform(df_clean[[TARGET_COL]])
+
+#     if fcst_feats:
+#         scaler_fcst = MinMaxScaler()
+#         df_clean[fcst_feats] = scaler_fcst.fit_transform(df_clean[fcst_feats])
+#     else:
+#         scaler_fcst = None
+
+#     df_clean = df_clean.sort_values('Datetime').reset_index(drop=True)
+
+#     return df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target
 def preprocess_features(df: pd.DataFrame, config: dict):
     df_clean = df.dropna(subset=[TARGET_COL]).copy()
 
-    # Initialize feature lists
-    hist_feats = [TARGET_COL]
+    df_clean['past_generation'] = df_clean[TARGET_COL]
+
+    hist_feats = ['past_generation']  
     fcst_feats = []
 
-    # Append weather-based historical features if use_hist_weather is True
-    if config.get('use_hist_weather', True):
+    if config.get('use_hist_weather', False):
         hist_feats += BASE_HIST_FEATURES
-
-    # Add time features if use_time = True
     if config.get('use_time', False):
         for col in ('Month_cos', 'Hour_sin', 'Hour_cos'):
             if col not in hist_feats:
                 hist_feats.append(col)
-
-    # Add statistical features
     if config.get('use_stats', False):
         hist_feats += BASE_STAT_FEATURES
-
-    # Add forecast features
     if config.get('use_forecast', False):
         fcst_feats += BASE_FCST_FEATURES
 
     # Drop rows with missing required features
-    na_check_feats = hist_feats + fcst_feats
+    na_check_feats = hist_feats + fcst_feats + [TARGET_COL]
     df_clean = df_clean.dropna(subset=na_check_feats).reset_index(drop=True)
 
-    # Normalize features
+    # Normalize input features
     scaler_hist = MinMaxScaler()
     df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
+
+    # Normalize target only once (✅ no overwrite)
+    scaler_target = MinMaxScaler()
+    df_clean[[TARGET_COL]] = scaler_target.fit_transform(df_clean[[TARGET_COL]])
 
     scaler_fcst = None
     if fcst_feats:
         scaler_fcst = MinMaxScaler()
         df_clean[fcst_feats] = scaler_fcst.fit_transform(df_clean[fcst_feats])
-
-    scaler_target = MinMaxScaler()
-    df_clean[[TARGET_COL]] = scaler_target.fit_transform(df_clean[[TARGET_COL]])
+    else:
+        scaler_fcst = None
 
     df_clean = df_clean.sort_values('Datetime').reset_index(drop=True)
+
     return df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target
 
 def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats):
