@@ -1,8 +1,10 @@
 """
 eval/eval_utils.py
 
-Utilities to save summary, predictions, training logs, and call plotting routines.
+Utilities to save summary, predictions, training logs, and generate plots.
+Ensures predictions and ground truth are inverse-transformed if required.
 """
+
 import os
 import pandas as pd
 import numpy as np
@@ -13,9 +15,6 @@ def save_results(
     model,
     metrics: dict,
     dates: list,
-    y_true: np.ndarray,
-    Xh_test: np.ndarray,
-    Xf_test: np.ndarray,
     config: dict
 ):
     """
@@ -28,25 +27,24 @@ def save_results(
                  'test_loss', 'train_time_sec', 'param_count', 'rmse', 'mae',
                  'predictions' (n,h), 'y_true' (n,h),
                  'dates' (n), 'epoch_logs' (list of dicts)
-        dates:   Fallback list of datetime strings
-        y_true, Xh_test, Xf_test: Unused (legacy support)
+        dates:   Fallback list of datetime strings (used if metrics['dates'] missing)
         config:  Dictionary with keys like 'save_dir', 'model', 'plot_days', 'scaler_target'
     """
     save_dir = config["save_dir"]
     os.makedirs(save_dir, exist_ok=True)
 
-    # Extract predictions and ground truth
+    # === Extract predictions and ground truth ===
     preds = metrics['predictions']
     yts   = metrics['y_true']
 
-    # ===== [NEW] Optional inverse_transform (only if not already done) =====
+    # === Optional inverse_transform (if not already applied) ===
     scaler = config.get("scaler_target", None)
     already_inverse = metrics.get("inverse_transformed", False)
     if scaler is not None and not already_inverse:
         preds = scaler.inverse_transform(preds.reshape(-1, 1)).reshape(preds.shape)
         yts   = scaler.inverse_transform(yts.reshape(-1, 1)).reshape(yts.shape)
 
-    # ===== 1. Save summary.csv =====
+    # === Save summary.csv ===
     summary = {
         'model':           config['model'],
         'use_feature':     config.get('use_feature', True),
@@ -60,7 +58,7 @@ def save_results(
     }
     pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
 
-    # ===== 2. Save predictions.csv =====
+    # === Save predictions.csv ===
     hrs = metrics.get('hours')
     dates_list = metrics.get('dates', dates)
     records = []
@@ -78,13 +76,13 @@ def save_results(
             })
     pd.DataFrame(records).to_csv(os.path.join(save_dir, "predictions.csv"), index=False)
 
-    # ===== 3. Save training log =====
+    # === Save training log if available ===
     if 'epoch_logs' in metrics:
         pd.DataFrame(metrics['epoch_logs']).to_csv(
             os.path.join(save_dir, "training_log.csv"), index=False
         )
 
-    # ===== 4. Save plots =====
+    # === Generate plots ===
     days = config.get('plot_days', None)
     plot_forecast(dates_list, yts, preds, save_dir, model_name=config['model'], days=days)
     if 'epoch_logs' in metrics:
