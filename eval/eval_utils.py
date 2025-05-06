@@ -10,6 +10,8 @@ import numpy as np
 from eval.plot_utils import plot_forecast, plot_training_curve, plot_val_loss_over_time
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
+# ===== Define Deep Learning model names =====
+DL_MODELS = {"Transformer", "LSTM", "GRU", "TCN"}
 
 def save_results(
     model,
@@ -96,8 +98,9 @@ def save_results(
             })
     pd.DataFrame(records).to_csv(os.path.join(save_dir, "predictions.csv"), index=False)
 
-    # ===== 3. Save training log =====
-    if 'epoch_logs' in metrics:
+    # ===== 3. Save training log (only if DL) =====
+    is_dl = config['model'] in DL_MODELS
+    if is_dl and 'epoch_logs' in metrics:
         pd.DataFrame(metrics['epoch_logs']).to_csv(
             os.path.join(save_dir, "training_log.csv"), index=False
         )
@@ -105,7 +108,8 @@ def save_results(
     # ===== 4. Save plots =====
     days = config.get('plot_days', None)
     plot_forecast(dates_list, yts, preds, save_dir, model_name=config['model'], days=days)
-    if 'epoch_logs' in metrics:
+
+    if is_dl and 'epoch_logs' in metrics:
         plot_training_curve(metrics['epoch_logs'], save_dir, model_name=config['model'])
         plot_val_loss_over_time(metrics['epoch_logs'], save_dir, model_name=config['model'])
 
