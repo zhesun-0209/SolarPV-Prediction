@@ -187,7 +187,7 @@ def main():
                 cfg,
                 Xh_tr, Xf_tr, y_tr,
                 Xh_te, Xf_te, y_te,
-                scaler_target  # ✅ ensure inverse normalization
+                scaler_target
             )
         metrics["train_time_sec"] = round(time.time() - start, 2)
 
@@ -197,9 +197,6 @@ def main():
             model,
             metrics,
             dates_te,
-            y_te,
-            Xh_te,
-            Xf_te,
             cfg
         )
         print(f"[INFO] Project {pid} | {cfg['model']} done, test_loss={metrics['test_loss']:.4f}")
