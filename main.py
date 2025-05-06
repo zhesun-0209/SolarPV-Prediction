@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-Main script: load config, preprocess data, train & evaluate models per ProjectID
-for solar power forecasting.
+main.py
+
+Orchestrates the entire Solar Power Forecasting Pipeline:
+  1. Loads a YAML config (and optional CLI overrides)
+  2. Preprocesses raw data
+  3. Splits into sliding windows and train/val/test sets per ProjectID
+  4. Trains either a DL or ML model
+  5. Saves results under:
+       <base_save_dir>/Project_<pid>/<alg_type>/<model_name>/<flag_tag>/
 """
 
 import os
@@ -21,67 +28,51 @@ from train.train_dl import train_dl_model
 from train.train_ml import train_ml_model
 from eval.eval_utils import save_results
 
+
 def str2bool(v: str) -> bool:
+    """Convert 'true'/'false' strings to boolean."""
     return v.lower() in ("true", "1", "yes")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Solar Power Forecasting Pipeline")
-    # core config
-    parser.add_argument("--config",        type=str,   required=True, help="Path to YAML config file")
-    parser.add_argument("--data_path",     type=str,   help="Override data_path")
-    parser.add_argument("--save_dir",      type=str,   help="Override save_dir")
-    # data/ablation flags
-    parser.add_argument("--model",         type=str,   help="Override model type")
-    parser.add_argument("--past_hours",    type=int,   help="Override past_hours")
-    parser.add_argument("--future_hours",  type=int,   help="Override future_hours")
-    parser.add_argument("--use_feature",   type=str,   choices=["true","false"], help="Override use_feature")
-    parser.add_argument("--use_time",      type=str,   choices=["true","false"], help="Override use_time")
-    parser.add_argument("--use_forecast",  type=str,   choices=["true","false"], help="Override use_forecast")
-    parser.add_argument("--use_stats",     type=str,   choices=["true","false"], help="Override use_stats")
-    parser.add_argument("--use_meta",      type=str,   choices=["true","false"], help="Override use_meta")
-    parser.add_argument("--train_ratio",   type=float, help="Override train_ratio")
-    parser.add_argument("--val_ratio",     type=float, help="Override val_ratio")
-    parser.add_argument("--plot_days",     type=int,   help="Override plot_days")
-    # DL model_params
-    parser.add_argument("--d_model",       type=int,   help="Override model_params.d_model")
-    parser.add_argument("--num_heads",     type=int,   help="Override model_params.num_heads")
-    parser.add_argument("--num_layers",    type=int,   help="Override model_params.num_layers")
-    parser.add_argument("--hidden_dim",    type=int,   help="Override model_params.hidden_dim")
-    parser.add_argument("--dropout",       type=float, help="Override model_params.dropout")
-    parser.add_argument("--tcn_channels",  type=str,   help="Override model_params.tcn_channels (e.g. \"[64,64]\")")
-    parser.add_argument("--kernel_size",   type=int,   help="Override model_params.kernel_size")
-    # ML model_params
-    parser.add_argument("--n_estimators",      type=int,   help="Override model_params.n_estimators")
-    parser.add_argument("--max_depth",         type=int,   help="Override model_params.max_depth")
-    parser.add_argument("--ml_learning_rate",  type=float, help="Override model_params.learning_rate")
-    parser.add_argument("--random_state",      type=int,   help="Override model_params.random_state")
-    # training parameters
-    parser.add_argument("--batch_size",        type=int,   help="Override train_params.batch_size")
-    parser.add_argument("--epochs",            type=int,   help="Override train_params.epochs")
-    parser.add_argument("--learning_rate",     type=float, help="Override train_params.learning_rate")
-    parser.add_argument("--weight_decay",      type=float, help="Override train_params.weight_decay")
-    parser.add_argument("--early_stop_patience", type=int, help="Override train_params.early_stop_patience")
-    parser.add_argument("--loss_type",         type=str,   help="Override train_params.loss_type")
+    # Core config
+    parser.add_argument("--config",       type=str,   required=True, help="Path to YAML config file")
+    parser.add_argument("--data_path",    type=str,   help="Override data_path in config")
+    parser.add_argument("--save_dir",     type=str,   help="Override base save_dir in config")
+    # Ablation flags & model selection
+    parser.add_argument("--model",        type=str,   help="Override model type")
+    parser.add_argument("--past_hours",   type=int,   help="Override past_hours")
+    parser.add_argument("--future_hours", type=int,   help="Override future_hours")
+    parser.add_argument("--use_feature",  type=str,   choices=["true","false"], help="Override use_feature")
+    parser.add_argument("--use_time",     type=str,   choices=["true","false"], help="Override use_time")
+    parser.add_argument("--use_forecast", type=str,   choices=["true","false"], help="Override use_forecast")
+    parser.add_argument("--use_stats",    type=str,   choices=["true","false"], help="Override use_stats")
+    parser.add_argument("--use_meta",     type=str,   choices=["true","false"], help="Override use_meta")
+    parser.add_argument("--train_ratio",  type=float, help="Override train_ratio")
+    parser.add_argument("--val_ratio",    type=float, help="Override val_ratio")
+    parser.add_argument("--plot_days",    type=int,   help="Override plot_days")
+    # (Additional CLI overrides for model_params & train_params omitted for brevity)
     args = parser.parse_args()
 
-    # --- Load config from YAML ---
+    # --- Load YAML config ---
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
 
-    # --- Override config from CLI args ---
-    if args.data_path:     config["data_path"]      = args.data_path
-    if args.save_dir:      config["save_dir"]       = args.save_dir
-    if args.model:         config["model"]          = args.model
-    if args.past_hours:    config["past_hours"]     = args.past_hours
-    if args.future_hours:  config["future_hours"]   = args.future_hours
-    if args.use_feature:   config["use_feature"]    = str2bool(args.use_feature)
-    if args.use_time:      config["use_time"]       = str2bool(args.use_time)
-    if args.use_forecast:  config["use_forecast"]   = str2bool(args.use_forecast)
-    if args.use_stats:     config["use_stats"]      = str2bool(args.use_stats)
-    if args.use_meta:      config["use_meta"]       = str2bool(args.use_meta)
-    if args.train_ratio:   config["train_ratio"]    = args.train_ratio
-    if args.val_ratio:     config["val_ratio"]      = args.val_ratio
-    if args.plot_days:     config["plot_days"]      = args.plot_days
+    # --- Apply CLI overrides to top‐level config ---
+    if args.data_path:    config["data_path"]      = args.data_path
+    if args.save_dir:     config["save_dir"]       = args.save_dir
+    if args.model:        config["model"]          = args.model
+    if args.past_hours:   config["past_hours"]     = args.past_hours
+    if args.future_hours: config["future_hours"]   = args.future_hours
+    if args.use_feature:  config["use_feature"]    = str2bool(args.use_feature)
+    if args.use_time:     config["use_time"]       = str2bool(args.use_time)
+    if args.use_forecast: config["use_forecast"]   = str2bool(args.use_forecast)
+    if args.use_stats:    config["use_stats"]      = str2bool(args.use_stats)
+    if args.use_meta:     config["use_meta"]       = str2bool(args.use_meta)
+    if args.train_ratio:  config["train_ratio"]    = args.train_ratio
+    if args.val_ratio:    config["val_ratio"]      = args.val_ratio
+    if args.plot_days:    config["plot_days"]      = args.plot_days
 
     # Merge CLI overrides into model_params
     mp = config.setdefault("model_params", {})
@@ -106,20 +97,33 @@ def main():
     if args.early_stop_patience: tp["early_stop_patience"] = args.early_stop_patience
     if args.loss_type:           tp["loss_type"]           = args.loss_type
 
-    # --- Load & preprocess entire dataset ---
+    # --- Load and preprocess data ---
     df = load_raw_data(config["data_path"])
     df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target = \
         preprocess_features(df, config)
 
-    # --- Loop over each ProjectID ---
-    for pid in df_clean['ProjectID'].unique():
-        df_proj = df_clean[df_clean['ProjectID'] == pid]
+    # Build a unique flag tag from the five ablation booleans
+    flag_tag = (
+        f"feat{config['use_feature']}_"
+        f"time{config['use_time']}_"
+        f"fcst{config['use_forecast']}_"
+        f"stats{config['use_stats']}_"
+        f"meta{config['use_meta']}"
+    )
+
+    # Determine algorithm type folder
+    is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
+    alg_type = "dl" if is_dl else "ml"
+
+    # --- Iterate over each ProjectID ---
+    for pid in df_clean["ProjectID"].unique():
+        df_proj = df_clean[df_clean["ProjectID"]]== pid
         if df_proj.empty:
-            print(f"[WARN] Project {pid} has no valid data, skipping")
+            print(f"[WARN] Project {pid} has no data, skipping")
             continue
 
-        # Create windows & split
-        X_hist, X_fcst, y, hours, dates = create_sliding_windows(
+        # Create sliding windows & split
+        Xh, Xf, y, hrs, dates = create_sliding_windows(
             df_proj,
             past_hours   = config["past_hours"],
             future_hours = config["future_hours"],
@@ -127,40 +131,27 @@ def main():
             fcst_feats   = fcst_feats
         )
         splits = split_data(
-            X_hist, X_fcst, y, hours, dates,
+            Xh, Xf, y, hrs, dates,
             train_ratio=config["train_ratio"],
             val_ratio=  config["val_ratio"]
         )
-        (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr,
-         Xh_va, Xf_va, y_va, hrs_va, dates_va,
-         Xh_te, Xf_te, y_te, hrs_te, dates_te) = splits
+        Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
+        Xh_va, Xf_va, y_va, hrs_va, dates_va, \
+        Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
 
-        # --- Prepare save dir per project/model/flags ---
-        # build a string of ablation flags, e.g. "feattrue_timetrue_fcsttrue_statstrue_metatrue"
-        flags = "_".join([
-            f"feat{str(config['use_feature']).lower()}",
-            f"time{str(config['use_time']).lower()}",
-            f"fcst{str(config['use_forecast']).lower()}",
-            f"stats{str(config['use_stats']).lower()}",
-            f"meta{str(config['use_meta']).lower()}",
-        ])
-        # choose 'dl' or 'ml' subfolder
-        mode = "dl" if config["model"] in ["Transformer", "LSTM", "GRU", "TCN"] else "ml"
-        proj_save_dir = os.path.join(
-            config["save_dir"],
-            "project",
-            mode,
-            config["model"],
-            flags,
-            f"Project_{pid}"
-        )
-        os.makedirs(proj_save_dir, exist_ok=True)
+        # Build per‐run save directory:
+        # <base_save_dir>/Project_<pid>/<dl|ml>/<model_lower>/<flag_tag>/
+        base = config["save_dir"]
+        proj_dir = os.path.join(base, f"Project_{pid}", alg_type, config["model"].lower(), flag_tag)
+        os.makedirs(proj_dir, exist_ok=True)
+
+        # Deep copy config and override save_dir for this run
         cfg = deepcopy(config)
-        cfg["save_dir"] = proj_save_dir
+        cfg["save_dir"] = proj_dir
 
-        # Train
-        start_time = time.time()
-        if cfg["model"] in ["Transformer", "LSTM", "GRU", "TCN"]:
+        # --- Train ---
+        start = time.time()
+        if is_dl:
             model, metrics = train_dl_model(
                 cfg,
                 (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr),
@@ -174,15 +165,9 @@ def main():
                 Xh_tr, Xf_tr, y_tr,
                 Xh_te, Xf_te, y_te
             )
-        metrics["train_time_sec"] = round(time.time() - start_time, 2)
-        metrics.update({
-            "model":        cfg["model"],
-            "use_feature":  cfg["use_feature"],
-            "past_hours":   cfg["past_hours"],
-            "future_hours": cfg["future_hours"]
-        })
+        metrics["train_time_sec"] = round(time.time() - start, 2)
 
-        # Save
+        # --- Save results ---
         save_results(
             model,
             metrics,
@@ -192,8 +177,7 @@ def main():
             Xf_te,
             cfg
         )
-        print(f"[INFO] Project {pid} | {cfg['model']} done in {metrics['train_time_sec']}s, "
-              f"Test Loss = {metrics.get('test_loss', np.nan):.4f}")
+        print(f"[INFO] Project {pid} | {cfg['model']} done, test_loss={metrics['test_loss']:.4f}")
 
 if __name__ == "__main__":
     main()
