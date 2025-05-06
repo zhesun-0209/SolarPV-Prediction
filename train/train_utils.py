@@ -174,3 +174,46 @@ def plot_hour_weights(
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
+
+def get_loss_function(
+    loss_type: str,
+    hour_tensor: Optional[torch.Tensor] = None,
+    hour_weights: Optional[torch.Tensor] = None,
+    peak_start: int = 10,
+    peak_end: int = 14,
+    alpha: float = 3.0
+):
+    """
+    Return a loss function according to the selected type.
+
+    Args:
+        loss_type: 'mse', 'weighted_mse', or 'dynamic_weighted_mse'
+        hour_tensor: hour index tensor for per-sample supervision (required for dynamic/weighted)
+        hour_weights: dynamic weight tensor of shape [24] for dynamic_weighted_mse
+        peak_start, peak_end: peak hour window for weighted_mse
+        alpha: additional weight multiplier during peak hours
+
+    Returns:
+        A callable loss function
+    """
+    mse_fn = torch.nn.MSELoss()
+
+    if loss_type == "mse":
+        return lambda preds, target: mse_fn(preds, target)
+
+    elif loss_type == "weighted_mse":
+        def weighted_mse(preds, target, hrs):
+            peak_mask = ((hrs >= peak_start) & (hrs <= peak_end)).float()
+            weights = 1.0 + alpha * peak_mask
+            return torch.mean(weights * (preds - target) ** 2)
+        return weighted_mse
+
+    elif loss_type == "dynamic_weighted_mse":
+        if hour_weights is None:
+            raise ValueError("Dynamic weighted MSE requires hour_weights to be provided.")
+        def dynamic_weighted_mse(preds, target, hrs):
+            return torch.mean(hour_weights[hrs] * (preds - target) ** 2)
+        return dynamic_weighted_mse
+
+    else:
+        raise ValueError(f"Unknown loss_type: {loss_type}")
