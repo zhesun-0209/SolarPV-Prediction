@@ -1,6 +1,4 @@
 """
-models/tcn.py
-
 Temporal Convolutional Network (TCN) for forecasting.
 Supports optional use of forecast features via a projection.
 """
@@ -23,6 +21,7 @@ class TCNModel(nn.Module):
         kernel = config['kernel_size']
         self.use_fcst = config.get('use_forecast', False)
         future_hours = config['future_hours']
+
         # Build TCN encoder on historical sequence
         layers = []
         in_ch = hist_dim
@@ -34,10 +33,12 @@ class TCNModel(nn.Module):
             layers.append(nn.ReLU())
             in_ch = out_ch
         self.encoder = nn.Sequential(*layers)
+
         # Forecast feature projection if enabled
         if self.use_fcst:
             self.fcst_proj = nn.Linear(fcst_dim * future_hours, channels[-1])
-        # Final prediction head
+
+        # Final prediction head with Softplus
         self.head = nn.Sequential(
             nn.Linear(channels[-1], future_hours),
             nn.Softplus()
