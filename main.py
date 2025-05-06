@@ -3,12 +3,12 @@
 main.py
 
 Orchestrates the entire Solar Power Forecasting Pipeline:
-  1. Loads a YAML config (with optional CLI overrides)
+  1. Loads a YAML config file (with optional CLI overrides)
   2. Preprocesses raw data
-  3. Splits into sliding windows and train/val/test sets per ProjectID
-  4. Trains either a DL or ML model
+  3. Applies sliding windows and splits data per ProjectID
+  4. Trains a DL or ML model
   5. Saves results under:
-       <base_save_dir>/Project_<pid>/<alg_type>/<model_name_lower>/<flag_tag>/
+       <save_dir>/Project_<pid>/<alg_type>/<model_name>/<flag_tag>/
 """
 
 import os
@@ -34,12 +34,12 @@ def str2bool(v: str) -> bool:
 def main():
     parser = argparse.ArgumentParser(description="Solar Power Forecasting Pipeline")
 
-    # Core config
+    # === Core settings ===
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_dir", type=str)
 
-    # Ablation flags
+    # === Ablation settings ===
     parser.add_argument("--model", type=str)
     parser.add_argument("--past_hours", type=int)
     parser.add_argument("--future_hours", type=int)
@@ -52,7 +52,7 @@ def main():
     parser.add_argument("--val_ratio", type=float)
     parser.add_argument("--plot_days", type=int)
 
-    # DL model params
+    # === Deep learning model parameters ===
     parser.add_argument("--d_model", type=int)
     parser.add_argument("--num_heads", type=int)
     parser.add_argument("--num_layers", type=int)
@@ -61,13 +61,13 @@ def main():
     parser.add_argument("--tcn_channels", type=str)
     parser.add_argument("--kernel_size", type=int)
 
-    # ML model params
+    # === ML model parameters ===
     parser.add_argument("--n_estimators", type=int)
     parser.add_argument("--max_depth", type=int)
     parser.add_argument("--ml_learning_rate", type=float)
     parser.add_argument("--random_state", type=int)
 
-    # Training params
+    # === Training parameters ===
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--learning_rate", type=float)
@@ -75,13 +75,19 @@ def main():
     parser.add_argument("--early_stop_patience", type=int)
     parser.add_argument("--loss_type", type=str)
 
+    # === Dynamic hour-weighted loss arguments ===
+    parser.add_argument("--alpha", type=float)
+    parser.add_argument("--peak_start", type=int)
+    parser.add_argument("--peak_end", type=int)
+    parser.add_argument("--threshold", type=float)
+
     args = parser.parse_args()
 
-    # Load config
+    # === Load base config from YAML ===
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
 
-    # Override config from CLI
+    # === Override general settings from CLI ===
     if args.data_path: config["data_path"] = args.data_path
     if args.save_dir: config["save_dir"] = args.save_dir
     if args.model: config["model"] = args.model
@@ -96,7 +102,7 @@ def main():
     if args.val_ratio: config["val_ratio"] = args.val_ratio
     if args.plot_days: config["plot_days"] = args.plot_days
 
-    # Override model_params
+    # === Override model-specific parameters ===
     mp = config.setdefault("model_params", {})
     if args.d_model: mp["d_model"] = args.d_model
     if args.num_heads: mp["num_heads"] = args.num_heads
@@ -110,7 +116,7 @@ def main():
     if args.ml_learning_rate is not None: mp["learning_rate"] = args.ml_learning_rate
     if args.random_state: mp["random_state"] = args.random_state
 
-    # Override train_params
+    # === Override training-specific parameters ===
     tp = config.setdefault("train_params", {})
     if args.batch_size: tp["batch_size"] = args.batch_size
     if args.epochs: tp["epochs"] = args.epochs
@@ -118,10 +124,15 @@ def main():
     if args.weight_decay: tp["weight_decay"] = args.weight_decay
     if args.early_stop_patience: tp["early_stop_patience"] = args.early_stop_patience
     if args.loss_type: tp["loss_type"] = args.loss_type
+    if args.alpha: tp["alpha"] = args.alpha
+    if args.peak_start: tp["peak_start"] = args.peak_start
+    if args.peak_end: tp["peak_end"] = args.peak_end
+    if args.threshold: tp["threshold"] = args.threshold
 
-    # Load raw data once
+    # === Load raw dataset once ===
     df = load_raw_data(config["data_path"])
 
+    # === Compose flag tag to name subfolders ===
     flag_tag = (
         f"feat{config['use_feature']}_"
         f"time{config['use_time']}_"
@@ -133,16 +144,18 @@ def main():
     is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
     alg_type = "dl" if is_dl else "ml"
 
+    # === Train for each project independently ===
     for pid in df["ProjectID"].unique():
         df_proj = df[df["ProjectID"] == pid]
         if df_proj.empty:
             print(f"[WARN] Project {pid} has no data, skipping")
             continue
 
-        # 👇 每个项目单独预处理
+        # Step 1: Preprocess and normalize
         df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target = \
             preprocess_features(df_proj, config)
 
+        # Step 2: Create sliding windows
         Xh, Xf, y, hrs, dates = create_sliding_windows(
             df_clean,
             past_hours=config["past_hours"],
@@ -150,15 +163,16 @@ def main():
             hist_feats=hist_feats,
             fcst_feats=fcst_feats
         )
-        splits = split_data(
-            Xh, Xf, y, hrs, dates,
-            train_ratio=config["train_ratio"],
-            val_ratio=config["val_ratio"]
-        )
+
+        # Step 3: Train/val/test split
+        splits = split_data(Xh, Xf, y, hrs, dates,
+                            train_ratio=config["train_ratio"],
+                            val_ratio=config["val_ratio"])
         Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
         Xh_va, Xf_va, y_va, hrs_va, dates_va, \
         Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
 
+        # Step 4: Create save directory
         proj_dir = os.path.join(
             config["save_dir"],
             f"Project_{pid}",
@@ -167,11 +181,10 @@ def main():
             flag_tag
         )
         os.makedirs(proj_dir, exist_ok=True)
-
         cfg = deepcopy(config)
         cfg["save_dir"] = proj_dir
 
-        # === Train ===
+        # Step 5: Train model
         start = time.time()
         if is_dl:
             model, metrics = train_dl_model(
@@ -190,17 +203,9 @@ def main():
             )
         metrics["train_time_sec"] = round(time.time() - start, 2)
 
-        # === Save ===
+        # Step 6: Save metrics and plots
         cfg["scaler_target"] = scaler_target
-        save_results(
-            model,
-            metrics,
-            dates_te,
-            y_te,
-            Xh_te,
-            Xf_te,
-            cfg
-        )
+        save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
         print(f"[INFO] Project {pid} | {cfg['model']} done, test_loss={metrics['test_loss']:.4f}")
 
 if __name__ == "__main__":
