@@ -21,7 +21,6 @@ from models.transformer import Transformer
 from models.rnn_models import LSTM, GRU
 from models.tcn import TCNModel
 
-
 def train_dl_model(
     config: dict,
     train_data: tuple,
@@ -32,18 +31,11 @@ def train_dl_model(
     """
     Train and evaluate a deep learning model with optional dynamic meta-weighted loss.
 
-    Args:
-        config:       configuration dict
-        train_data:   (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr)
-        val_data:     (Xh_va, Xf_va, y_va, hrs_va, dates_va)
-        test_data:    (Xh_te, Xf_te, y_te, hrs_te, dates_te)
-        scalers:      (scaler_hist, scaler_fcst, scaler_target)
-
     Returns:
-        model:   trained PyTorch model
-        metrics: dict with test metrics and inverse-transformed predictions
+        model: trained PyTorch model
+        metrics: dict with inverse-transformed predictions and test metrics
     """
-    # Unpack data and scalers
+    # Unpack
     Xh_tr, Xf_tr, y_tr, hrs_tr, _ = train_data
     Xh_va, Xf_va, y_va, hrs_va, _ = val_data
     Xh_te, Xf_te, y_te, hrs_te, dates_te = test_data
@@ -51,7 +43,6 @@ def train_dl_model(
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Build DataLoaders
     def make_loader(Xh, Xf, y, hrs, bs, shuffle=False):
         tensors = [torch.tensor(Xh, dtype=torch.float32),
                    torch.tensor(hrs, dtype=torch.long)]
@@ -65,7 +56,7 @@ def train_dl_model(
     val_loader   = make_loader(Xh_va, Xf_va, y_va, hrs_va, bs)
     test_loader  = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
 
-    # Initialize model
+    # Model
     mp = config['model_params'].copy()
     mp.update({
         'use_forecast': config.get('use_forecast', False),
@@ -90,12 +81,11 @@ def train_dl_model(
 
     model.to(device)
 
-    # Optimizer, scheduler, early stopping
+    # Training components
     train_params = config['train_params']
-    opt = get_optimizer(model, lr=float(train_params['learning_rate']),
-                        weight_decay=float(train_params['weight_decay']))
+    opt = get_optimizer(model, lr=train_params['learning_rate'], weight_decay=train_params['weight_decay'])
     sched = get_scheduler(opt, train_params)
-    stopper = EarlyStopping(int(train_params['early_stop_patience']))
+    stopper = EarlyStopping(train_params['early_stop_patience'])
 
     mse_fn = torch.nn.MSELoss()
     use_meta = config.get('use_meta', False)
@@ -104,24 +94,23 @@ def train_dl_model(
     logs = []
     total_time = 0.0
 
-    for ep in range(1, int(train_params['epochs']) + 1):
+    for ep in range(1, train_params['epochs'] + 1):
         model.train()
         train_loss = 0.0
         epoch_start = time.time()
 
         for batch in train_loader:
             if Xf_tr is not None:
-                xh, xf, hrs, yb = batch
-                xh, xf, hrs, yb = xh.to(device), xf.to(device), hrs.to(device), yb.to(device)
+                xh, xf, hrs, yb = [b.to(device) for b in batch]
                 preds = model(xh, xf)
             else:
-                xh, hrs, yb = batch
-                xh, hrs, yb = xh.to(device), hrs.to(device), yb.to(device)
+                xh, hrs, yb = [b.to(device) for b in batch]
                 preds = model(xh)
 
-            loss = mse_fn(preds, yb)
             if use_meta:
-                loss = torch.mean(hour_weights[hrs.to(device)] * (preds - yb) ** 2)
+                loss = torch.mean(hour_weights[hrs] * (preds - yb) ** 2)
+            else:
+                loss = mse_fn(preds, yb)
 
             opt.zero_grad()
             loss.backward()
@@ -137,19 +126,18 @@ def train_dl_model(
         with torch.no_grad():
             for batch in val_loader:
                 if Xf_va is not None:
-                    xh, xf, hrs, yb = batch
-                    xh, xf, hrs, yb = xh.to(device), xf.to(device), hrs.to(device), yb.to(device)
+                    xh, xf, hrs, yb = [b.to(device) for b in batch]
                     preds = model(xh, xf)
                 else:
-                    xh, hrs, yb = batch
-                    xh, hrs, yb = xh.to(device), hrs.to(device), yb.to(device)
+                    xh, hrs, yb = [b.to(device) for b in batch]
                     preds = model(xh)
 
                 val_loss += mse_fn(preds, yb).item()
+
                 if use_meta:
                     err = torch.abs(preds - yb)
-                    for i in range(err.size(0)):
-                        for j in range(err.size(1)):
+                    for i in range(err.shape[0]):
+                        for j in range(err.shape[1]):
                             hour_errors[int(hrs[i, j])].append(err[i, j].item())
 
         val_loss /= len(val_loader)
@@ -157,11 +145,7 @@ def train_dl_model(
         total_time += time.time() - epoch_start
 
         if use_meta:
-            hour_weights = compute_dynamic_hour_weights(
-                hour_errors,
-                alpha=mp.get('meta_alpha', 3.0),
-                threshold=mp.get('meta_threshold', 0.005)
-            ).to(device)
+            hour_weights = compute_dynamic_hour_weights(hour_errors).to(device)
 
         logs.append({
             'epoch': ep,
@@ -175,39 +159,39 @@ def train_dl_model(
             print(f"Early stopping at epoch {ep}")
             break
 
+    # Restore best model
     model.load_state_dict(stopper.best_state)
 
+    # Test inference
     model.eval()
-    test_loss = 0.0
     all_preds = []
     with torch.no_grad():
         for batch in test_loader:
             if Xf_te is not None:
                 xh, xf, hrs, yb = batch
-                xh, xf, hrs = xh.to(device), xf.to(device), hrs.to(device)
+                xh, xf = xh.to(device), xf.to(device)
                 preds = model(xh, xf)
             else:
                 xh, hrs, yb = batch
-                xh, hrs = xh.to(device), hrs.to(device)
+                xh = xh.to(device)
                 preds = model(xh)
             all_preds.append(preds.cpu().numpy())
 
-    preds_arr = np.vstack(all_preds)                # (N, H)
-    y_true_arr = y_te.cpu().numpy()                 # (N, H)
+    preds_arr = np.vstack(all_preds)  # (N, H)
+    y_true_arr = y_te if isinstance(y_te, np.ndarray) else y_te.cpu().numpy()
 
-    p_flat = preds_arr.reshape(-1, 1)
+    # Inverse-transform
     y_flat = y_true_arr.reshape(-1, 1)
-
-    #  Inverse-transform
-    p_inv = scaler_target.inverse_transform(p_flat).flatten()
-    y_inv = scaler_target.inverse_transform(y_flat).flatten()
+    p_flat = preds_arr.reshape(-1, 1)
+    y_inv  = scaler_target.inverse_transform(y_flat).flatten()
+    p_inv  = scaler_target.inverse_transform(p_flat).flatten()
 
     # Final metrics
-    raw_mse = np.mean((y_inv - p_inv) ** 2)
+    raw_mse  = np.mean((y_inv - p_inv) ** 2)
     raw_rmse = np.sqrt(raw_mse)
-    raw_mae = np.mean(np.abs(y_inv - p_inv))
+    raw_mae  = np.mean(np.abs(y_inv - p_inv))
 
-    metrics = {
+    return model, {
         'test_loss': raw_mse,
         'rmse': raw_rmse,
         'mae': raw_mae,
@@ -215,8 +199,6 @@ def train_dl_model(
         'param_count': count_parameters(model),
         'predictions': p_inv.reshape(y_te.shape),
         'y_true': y_inv.reshape(y_te.shape),
-        'dates': dates_te
+        'dates': dates_te,
+        'inverse_transformed': True
     }
-
-    return model, metrics
-
