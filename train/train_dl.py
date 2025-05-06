@@ -211,10 +211,16 @@ def train_dl_model(
     p_flat = preds_arr.reshape(-1, 1)
     y_inv  = scaler_target.inverse_transform(y_flat).flatten()
     p_inv  = scaler_target.inverse_transform(p_flat).flatten()
-    raw_mse = np.mean((y_inv - p_inv) ** 2)
+    
+    # Metrics
+    raw_mse  = np.mean((y_inv - p_inv) ** 2)
+    raw_rmse = np.sqrt(raw_mse)
+    raw_mae  = np.mean(np.abs(y_inv - p_inv))
 
     metrics = {
         'test_loss':   raw_mse,
+        'rmse':        raw_rmse,        
+        'mae':         raw_mae,           
         'epoch_logs':  logs,
         'param_count': count_parameters(model),
         'predictions': preds_arr,
