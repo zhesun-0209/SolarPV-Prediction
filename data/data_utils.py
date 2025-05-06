@@ -26,36 +26,46 @@ def load_raw_data(path: str) -> pd.DataFrame:
 def preprocess_features(df: pd.DataFrame, config: dict):
     df_clean = df.dropna(subset=[TARGET_COL]).copy()
 
-    if not config.get('use_feature', True):
-        hist_feats = [TARGET_COL]
-        fcst_feats = []
-    else:
-        hist_feats = BASE_HIST_FEATURES.copy()
-        if not config.get('use_time', True):
-            for col in ('Month_cos', 'Hour_sin', 'Hour_cos'):
-                hist_feats.remove(col)
-        if config.get('use_stats', False):
-            hist_feats += BASE_STAT_FEATURES
-        hist_feats += [TARGET_COL]  # for NA check
-        fcst_feats = BASE_FCST_FEATURES if config.get('use_forecast', False) else []
-
-    df_clean = df_clean.dropna(subset=hist_feats + fcst_feats).reset_index(drop=True)
-
-    if TARGET_COL in hist_feats:
-        hist_feats.remove(TARGET_COL)
-
+    # Initialize empty
+    hist_feats = []
+    fcst_feats = []
+    
+    # Add base features if use_feature = True
+    if config.get('use_feature', True):
+        hist_feats += BASE_HIST_FEATURES
+    
+    # Add time features if use_time = True
+    if config.get('use_time', False):
+        for col in ('Month_cos', 'Hour_sin', 'Hour_cos'):
+            if col not in hist_feats:
+                hist_feats.append(col)
+    
+    # Add statistical features
+    if config.get('use_stats', False):
+        hist_feats += BASE_STAT_FEATURES
+    
+    # Add forecast features
+    if config.get('use_forecast', False):
+        fcst_feats += BASE_FCST_FEATURES
+    
+    # Ensure target is included for NA check
+    na_check_feats = hist_feats + fcst_feats + [TARGET_COL]
+    df_clean = df.dropna(subset=na_check_feats).copy()
+    df_clean = df_clean.reset_index(drop=True)
+    
+    # Fit scalers
     scaler_hist = MinMaxScaler()
     if hist_feats:
         df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
-
+    
     scaler_fcst = None
     if fcst_feats:
         scaler_fcst = MinMaxScaler()
         df_clean[fcst_feats] = scaler_fcst.fit_transform(df_clean[fcst_feats])
-
+    
     scaler_target = MinMaxScaler()
     df_clean[[TARGET_COL]] = scaler_target.fit_transform(df_clean[[TARGET_COL]])
-
+    
     df_clean = df_clean.sort_values('Datetime').reset_index(drop=True)
     return df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target
 
