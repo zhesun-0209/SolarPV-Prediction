@@ -29,66 +29,36 @@ TARGET_COL = 'Electricity Generated'
 
 
 def load_raw_data(path: str) -> pd.DataFrame:
-    """
-    Load raw CSV and parse Year/Month/Day/Hour into a single 'Datetime' column.
-
-    Args:
-        path: file path to CSV.
-
-    Returns:
-        df: DataFrame including parsed 'Datetime'.
-    """
     df = pd.read_csv(path)
     df['Datetime'] = pd.to_datetime(df[['Year', 'Month', 'Day', 'Hour']])
     return df
 
 
 def preprocess_features(df: pd.DataFrame, config: dict):
-    """
-    Clean and scale features based on config flags.
-    Applies in order:
-      1. Drop rows with missing target.
-      2. Select features using: use_feature, use_time, use_stats, use_forecast.
-      3. Drop any rows with NA in chosen features.
-      4. Scale historical, forecast, and target separately via MinMaxScaler.
-      5. Sort by 'Datetime' to guarantee chronological order.
-
-    Args:
-        df: raw DataFrame with Weather & target columns.
-        config: dict containing ablation flags and paths.
-
-    Returns:
-        df_clean: cleaned & sorted DataFrame.
-        hist_feats: list of column names used as history features.
-        fcst_feats: list of column names used as forecast features.
-        scaler_hist: fitted MinMaxScaler for hist_feats.
-        scaler_fcst: fitted MinMaxScaler for fcst_feats (or None if not used).
-        scaler_target: fitted MinMaxScaler for TARGET_COL.
-    """
     # 1) Drop rows missing the target
     df_clean = df.dropna(subset=[TARGET_COL]).copy()
 
     # 2) Determine feature sets
     if not config.get('use_feature', True):
-        # Only past target
         hist_feats = [TARGET_COL]
         fcst_feats = []
     else:
-        # History
         hist_feats = BASE_HIST_FEATURES.copy()
         if not config.get('use_time', True):
             for col in ('Month_cos', 'Hour_sin', 'Hour_cos'):
                 hist_feats.remove(col)
         if config.get('use_stats', False):
             hist_feats += BASE_STAT_FEATURES
-        hist_feats += [TARGET_COL]
-        # Forecast
-        fcst_feats = BASE_FCST_FEATURES if config.get('use_forecast', False) else []
+        hist_feats += [TARGET_COL]  # 临时添加用于 NA 检查
 
-    # 3) Drop any remaining NA
+    # 3) Drop NA
     df_clean = df_clean.dropna(subset=hist_feats + fcst_feats).reset_index(drop=True)
 
-    # 4) Scale features
+    # ✅ 3.5) 移除目标列，避免被归一化到 hist_feats 中
+    if TARGET_COL in hist_feats:
+        hist_feats.remove(TARGET_COL)
+
+    # 4) Scale inputs separately
     scaler_hist = MinMaxScaler()
     df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
 
@@ -106,34 +76,10 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     return df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target
 
 
-def create_sliding_windows(
-    df: pd.DataFrame,
-    past_hours: int,
-    future_hours: int,
-    hist_feats: list,
-    fcst_feats: list
-):
-    """
-    Build non-overlapping day-by-day sliding windows.
-
-    Args:
-        df: DataFrame sorted by 'Datetime'.
-        past_hours: number of past hours to include.
-        future_hours: forecast horizon (e.g. 24 for next day).
-        hist_feats: list of history feature columns.
-        fcst_feats: list of forecast feature columns.
-
-    Returns:
-        X_hist: np.ndarray of shape (N, past_hours, len(hist_feats)).
-        X_fcst: np.ndarray or None of shape (N, future_hours, len(fcst_feats)).
-        y:      np.ndarray of shape (N, future_hours).
-        hours:  np.ndarray of shape (N, future_hours) with hour-of-day.
-        dates:  list of length N with the end datetime of each window.
-    """
+def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats):
     X_hist, X_fcst, y, hours, dates = [], [], [], [], []
     n = len(df)
 
-    # step = future_hours ensures one window per day
     for start in range(0, n - past_hours - future_hours + 1, future_hours):
         h_end = start + past_hours
         f_end = h_end + future_hours
@@ -152,6 +98,33 @@ def create_sliding_windows(
     y      = np.stack(y)
     hours  = np.stack(hours)
     X_fcst = np.stack(X_fcst) if fcst_feats else None
+
+    return X_hist, X_fcst, y, hours, dates
+
+
+def split_data(X_hist, X_fcst, y, hours, dates, train_ratio=0.8, val_ratio=0.1):
+    N = X_hist.shape[0]
+    i_tr  = int(N * train_ratio)
+    i_val = int(N * (train_ratio + val_ratio))
+
+    slice_ = lambda arr: (arr[:i_tr], arr[i_tr:i_val], arr[i_val:])
+
+    Xh_tr, Xh_va, Xh_te = slice_(X_hist)
+    y_tr,  y_va,  y_te  = slice_(y)
+    hrs_tr, hrs_va, hrs_te = slice_(hours)
+    dates_arr = np.array(dates)
+    dates_tr, dates_va, dates_te = slice_(dates_arr)
+
+    if X_fcst is not None:
+        Xf_tr, Xf_va, Xf_te = slice_(X_fcst)
+    else:
+        Xf_tr = Xf_va = Xf_te = None
+
+    return (
+        Xh_tr, Xf_tr, y_tr, hrs_tr, list(dates_tr),
+        Xh_va, Xf_va, y_va, hrs_va, list(dates_va),
+        Xh_te, Xf_te, y_te, hrs_te, list(dates_te)
+    )
 
     return X_hist, X_fcst, y, hours, dates
 
