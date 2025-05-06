@@ -47,8 +47,8 @@ def save_results(
     scaler = config.get("scaler_target", None)
     already_inverse = metrics.get("inverse_transformed", False)
     if scaler is not None and not already_inverse:
-        preds = scaler.inverse_transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).values.reshape(preds.shape)
-        yts   = scaler.inverse_transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).values.reshape(yts.shape)
+        preds = scaler.inverse_transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).reshape(preds.shape)
+        yts   = scaler.inverse_transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).reshape(yts.shape)
 
     # ===== [NEW] Compute normalized errors using train-set scaler (if needed) =====
     if scaler is not None:
