@@ -34,8 +34,8 @@ class Transformer(nn.Module):
 
         # Projection layers
         self.hist_proj = nn.Linear(hist_dim, d_model)
-        if config.get('use_forecast', False):
-            self.fcst_proj = nn.Linear(fcst_dim, d_model)
+        self.fcst_proj = nn.Linear(fcst_dim, d_model) if fcst_dim > 0 else None
+
 
         # Positional encoding
         self.pos_enc = PositionalEncoding(d_model)
@@ -60,21 +60,23 @@ class Transformer(nn.Module):
 
     def forward(
         self,
-        hist: torch.Tensor,        # (B, past_hours, hist_dim)
-        fcst: torch.Tensor = None   # (B, future_hours, fcst_dim) or None
+        hist: torch.Tensor,        # shape: (B, past_hours, hist_dim)
+        fcst: torch.Tensor = None  # shape: (B, future_hours, fcst_dim), optional
     ) -> torch.Tensor:
-        # Encode history
-        h = self.hist_proj(hist)
+        # Encode historical input
+        h = self.hist_proj(hist)              # (B, past_hours, d_model)
         h = self.pos_enc(h)
-        h_enc = self.encoder(h)
+        h_enc = self.encoder(h)               # (B, past_hours, d_model)
 
-        if self.cfg.get('use_forecast', False) and fcst is not None:
-            f = self.fcst_proj(fcst)
+        # Encode forecast input if applicable
+        if self.cfg.get('use_forecast', False) and fcst is not None and self.fcst_proj is not None:
+            f = self.fcst_proj(fcst)          # (B, future_hours, d_model)
             f = self.pos_enc(f)
-            f_enc = self.encoder(f)
+            f_enc = self.encoder(f)           # (B, future_hours, d_model)
             seq = torch.cat([h_enc, f_enc], dim=1)  # (B, total_seq, d_model)
         else:
-            seq = h_enc
+            seq = h_enc                       # (B, past_hours, d_model)
 
-        flat = seq.flatten(start_dim=1)  # (B, total_seq * d_model)
-        return self.head(flat)           # (B, future_hours)
+        flat = seq.flatten(start_dim=1)       # (B, total_seq * d_model)
+        return self.head(flat)                # (B, future_hours)
+
