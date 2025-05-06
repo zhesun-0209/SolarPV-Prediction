@@ -13,14 +13,10 @@ def train_ml_model(
     Xh_test: np.ndarray,
     Xf_test: np.ndarray,
     y_test: np.ndarray,
-    scaler_target=None  # ← NEW: allow inverse-transforming if provided
+    scaler_target=None
 ):
     """
     Train a traditional ML model and evaluate on the test set.
-
-    Returns:
-        model: trained sklearn model
-        metrics: dict containing predictions, y_true, test_loss, rmse, mae, epoch_logs, etc.
     """
 
     def flatten(Xh, Xf):
@@ -30,15 +26,25 @@ def train_ml_model(
             return np.concatenate([h, f], axis=1)
         return h
 
-    # Flatten data
     X_train_flat = flatten(Xh_train, Xf_train)
     X_test_flat  = flatten(Xh_test, Xf_test)
     y_train_flat = y_train.reshape(y_train.shape[0], -1)
     y_test_flat  = y_test.reshape(y_test.shape[0], -1)
 
-    # Parse model and parameters
-    name   = config['model']
-    params = config['model_params']
+    name = config['model']
+
+    # ========= 🔧 Filter ML model params =========
+    ml_param_keys = {
+        'RF':   ['n_estimators', 'max_depth', 'random_state'],
+        'GBR':  ['n_estimators', 'max_depth', 'learning_rate', 'random_state'],
+        'XGB':  ['n_estimators', 'max_depth', 'learning_rate', 'verbosity'],
+        'LGBM': ['n_estimators', 'max_depth', 'learning_rate', 'random_state']
+    }
+    all_params = config.get('model_params', {})
+    allowed_keys = ml_param_keys.get(name, [])
+    params = {k: all_params[k] for k in allowed_keys if k in all_params}
+
+    # Convert types
     if 'learning_rate' in params:
         params['learning_rate'] = float(params['learning_rate'])
     if 'n_estimators' in params:
@@ -57,40 +63,33 @@ def train_ml_model(
     else:
         raise ValueError(f"Unsupported ML model: {name}")
 
-    # Train model
     start_time = time.time()
     model = trainer(X_train_flat, y_train_flat, params)
     train_time = time.time() - start_time
 
-    # Predict
     preds_flat = model.predict(X_test_flat)
     train_preds_flat = model.predict(X_train_flat)
 
-    # Inverse transform if scaler is provided
     if scaler_target is not None:
         preds_flat = scaler_target.inverse_transform(preds_flat.reshape(-1, 1)).flatten()
         y_test_flat = scaler_target.inverse_transform(y_test_flat.reshape(-1, 1)).flatten()
         train_preds_flat = scaler_target.inverse_transform(train_preds_flat.reshape(-1, 1)).flatten()
         y_train_flat = scaler_target.inverse_transform(y_train_flat.reshape(-1, 1)).flatten()
 
-    # Compute metrics
     mse  = mean_squared_error(y_test_flat, preds_flat)
     rmse = np.sqrt(mse)
     mae  = mean_absolute_error(y_test_flat, preds_flat)
     train_mse = mean_squared_error(y_train_flat, train_preds_flat)
 
-    # Reshape to (num_windows, future_hours)
     fh = int(config['train_params']['future_hours'])
     y_matrix = y_test_flat.reshape(-1, fh)
     p_matrix = preds_flat.reshape(-1, fh)
 
-    # Save model
     save_dir  = config['save_dir']
     model_dir = os.path.join(save_dir, name)
     os.makedirs(model_dir, exist_ok=True)
     joblib.dump(model, os.path.join(model_dir, 'best_model.pkl'))
 
-    # Return
     metrics = {
         'test_loss':      mse,
         'rmse':           rmse,
@@ -100,7 +99,7 @@ def train_ml_model(
         'predictions':    p_matrix,
         'y_true':         y_matrix,
         'epoch_logs':     [{'epoch': 1, 'train_loss': train_mse, 'val_loss': mse}],
-        'inverse_transformed': scaler_target is not None  # ← KEY
+        'inverse_transformed': scaler_target is not None
     }
 
     return model, metrics
