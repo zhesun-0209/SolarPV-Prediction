@@ -47,3 +47,6 @@ train_params:
   early_stop_patience:  10
   loss_type:           'mse'
   future_hours:         24    # needed for DL meta-weighting
+  alpha: 3.0
+  peak_start: 10
+  peak_end: 14
