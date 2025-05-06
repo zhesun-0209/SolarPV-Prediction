@@ -45,7 +45,8 @@ def preprocess_features(df: pd.DataFrame, config: dict):
         hist_feats.remove(TARGET_COL)
 
     scaler_hist = MinMaxScaler()
-    df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
+    if hist_feats:
+        df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
 
     scaler_fcst = None
     if fcst_feats:
@@ -69,9 +70,14 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats)
         hist_win = df.iloc[start:h_end]
         fut_win = df.iloc[h_end:f_end]
 
-        X_hist.append(hist_win[hist_feats].values)
+        if hist_feats:
+            X_hist.append(hist_win[hist_feats].values)
+        else:
+            X_hist.append(np.zeros((past_hours, 1)))  # dummy feature if no input features
+
         if fcst_feats:
             X_fcst.append(fut_win[fcst_feats].values)
+
         y.append(fut_win[TARGET_COL].values)
         hours.append(fut_win['Hour'].values)
         dates.append(fut_win['Datetime'].iloc[-1])
@@ -82,6 +88,7 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats)
     X_fcst = np.stack(X_fcst) if fcst_feats else None
 
     return X_hist, X_fcst, y, hours, dates
+
 
 def split_data(X_hist, X_fcst, y, hours, dates, train_ratio=0.8, val_ratio=0.1):
     N = X_hist.shape[0]
@@ -106,8 +113,7 @@ def split_data(X_hist, X_fcst, y, hours, dates, train_ratio=0.8, val_ratio=0.1):
         Xh_te, Xf_te, y_te, hrs_te, list(dates_te)
     )
 
-
-# ======== main.py 修改段落（核心循环） ========
+# ======== main.py ========
 
     for pid in df["ProjectID"].unique():
         df_proj_raw = df[df["ProjectID"] == pid]
