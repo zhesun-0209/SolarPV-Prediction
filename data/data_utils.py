@@ -26,14 +26,11 @@ def load_raw_data(path: str) -> pd.DataFrame:
 def preprocess_features(df: pd.DataFrame, config: dict):
     df_clean = df.dropna(subset=[TARGET_COL]).copy()
 
-    # Initialize empty
-    hist_feats = []
-    fcst_feats = []
-    
-    # Always include historical generation as input
+    # Initialize feature lists
     hist_feats = [TARGET_COL]
+    fcst_feats = []
 
-    # Append weather-based historical features only if use_feature is True
+    # Append weather-based historical features if use_feature is True
     if config.get('use_feature', True):
         hist_feats += BASE_HIST_FEATURES
 
@@ -42,33 +39,31 @@ def preprocess_features(df: pd.DataFrame, config: dict):
         for col in ('Month_cos', 'Hour_sin', 'Hour_cos'):
             if col not in hist_feats:
                 hist_feats.append(col)
-    
+
     # Add statistical features
     if config.get('use_stats', False):
         hist_feats += BASE_STAT_FEATURES
-    
+
     # Add forecast features
     if config.get('use_forecast', False):
         fcst_feats += BASE_FCST_FEATURES
-    
-    # Ensure target is included for NA check
-    na_check_feats = hist_feats + fcst_feats + [TARGET_COL]
-    df_clean = df.dropna(subset=na_check_feats).copy()
-    df_clean = df_clean.reset_index(drop=True)
-    
-    # Fit scalers
+
+    # Drop rows with missing required features
+    na_check_feats = hist_feats + fcst_feats
+    df_clean = df_clean.dropna(subset=na_check_feats).reset_index(drop=True)
+
+    # Normalize features
     scaler_hist = MinMaxScaler()
-    if hist_feats:
-        df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
-    
+    df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
+
     scaler_fcst = None
     if fcst_feats:
         scaler_fcst = MinMaxScaler()
         df_clean[fcst_feats] = scaler_fcst.fit_transform(df_clean[fcst_feats])
-    
+
     scaler_target = MinMaxScaler()
     df_clean[[TARGET_COL]] = scaler_target.fit_transform(df_clean[[TARGET_COL]])
-    
+
     df_clean = df_clean.sort_values('Datetime').reset_index(drop=True)
     return df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target
 
@@ -83,10 +78,7 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats)
         hist_win = df.iloc[start:h_end]
         fut_win = df.iloc[h_end:f_end]
 
-        if hist_feats:
-            X_hist.append(hist_win[hist_feats].values)
-        else:
-            X_hist.append(np.zeros((past_hours, 1)))  # dummy feature if no input features
+        X_hist.append(hist_win[hist_feats].values)
 
         if fcst_feats:
             X_fcst.append(fut_win[fcst_feats].values)
@@ -101,7 +93,6 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats)
     X_fcst = np.stack(X_fcst) if fcst_feats else None
 
     return X_hist, X_fcst, y, hours, dates
-
 
 def split_data(X_hist, X_fcst, y, hours, dates, train_ratio=0.8, val_ratio=0.1):
     N = X_hist.shape[0]
