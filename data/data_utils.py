@@ -30,8 +30,8 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     hist_feats = [TARGET_COL]
     fcst_feats = []
 
-    # Append weather-based historical features if use_feature is True
-    if config.get('use_feature', True):
+    # Append weather-based historical features if use_hist_weather is True
+    if config.get('use_hist_weather', True):
         hist_feats += BASE_HIST_FEATURES
 
     # Add time features if use_time = True
