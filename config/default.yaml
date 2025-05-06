@@ -1,8 +1,8 @@
 # config/default.yaml
 
 # Data & output paths
-data_path: '/path/to/data.csv'
-save_dir:   '/path/to/outputs'
+data_path: '/content/drive/MyDrive/5900/data.csv'
+save_dir:   '/content/drive/MyDrive/SolarPV/outputs_demo'
 
 # Model selection & ablation
 model: 'Transformer'      # options: Transformer, LSTM, GRU, TCN, RF, GBR, XGB, LGBM
