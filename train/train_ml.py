@@ -1,10 +1,3 @@
-import os
-import time
-import joblib
-import numpy as np
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from models.ml_models import train_rf, train_gbr, train_xgb, train_lgbm
-
 def train_ml_model(
     config: dict,
     Xh_train: np.ndarray,
@@ -13,6 +6,7 @@ def train_ml_model(
     Xh_test: np.ndarray,
     Xf_test: np.ndarray,
     y_test: np.ndarray,
+    dates_test: list,
     scaler_target=None
 ):
     """
@@ -33,7 +27,6 @@ def train_ml_model(
 
     name = config['model']
 
-    # ========= 🔧 Filter ML model params =========
     ml_param_keys = {
         'RF':   ['n_estimators', 'max_depth', 'random_state'],
         'GBR':  ['n_estimators', 'max_depth', 'learning_rate', 'random_state'],
@@ -44,7 +37,6 @@ def train_ml_model(
     allowed_keys = ml_param_keys.get(name, [])
     params = {k: all_params[k] for k in allowed_keys if k in all_params}
 
-    # Convert types
     if 'learning_rate' in params:
         params['learning_rate'] = float(params['learning_rate'])
     if 'n_estimators' in params:
@@ -81,9 +73,16 @@ def train_ml_model(
     mae  = mean_absolute_error(y_test_flat, preds_flat)
     train_mse = mean_squared_error(y_train_flat, train_preds_flat)
 
-    fh = int(config['train_params']['future_hours'])
+    fh = int(config['future_hours'])
     y_matrix = y_test_flat.reshape(-1, fh)
     p_matrix = preds_flat.reshape(-1, fh)
+
+    # Normalized metrics (even if already inverse-transformed)
+    preds_norm = scaler_target.transform(p_matrix.reshape(-1, 1)).flatten() if scaler_target else preds_flat
+    y_norm     = scaler_target.transform(y_matrix.reshape(-1, 1)).flatten() if scaler_target else y_test_flat
+    norm_mse  = mean_squared_error(y_norm, preds_norm)
+    norm_rmse = np.sqrt(norm_mse)
+    norm_mae  = mean_absolute_error(y_norm, preds_norm)
 
     save_dir  = config['save_dir']
     model_dir = os.path.join(save_dir, name)
@@ -94,10 +93,14 @@ def train_ml_model(
         'test_loss':      mse,
         'rmse':           rmse,
         'mae':            mae,
+        'norm_test_loss': norm_mse,
+        'norm_rmse':      norm_rmse,
+        'norm_mae':       norm_mae,
         'train_time_sec': round(train_time, 2),
         'param_count':    X_train_flat.shape[1],
         'predictions':    p_matrix,
         'y_true':         y_matrix,
+        'dates':          dates_test,
         'epoch_logs':     [{'epoch': 1, 'train_loss': train_mse, 'val_loss': mse}],
         'inverse_transformed': scaler_target is not None
     }
