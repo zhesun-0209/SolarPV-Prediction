@@ -31,7 +31,7 @@ def plot_forecast(
     times, true_vals, pred_vals = [], [], []
     for i, dt_end in enumerate(dates):
         start = pd.to_datetime(dt_end) - pd.Timedelta(hours=horizon - 1)
-        idx = pd.date_range(start, periods=horizon, freq='H')
+        idx = pd.date_range(start, periods=horizon, freq='h')
         times.extend(idx)
         true_vals.extend(y_true[i])
         pred_vals.extend(y_pred[i])
