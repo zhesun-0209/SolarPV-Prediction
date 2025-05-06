@@ -19,7 +19,7 @@ class RNNBase(nn.Module):
         super().__init__()
         self.cfg = config
         hidden = config['hidden_dim']
-        layers = config['num_layers']
+        layers = config['n_layers']
 
         # Project history features
         self.hist_proj = nn.Linear(hist_dim, hidden)
