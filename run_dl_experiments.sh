@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # run_dl_experiments.sh
 #
-# Runs all deep‐learning models across every combination of the
+# Runs all deep-learning models across every combination of the
 # five ablation flags, for every ProjectID internally within main.py.
 
 set -e
 
+# Path to your base config YAML
 BASE_CONFIG="config/default.yaml"
-BASE_SAVE_DIR="/path/to/outputs"   # modify to your outputs root
+
+# Use Python to extract save_dir from YAML
+BASE_SAVE_DIR=$(python -c "import yaml; print(yaml.safe_load(open('$BASE_CONFIG'))['save_dir'])")
 
 MODELS=("Transformer" "LSTM" "GRU" "TCN")
 
