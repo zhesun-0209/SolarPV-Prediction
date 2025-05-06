@@ -10,6 +10,7 @@ Records per-epoch timing and validation loss over time for plotting.
 import time
 import torch
 import numpy as np
+import pandas as pd
 from collections import defaultdict
 from torch.utils.data import DataLoader, TensorDataset
 from train.train_utils import (
@@ -190,23 +191,28 @@ def train_dl_model(
     preds_arr = np.vstack(all_preds)
     y_true_arr = y_te  # already numpy
 
-    # Inverse normalization
+    # Inverse normalization (with column name for compatibility)
     p_flat = preds_arr.reshape(-1, 1)
     y_flat = y_true_arr.reshape(-1, 1)
-    p_inv = scaler_target.inverse_transform(p_flat).flatten()
-    y_inv = scaler_target.inverse_transform(y_flat).flatten()
+
+    p_df = pd.DataFrame(p_flat, columns=['Electricity Generated'])
+    y_df = pd.DataFrame(y_flat, columns=['Electricity Generated'])
+
+    p_inv = scaler_target.inverse_transform(p_df).flatten()
+    y_inv = scaler_target.inverse_transform(y_df).flatten()
 
     # === Raw test metrics (kWh scale) ===
     raw_mse = np.mean((y_inv - p_inv) ** 2)
     raw_rmse = np.sqrt(raw_mse)
     raw_mae = np.mean(np.abs(y_inv - p_inv))
 
-    # === Normalized test metrics (0–1 scale) ===
-    p_norm = scaler_target.transform(p_flat).flatten()
-    y_norm = scaler_target.transform(y_flat).flatten()
+    # === Normalized test metrics (0–1 scale)
+    p_norm = scaler_target.transform(p_df).flatten()
+    y_norm = scaler_target.transform(y_df).flatten()
     norm_mse = np.mean((y_norm - p_norm) ** 2)
     norm_rmse = np.sqrt(norm_mse)
     norm_mae = np.mean(np.abs(y_norm - p_norm))
+
 
     metrics = {
         'test_loss': raw_mse,
