@@ -172,7 +172,7 @@ def train_dl_model(
 
     model.load_state_dict(stopper.best_state)
 
-    # Test phase
+        # Test phase
     model.eval()
     all_preds = []
     with torch.no_grad():
@@ -196,14 +196,25 @@ def train_dl_model(
     p_inv = scaler_target.inverse_transform(p_flat).flatten()
     y_inv = scaler_target.inverse_transform(y_flat).flatten()
 
+    # === Raw test metrics (kWh scale) ===
     raw_mse = np.mean((y_inv - p_inv) ** 2)
     raw_rmse = np.sqrt(raw_mse)
     raw_mae = np.mean(np.abs(y_inv - p_inv))
+
+    # === Normalized test metrics (0–1 scale) ===
+    p_norm = scaler_target.transform(p_flat).flatten()
+    y_norm = scaler_target.transform(y_flat).flatten()
+    norm_mse = np.mean((y_norm - p_norm) ** 2)
+    norm_rmse = np.sqrt(norm_mse)
+    norm_mae = np.mean(np.abs(y_norm - p_norm))
 
     metrics = {
         'test_loss': raw_mse,
         'rmse': raw_rmse,
         'mae': raw_mae,
+        'norm_test_loss': norm_mse,
+        'norm_rmse': norm_rmse,
+        'norm_mae': norm_mae,
         'epoch_logs': logs,
         'param_count': count_parameters(model),
         'predictions': p_inv.reshape(y_te.shape),
