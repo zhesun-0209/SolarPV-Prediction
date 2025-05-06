@@ -6,7 +6,7 @@ set -e
 
 BASE_CONFIG="config/default.yaml"
 BASE_SAVE_DIR=$(python -c "import yaml; print(yaml.safe_load(open('$BASE_CONFIG'))['save_dir'])")
-MODELS=("RF" "XGB" "LGBM")
+MODELS=("RF" "GBR" "XGB" "LGBM")
 
 FLAGS=("use_feature" "use_time" "use_forecast" "use_stats")
 
