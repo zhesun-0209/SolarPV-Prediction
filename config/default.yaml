@@ -45,8 +45,10 @@ train_params:
   learning_rate:        1e-3
   weight_decay:         1e-4
   early_stop_patience:  10
-  loss_type:           'mse'
-  future_hours:         24    # needed for DL meta-weighting
-  alpha: 3.0
-  peak_start: 10
-  peak_end: 14
+
+  loss_type:            'mse'    # options: 'mse', 'weighted_mse', 'dynamic_weighted_mse'
+  future_hours:         24       # needed for DL meta-weighting
+  alpha:                3.0
+  peak_start:           10
+  peak_end:             14
+  hour_weight_threshold: 0.005   # for dynamic hour weight filtering
