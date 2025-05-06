@@ -8,7 +8,7 @@ save_dir:   '/path/to/outputs'
 model: 'Transformer'      # options: Transformer, LSTM, GRU, TCN, RF, GBR, XGB, LGBM
 past_hours: 72
 future_hours: 24
-use_feature: true         # use exogenous features
+use_hist_weather: true        # use history weather features
 use_time: true            # include time encodings
 use_forecast: true        # include weather forecasts
 use_stats: true           # include statistical features
