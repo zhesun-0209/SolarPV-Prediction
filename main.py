@@ -3,12 +3,12 @@
 main.py
 
 Orchestrates the entire Solar Power Forecasting Pipeline:
-  1. Loads a YAML config (and optional CLI overrides)
+  1. Loads a YAML config (with optional CLI overrides)
   2. Preprocesses raw data
   3. Splits into sliding windows and train/val/test sets per ProjectID
   4. Trains either a DL or ML model
   5. Saves results under:
-       <base_save_dir>/Project_<pid>/<alg_type>/<model_name>/<flag_tag>/
+       <base_save_dir>/Project_<pid>/<alg_type>/<model_name_lower>/<flag_tag>/
 """
 
 import os
@@ -52,14 +52,33 @@ def main():
     parser.add_argument("--train_ratio",  type=float, help="Override train_ratio")
     parser.add_argument("--val_ratio",    type=float, help="Override val_ratio")
     parser.add_argument("--plot_days",    type=int,   help="Override plot_days")
-    # (Additional CLI overrides for model_params & train_params omitted for brevity)
+    # Deep-Learning overrides
+    parser.add_argument("--d_model",      type=int,   help="Override model_params.d_model")
+    parser.add_argument("--num_heads",    type=int,   help="Override model_params.num_heads")
+    parser.add_argument("--num_layers",   type=int,   help="Override model_params.num_layers")
+    parser.add_argument("--hidden_dim",   type=int,   help="Override model_params.hidden_dim")
+    parser.add_argument("--dropout",      type=float, help="Override model_params.dropout")
+    parser.add_argument("--tcn_channels", type=str,   help="Override model_params.tcn_channels (e.g. \"[64,64]\")")
+    parser.add_argument("--kernel_size",  type=int,   help="Override model_params.kernel_size")
+    # Machine-Learning overrides
+    parser.add_argument("--n_estimators",     type=int,   help="Override model_params.n_estimators")
+    parser.add_argument("--max_depth",        type=int,   help="Override model_params.max_depth")
+    parser.add_argument("--ml_learning_rate", type=float, help="Override model_params.learning_rate")
+    parser.add_argument("--random_state",     type=int,   help="Override model_params.random_state")
+    # Training overrides
+    parser.add_argument("--batch_size",         type=int,   help="Override train_params.batch_size")
+    parser.add_argument("--epochs",             type=int,   help="Override train_params.epochs")
+    parser.add_argument("--learning_rate",      type=float, help="Override train_params.learning_rate")
+    parser.add_argument("--weight_decay",       type=float, help="Override train_params.weight_decay")
+    parser.add_argument("--early_stop_patience",type=int,   help="Override train_params.early_stop_patience")
+    parser.add_argument("--loss_type",          type=str,   help="Override train_params.loss_type")
     args = parser.parse_args()
 
     # --- Load YAML config ---
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
 
-    # --- Apply CLI overrides to top‐level config ---
+    # --- Apply CLI overrides to top-level config ---
     if args.data_path:    config["data_path"]      = args.data_path
     if args.save_dir:     config["save_dir"]       = args.save_dir
     if args.model:        config["model"]          = args.model
@@ -90,12 +109,12 @@ def main():
 
     # Merge CLI overrides into train_params
     tp = config.setdefault("train_params", {})
-    if args.batch_size:          tp["batch_size"]          = args.batch_size
-    if args.epochs:              tp["epochs"]              = args.epochs
-    if args.learning_rate:       tp["learning_rate"]       = args.learning_rate
-    if args.weight_decay:        tp["weight_decay"]        = args.weight_decay
-    if args.early_stop_patience: tp["early_stop_patience"] = args.early_stop_patience
-    if args.loss_type:           tp["loss_type"]           = args.loss_type
+    if args.batch_size:           tp["batch_size"]          = args.batch_size
+    if args.epochs:               tp["epochs"]              = args.epochs
+    if args.learning_rate:        tp["learning_rate"]       = args.learning_rate
+    if args.weight_decay:         tp["weight_decay"]        = args.weight_decay
+    if args.early_stop_patience:  tp["early_stop_patience"] = args.early_stop_patience
+    if args.loss_type:            tp["loss_type"]           = args.loss_type
 
     # --- Load and preprocess data ---
     df = load_raw_data(config["data_path"])
@@ -117,7 +136,8 @@ def main():
 
     # --- Iterate over each ProjectID ---
     for pid in df_clean["ProjectID"].unique():
-        df_proj = df_clean[df_clean["ProjectID"]]== pid
+        # select only this project’s rows
+        df_proj = df_clean[df_clean["ProjectID"] == pid]
         if df_proj.empty:
             print(f"[WARN] Project {pid} has no data, skipping")
             continue
@@ -139,13 +159,17 @@ def main():
         Xh_va, Xf_va, y_va, hrs_va, dates_va, \
         Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
 
-        # Build per‐run save directory:
+        # Build per-run save directory:
         # <base_save_dir>/Project_<pid>/<dl|ml>/<model_lower>/<flag_tag>/
         base = config["save_dir"]
-        proj_dir = os.path.join(base, f"Project_{pid}", alg_type, config["model"].lower(), flag_tag)
+        proj_dir = os.path.join(base,
+                                f"Project_{pid}",
+                                alg_type,
+                                config["model"].lower(),
+                                flag_tag)
         os.makedirs(proj_dir, exist_ok=True)
 
-        # Deep copy config and override save_dir for this run
+        # Deep-copy config and override save_dir for this run
         cfg = deepcopy(config)
         cfg["save_dir"] = proj_dir
 
