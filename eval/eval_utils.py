@@ -30,14 +30,21 @@ def save_results(
                  'dates' (n), 'epoch_logs' (list of dicts)
         dates:   Fallback list of datetime strings
         y_true, Xh_test, Xf_test: Unused (legacy support)
-        config:  Dictionary with keys like 'save_dir', 'model', 'plot_days'
+        config:  Dictionary with keys like 'save_dir', 'model', 'plot_days', 'scaler_target'
     """
     save_dir = config["save_dir"]
     os.makedirs(save_dir, exist_ok=True)
 
-    # Extract predictions and ground truth (already inverse-transformed)
+    # Extract predictions and ground truth
     preds = metrics['predictions']
     yts   = metrics['y_true']
+
+    # ===== [NEW] Optional inverse_transform (only if not already done) =====
+    scaler = config.get("scaler_target", None)
+    already_inverse = metrics.get("inverse_transformed", False)
+    if scaler is not None and not already_inverse:
+        preds = scaler.inverse_transform(preds.reshape(-1, 1)).reshape(preds.shape)
+        yts   = scaler.inverse_transform(yts.reshape(-1, 1)).reshape(yts.shape)
 
     # ===== 1. Save summary.csv =====
     summary = {
