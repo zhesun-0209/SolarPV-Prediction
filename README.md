@@ -90,7 +90,7 @@ All pipeline settings live in `config/default.yaml`. Adjust as needed:
       # Deep Learning
       d_model:       64
       n_heads:       4
-      n_layers:      2
+      n_layers:      4
       hidden_dim:    64
       dropout:       0.1
       tcn_channels:  [64, 64]
