@@ -188,8 +188,15 @@ def analyze_results():
     print("\n📊 分析结果...")
     
     try:
+        # 检查Drive目录
+        drive_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+        if os.path.exists(drive_dir):
+            result_dir = drive_dir
+        else:
+            result_dir = 'result'
+        
         # 查找所有summary.csv文件
-        summary_files = glob.glob('result/**/summary.csv', recursive=True)
+        summary_files = glob.glob(f'{result_dir}/**/summary.csv', recursive=True)
         
         if not summary_files:
             print("❌ 未找到结果文件")
@@ -214,8 +221,8 @@ def analyze_results():
         combined_df = pd.concat(all_results, ignore_index=True)
         
         # 保存合并结果
-        combined_df.to_csv('result/all_experiments_results.csv', index=False)
-        print("✅ 合并结果保存到 result/all_experiments_results.csv")
+        combined_df.to_csv(f'{result_dir}/all_experiments_results.csv', index=False)
+        print(f"✅ 合并结果保存到 {result_dir}/all_experiments_results.csv")
         
         # 创建可视化
         create_visualizations(combined_df)
@@ -282,10 +289,17 @@ def create_visualizations(df):
     plt.colorbar(scatter, ax=ax6, label='Parameter Count')
     
     plt.tight_layout()
-    plt.savefig('result/gpu_experiments_analysis.png', dpi=300, bbox_inches='tight')
+    # 检查Drive目录
+    drive_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    if os.path.exists(drive_dir):
+        result_dir = drive_dir
+    else:
+        result_dir = 'result'
+    
+    plt.savefig(f'{result_dir}/gpu_experiments_analysis.png', dpi=300, bbox_inches='tight')
     plt.show()
     
-    print("✅ 可视化图表保存到 result/gpu_experiments_analysis.png")
+    print(f"✅ 可视化图表保存到 {result_dir}/gpu_experiments_analysis.png")
 
 def show_statistics(df):
     """显示统计结果"""
@@ -359,9 +373,17 @@ def main():
     print(f"📊 成功: {completed}")
     print(f"❌ 失败: {failed}")
     print(f"⏭️ 跳过: {skipped}")
-    print(f"📁 结果保存在: result/ 目录")
-    print(f"📊 合并结果: result/all_experiments_results.csv")
-    print(f"📊 可视化: result/gpu_experiments_analysis.png")
+    # 检查Drive目录
+    drive_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    if os.path.exists(drive_dir):
+        result_dir = drive_dir
+        print(f"📁 结果保存在: {result_dir} (Google Drive)")
+    else:
+        result_dir = 'result'
+        print(f"📁 结果保存在: {result_dir} (本地)")
+    
+    print(f"📊 合并结果: {result_dir}/all_experiments_results.csv")
+    print(f"📊 可视化: {result_dir}/gpu_experiments_analysis.png")
 
 if __name__ == "__main__":
     main()
