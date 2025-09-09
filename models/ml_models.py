@@ -29,8 +29,9 @@ from lightgbm import LGBMRegressor
 def train_rf(X_train, y_train, params: dict):
     """Train GPU-accelerated Random Forest regressor with multi-output support."""
     if GPU_AVAILABLE:
-        # Use GPU version directly (cuML supports multi-output natively)
-        model = cuRandomForestRegressor(**params)
+        # cuML Random Forest不支持多输出，需要使用MultiOutputRegressor
+        base = cuRandomForestRegressor(**params)
+        model = MultiOutputRegressor(base)
         model.fit(X_train, y_train)
         return model
     else:
@@ -43,8 +44,9 @@ def train_rf(X_train, y_train, params: dict):
 def train_gbr(X_train, y_train, params: dict):
     """Train GPU-accelerated Gradient Boosting regressor with multi-output support."""
     if GPU_AVAILABLE:
-        # Use GPU version directly (cuML supports multi-output natively)
-        model = cuGradientBoostingRegressor(**params)
+        # cuML模型也需要MultiOutputRegressor来支持多输出
+        base = cuGradientBoostingRegressor(**params)
+        model = MultiOutputRegressor(base)
         model.fit(X_train, y_train)
         return model
     else:

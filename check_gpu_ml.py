@@ -49,10 +49,10 @@ def check_gpu_ml():
         # 测试创建模型
         print("\n🧪 测试创建GPU模型...")
         
-        # 创建测试数据
+        # 创建测试数据 - cuML Random Forest只支持单输出
         import numpy as np
         X_test = np.random.rand(1000, 10).astype(np.float32)
-        y_test = np.random.rand(1000, 24).astype(np.float32)
+        y_test = np.random.rand(1000, 1).astype(np.float32)  # 单输出
         
         # 测试Random Forest
         print("测试Random Forest...")
