@@ -50,18 +50,23 @@ def save_results(
         preds = scaler.inverse_transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).reshape(preds.shape)
         yts   = scaler.inverse_transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).reshape(yts.shape)
 
-    # ===== [NEW] Compute normalized errors using train-set scaler (if needed) =====
-    if scaler is not None:
-        # Fit scaler on flattened y_true (real values), get normalization transform
-        norm_scaler = scaler  # We assume same scaler used for train/val/test
-        preds_norm = norm_scaler.transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
-        yts_norm   = norm_scaler.transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
-  
+    # ===== 计算标准化误差（用于辅助分析） =====
+    if scaler is not None and not already_inverse:
+        # 使用训练集的scaler进行标准化
+        preds_norm = scaler.transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
+        yts_norm   = scaler.transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
+        
         norm_mse  = mean_squared_error(yts_norm, preds_norm)
         norm_rmse = np.sqrt(norm_mse)
         norm_mae  = mean_absolute_error(yts_norm, preds_norm)
     else:
-        norm_mse = norm_rmse = norm_mae = np.nan
+        # 如果已经反标准化或没有scaler，计算相对误差
+        if np.mean(yts) > 0:
+            norm_mse  = np.mean(((preds - yts) / yts) ** 2)
+            norm_rmse = np.sqrt(norm_mse)
+            norm_mae  = np.mean(np.abs((preds - yts) / yts))
+        else:
+            norm_mse = norm_rmse = norm_mae = np.nan
 
     # 获取保存选项
     save_options = config.get('save_options', {})
@@ -69,21 +74,27 @@ def save_results(
     # ===== 1. Save summary.csv =====
     if save_options.get('save_summary', True):
         # 使用原始尺度（kWh）作为主要评估指标
+        # 计算整个测试集的指标
+        test_mse = np.mean((preds - yts) ** 2)
+        test_rmse = np.sqrt(test_mse)
+        test_mae = np.mean(np.abs(preds - yts))
+        
         summary = {
             'model':           config['model'],
-            'use_hist_weather':     config.get('use_hist_weather', True),
+            'use_hist_weather': config.get('use_hist_weather', False),
             'use_forecast':    config.get('use_forecast', False),
             'past_hours':      config['past_hours'],
             'future_hours':    config['future_hours'],
-            'test_loss':       metrics.get('test_loss'),  # 原始尺度MSE (kWh²)
+            'test_loss':       test_mse,   # 整个测试集MSE (kWh²)
+            'rmse':            test_rmse,  # 整个测试集RMSE (kWh)
+            'mae':             test_mae,   # 整个测试集MAE (kWh)
             'train_time_sec':  metrics.get('train_time_sec'),
             'inference_time_sec': metrics.get('inference_time_sec', np.nan),
             'param_count':     metrics.get('param_count'),
-            'rmse':            metrics.get('rmse', np.nan),  # 原始尺度RMSE (kWh)
-            'mae':             metrics.get('mae', np.nan),   # 原始尺度MAE (kWh)
-            'norm_test_loss':  norm_mse,   # 标准化尺度MSE (0-1)
-            'norm_rmse':       norm_rmse,  # 标准化尺度RMSE (0-1)
-            'norm_mae':        norm_mae,   # 标准化尺度MAE (0-1)
+            'samples_count':   len(preds),  # 测试样本数量
+            'norm_test_loss':  norm_mse,   # 标准化/相对MSE
+            'norm_rmse':       norm_rmse,  # 标准化/相对RMSE
+            'norm_mae':        norm_mae,   # 标准化/相对MAE
         }
         pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
 
