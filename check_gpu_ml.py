@@ -13,11 +13,17 @@ def check_gpu_ml():
         import cuml
         print(f"✅ cuML已安装，版本: {cuml.__version__}")
         
-        # 检查GPU可用性
-        if cuml.is_gpu_available():
-            print("✅ cuML GPU可用")
-        else:
-            print("❌ cuML GPU不可用")
+        # 检查GPU可用性 (cuML 25.06+ 版本)
+        try:
+            # 新版本使用不同的方法检查GPU
+            import cupy as cp
+            if cp.cuda.is_available():
+                print("✅ cuML GPU可用 (通过CuPy检测)")
+            else:
+                print("❌ cuML GPU不可用 (通过CuPy检测)")
+        except Exception as e:
+            print(f"⚠️ 无法检测GPU状态: {e}")
+            print("💡 尝试直接创建模型来验证GPU可用性")
             
     except ImportError:
         print("❌ cuML未安装")
@@ -39,15 +45,23 @@ def check_gpu_ml():
         
         # 测试Random Forest
         print("测试Random Forest...")
-        rf_model = cuRandomForestRegressor(n_estimators=10, random_state=42)
-        rf_model.fit(X_test, y_test)
-        print("✅ Random Forest GPU模型创建成功")
+        try:
+            rf_model = cuRandomForestRegressor(n_estimators=10, random_state=42)
+            rf_model.fit(X_test, y_test)
+            print("✅ Random Forest GPU模型创建成功")
+        except Exception as e:
+            print(f"❌ Random Forest GPU模型创建失败: {e}")
+            return False
         
         # 测试Gradient Boosting
         print("测试Gradient Boosting...")
-        gbr_model = cuGradientBoostingRegressor(n_estimators=10, random_state=42)
-        gbr_model.fit(X_test, y_test)
-        print("✅ Gradient Boosting GPU模型创建成功")
+        try:
+            gbr_model = cuGradientBoostingRegressor(n_estimators=10, random_state=42)
+            gbr_model.fit(X_test, y_test)
+            print("✅ Gradient Boosting GPU模型创建成功")
+        except Exception as e:
+            print(f"❌ Gradient Boosting GPU模型创建失败: {e}")
+            return False
         
         return True
         
