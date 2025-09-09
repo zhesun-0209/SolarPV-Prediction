@@ -207,37 +207,51 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats)
 
     return X_hist, X_fcst, y, hours, dates
 
-def split_data(X_hist, X_fcst, y, hours, dates, train_ratio=0.8, val_ratio=0.1):
+def split_data(X_hist, X_fcst, y, hours, dates, train_ratio=0.8, val_ratio=0.1, shuffle=True, random_state=42):
     """
     分割数据为训练集、验证集和测试集
-    由于样本已经是非连续的时间窗口，可以直接按比例分割
+    由于样本已经是非连续的时间窗口，可以安全地shuffle和按比例分割
     每个样本都是独立的预测日，不存在数据泄漏问题
     """
     N = X_hist.shape[0]
+    
+    # 创建随机索引
+    if shuffle:
+        np.random.seed(random_state)
+        indices = np.random.permutation(N)
+    else:
+        indices = np.arange(N)
+    
+    # 计算分割点
     i_tr = int(N * train_ratio)
     i_val = int(N * (train_ratio + val_ratio))
     
+    # 分割索引
+    train_idx = indices[:i_tr]
+    val_idx = indices[i_tr:i_val]
+    test_idx = indices[i_val:]
+    
     # 定义切片函数
-    def slice_array(arr):
+    def slice_array(arr, indices):
         if isinstance(arr, np.ndarray):
-            return arr[:i_tr], arr[i_tr:i_val], arr[i_val:]
+            return arr[indices]
         else:
             # 处理列表类型
-            return arr[:i_tr], arr[i_tr:i_val], arr[i_val:]
+            return [arr[i] for i in indices]
 
     # 分割所有数组
-    Xh_tr, Xh_va, Xh_te = slice_array(X_hist)
-    y_tr, y_va, y_te = slice_array(y)
-    hrs_tr, hrs_va, hrs_te = slice_array(hours)
+    Xh_tr, Xh_va, Xh_te = slice_array(X_hist, train_idx), slice_array(X_hist, val_idx), slice_array(X_hist, test_idx)
+    y_tr, y_va, y_te = slice_array(y, train_idx), slice_array(y, val_idx), slice_array(y, test_idx)
+    hrs_tr, hrs_va, hrs_te = slice_array(hours, train_idx), slice_array(hours, val_idx), slice_array(hours, test_idx)
     
     # 处理日期列表
-    dates_tr = dates[:i_tr]
-    dates_va = dates[i_tr:i_val]
-    dates_te = dates[i_val:]
+    dates_tr = [dates[i] for i in train_idx]
+    dates_va = [dates[i] for i in val_idx]
+    dates_te = [dates[i] for i in test_idx]
 
     # 处理预测特征
     if X_fcst is not None:
-        Xf_tr, Xf_va, Xf_te = slice_array(X_fcst)
+        Xf_tr, Xf_va, Xf_te = slice_array(X_fcst, train_idx), slice_array(X_fcst, val_idx), slice_array(X_fcst, test_idx)
     else:
         Xf_tr = Xf_va = Xf_te = None
 

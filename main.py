@@ -210,10 +210,12 @@ def main():
             fcst_feats=fcst_feats
         )
 
-        # Step 3: Train/val/test split
+        # Step 3: Train/val/test split (with shuffle)
         splits = split_data(Xh, Xf, y, hrs, dates,
                             train_ratio=config["train_ratio"],
-                            val_ratio=config["val_ratio"])
+                            val_ratio=config["val_ratio"],
+                            shuffle=True,
+                            random_state=42)
         Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
         Xh_va, Xf_va, y_va, hrs_va, dates_va, \
         Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
