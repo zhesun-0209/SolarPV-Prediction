@@ -5,7 +5,7 @@ data_path: './data/Project1033.csv'  # 数据文件路径
 save_dir:   './result'               # 结果保存目录
 
 # Model selection & ablation
-model: 'Transformer'      # options: Transformer, LSTM, GRU, TCN, RF, GBR, XGB, LGBM
+model: 'Transformer'      # options: Transformer, LSTM, GRU, TCN, RF, XGB, LGBM
 
 # Time window options (消融实验)
 past_days: 3              # options: 1, 3, 7 (历史天数)

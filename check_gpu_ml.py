@@ -64,10 +64,8 @@ def check_gpu_ml():
             print(f"❌ Random Forest GPU模型创建失败: {e}")
             return False
         
-        # 测试Gradient Boosting替代方案
-        print("测试Gradient Boosting替代方案...")
-        
         # 测试XGBoost GPU
+        print("测试XGBoost GPU...")
         try:
             import xgboost as xgb
             xgb_model = xgb.XGBRegressor(
@@ -82,6 +80,7 @@ def check_gpu_ml():
             print(f"⚠️ XGBoost GPU模型创建失败: {e}")
         
         # 测试LightGBM GPU
+        print("测试LightGBM GPU...")
         try:
             import lightgbm as lgb
             lgb_model = lgb.LGBMRegressor(
@@ -96,7 +95,7 @@ def check_gpu_ml():
         except Exception as e:
             print(f"⚠️ LightGBM GPU模型创建失败: {e}")
         
-        print("✅ Gradient Boosting替代方案测试完成")
+        print("✅ 所有GPU模型测试完成")
         
         return True
         

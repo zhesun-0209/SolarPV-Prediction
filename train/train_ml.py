@@ -3,7 +3,7 @@ import time
 import joblib
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from models.ml_models import train_rf, train_gbr, train_xgb, train_lgbm
+from models.ml_models import train_rf, train_xgb, train_lgbm
 
 def train_ml_model(
     config: dict,
@@ -39,7 +39,6 @@ def train_ml_model(
 
     ml_param_keys = {
         'RF':   ['n_estimators', 'max_depth', 'random_state'],
-        'GBR':  ['n_estimators', 'max_depth', 'learning_rate', 'random_state'],
         'XGB':  ['n_estimators', 'max_depth', 'learning_rate', 'verbosity'],
         'LGBM': ['n_estimators', 'max_depth', 'learning_rate', 'random_state']
     }
@@ -60,8 +59,6 @@ def train_ml_model(
 
     if name == 'RF':
         trainer = train_rf
-    elif name == 'GBR':
-        trainer = train_gbr
     elif name == 'XGB':
         trainer = train_xgb
     elif name == 'LGBM':

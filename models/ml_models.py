@@ -58,21 +58,30 @@ def train_rf(X_train, y_train, params: dict):
         model.fit(X_train, y_train)
         return model
 
-def train_gbr(X_train, y_train, params: dict):
-    """Train GPU-accelerated Gradient Boosting regressor with multi-output support."""
+# GBR已移除，使用XGBoost和LightGBM替代
+
+def train_xgb(X_train, y_train, params: dict):
+    """Train XGBoost regressor with multi-output support."""
     if XGB_GPU_AVAILABLE:
-        # 使用XGBoost GPU版本作为GBR的替代
+        # 使用XGBoost GPU版本
         gpu_params = params.copy()
         gpu_params.update({
             'tree_method': 'gpu_hist',
             'gpu_id': 0
         })
         base = XGBRegressor(**gpu_params)
-        model = MultiOutputRegressor(base)
-        model.fit(X_train, y_train)
-        return model
-    elif LGB_GPU_AVAILABLE:
-        # 使用LightGBM GPU版本作为GBR的替代
+    else:
+        # 使用XGBoost CPU版本
+        base = XGBRegressor(**params)
+    
+    model = MultiOutputRegressor(base)
+    model.fit(X_train, y_train)
+    return model
+
+def train_lgbm(X_train, y_train, params: dict):
+    """Train LightGBM regressor with multi-output support."""
+    if LGB_GPU_AVAILABLE:
+        # 使用LightGBM GPU版本
         gpu_params = params.copy()
         gpu_params.update({
             'device': 'gpu',
@@ -80,27 +89,10 @@ def train_gbr(X_train, y_train, params: dict):
             'gpu_device_id': 0
         })
         base = LGBMRegressor(**gpu_params)
-        model = MultiOutputRegressor(base)
-        model.fit(X_train, y_train)
-        return model
     else:
-        # 回退到CPU版本的GradientBoostingRegressor
-        from sklearn.ensemble import GradientBoostingRegressor
-        base = GradientBoostingRegressor(**params)
-        model = MultiOutputRegressor(base)
-        model.fit(X_train, y_train)
-        return model
-
-def train_xgb(X_train, y_train, params: dict):
-    """Train XGBoost regressor with multi-output support."""
-    base = XGBRegressor(**params)
-    model = MultiOutputRegressor(base)
-    model.fit(X_train, y_train)
-    return model
-
-def train_lgbm(X_train, y_train, params: dict):
-    """Train LightGBM regressor with multi-output support."""
-    base = LGBMRegressor(**params)
+        # 使用LightGBM CPU版本
+        base = LGBMRegressor(**params)
+    
     model = MultiOutputRegressor(base)
     model.fit(X_train, y_train)
     return model
