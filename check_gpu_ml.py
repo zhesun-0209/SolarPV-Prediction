@@ -71,8 +71,8 @@ def check_gpu_ml():
             xgb_model = xgb.XGBRegressor(
                 n_estimators=10, 
                 random_state=42,
-                tree_method='gpu_hist',
-                gpu_id=0
+                tree_method='hist',
+                device='cuda'
             )
             xgb_model.fit(X_test, y_test)
             print("✅ XGBoost GPU模型创建成功")
@@ -83,6 +83,8 @@ def check_gpu_ml():
         print("测试LightGBM GPU...")
         try:
             import lightgbm as lgb
+            # LightGBM需要1D的y，所以使用ravel()
+            y_test_1d = y_test.ravel()
             lgb_model = lgb.LGBMRegressor(
                 n_estimators=10, 
                 random_state=42,
@@ -90,7 +92,7 @@ def check_gpu_ml():
                 gpu_platform_id=0,
                 gpu_device_id=0
             )
-            lgb_model.fit(X_test, y_test)
+            lgb_model.fit(X_test, y_test_1d)
             print("✅ LightGBM GPU模型创建成功")
         except Exception as e:
             print(f"⚠️ LightGBM GPU模型创建失败: {e}")
@@ -108,19 +110,21 @@ def check_ml_models_import():
     print("\n🔍 检查ml_models.py导入...")
     
     try:
-        from models.ml_models import train_rf, train_gbr
+        from models.ml_models import train_rf, train_xgb, train_lgbm
         print("✅ ml_models导入成功")
         
         # 检查GPU_AVAILABLE变量
         import models.ml_models as ml_models
         print(f"GPU_AVAILABLE: {ml_models.GPU_AVAILABLE}")
+        print(f"XGB_GPU_AVAILABLE: {ml_models.XGB_GPU_AVAILABLE}")
+        print(f"LGB_GPU_AVAILABLE: {ml_models.LGB_GPU_AVAILABLE}")
         
-        if ml_models.GPU_AVAILABLE:
+        if ml_models.GPU_AVAILABLE or ml_models.XGB_GPU_AVAILABLE or ml_models.LGB_GPU_AVAILABLE:
             print("✅ ml_models将使用GPU版本")
         else:
             print("❌ ml_models将使用CPU版本")
             
-        return ml_models.GPU_AVAILABLE
+        return ml_models.GPU_AVAILABLE or ml_models.XGB_GPU_AVAILABLE or ml_models.LGB_GPU_AVAILABLE
         
     except Exception as e:
         print(f"❌ ml_models导入失败: {e}")

@@ -17,7 +17,7 @@ try:
     import xgboost as xgb
     # 测试XGBoost GPU支持
     try:
-        test_model = xgb.XGBRegressor(tree_method='gpu_hist', gpu_id=0, n_estimators=1)
+        test_model = xgb.XGBRegressor(tree_method='hist', device='cuda', n_estimators=1)
         XGB_GPU_AVAILABLE = True
         print("✅ XGBoost GPU 可用")
     except:
@@ -66,8 +66,8 @@ def train_xgb(X_train, y_train, params: dict):
         # 使用XGBoost GPU版本
         gpu_params = params.copy()
         gpu_params.update({
-            'tree_method': 'gpu_hist',
-            'gpu_id': 0
+            'tree_method': 'hist',
+            'device': 'cuda'
         })
         base = XGBRegressor(**gpu_params)
     else:
