@@ -1,8 +1,8 @@
 # config/default.yaml
 
 # Data & output paths
-data_path: './data/solar_data.csv'  # Update this path to your actual data file
-save_dir:   './outputs'             # Update this path to your desired output directory
+data_path: './data/Project1033.csv'  # 数据文件路径
+save_dir:   './result'               # 结果保存目录
 
 # Model selection & ablation
 model: 'Transformer'      # options: Transformer, LSTM, GRU, TCN, RF, GBR, XGB, LGBM
