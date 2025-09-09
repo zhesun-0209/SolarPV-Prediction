@@ -109,8 +109,8 @@ def run_gpu_experiments():
     print("\n🔬 GPU版本全参数组合实验")
     print("=" * 80)
     
-    # 模型列表
-    models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'GBR', 'XGB', 'LGBM']
+    # 模型列表 (已移除GBR)
+    models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
     
     # 特征组合
     feature_configs = [
