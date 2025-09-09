@@ -70,12 +70,26 @@ def check_existing_results():
     """检查现有结果"""
     print("🔍 检查现有结果...")
     
-    # 查找所有summary.csv文件
-    summary_files = glob.glob('result/**/summary.csv', recursive=True)
+    # 检查多个可能的结果目录
+    result_dirs = [
+        'result/',  # 本地目录
+        '/content/drive/MyDrive/Solar PV electricity/results/',  # Drive目录
+        '/content/drive/MyDrive/Solar PV electricity/results',   # 不带斜杠
+    ]
+    
+    summary_files = []
+    for result_dir in result_dirs:
+        if os.path.exists(result_dir):
+            print(f"📁 检查目录: {result_dir}")
+            files = glob.glob(os.path.join(result_dir, '**/summary.csv'), recursive=True)
+            summary_files.extend(files)
+            print(f"   找到 {len(files)} 个summary.csv文件")
     
     if not summary_files:
         print("📝 未找到现有结果，将从头开始")
         return set()
+    
+    print(f"📊 总共找到 {len(summary_files)} 个结果文件")
     
     # 读取现有结果
     existing_experiments = set()
@@ -86,8 +100,9 @@ def check_existing_results():
                 # 创建实验标识
                 exp_id = f"{df.iloc[0]['model']}_{df.iloc[0]['use_hist_weather']}_{df.iloc[0]['use_forecast']}_{df.iloc[0].get('model_complexity', 'medium')}"
                 existing_experiments.add(exp_id)
+                print(f"   ✅ 读取: {file} -> {exp_id}")
         except Exception as e:
-            print(f"⚠️ 读取结果文件失败 {file}: {e}")
+            print(f"   ⚠️ 读取结果文件失败 {file}: {e}")
     
     print(f"📊 找到 {len(existing_experiments)} 个已完成实验")
     return existing_experiments
@@ -140,6 +155,22 @@ def main():
     if not os.path.exists('result'):
         os.makedirs('result')
         print("✅ 创建result目录")
+    
+    # 检查Drive目录
+    drive_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    if os.path.exists(drive_dir):
+        print(f"✅ Drive目录存在: {drive_dir}")
+        # 修改配置文件，保存到Drive目录
+        import yaml
+        with open('config/default.yaml', 'r') as f:
+            config = yaml.safe_load(f)
+        config['save_dir'] = drive_dir
+        with open('config/default.yaml', 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+        print(f"✅ 配置已更新，结果将保存到: {drive_dir}")
+    else:
+        print(f"⚠️ Drive目录不存在: {drive_dir}")
+        print("💡 请确保已挂载Google Drive")
     
     # 检查现有结果
     existing_experiments = check_existing_results()
