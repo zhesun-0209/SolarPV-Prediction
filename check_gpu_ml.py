@@ -32,17 +32,8 @@ def check_gpu_ml():
     # 检查模型导入
     try:
         from cuml.ensemble import RandomForestRegressor as cuRandomForestRegressor
-        # cuML 25.06+ 版本中GradientBoostingRegressor的导入路径可能不同
-        try:
-            from cuml.ensemble import GradientBoostingRegressor as cuGradientBoostingRegressor
-        except ImportError:
-            # 尝试其他可能的导入路径
-            try:
-                from cuml.linear_model import LinearRegression as cuGradientBoostingRegressor
-                print("⚠️ 使用LinearRegression替代GradientBoostingRegressor进行测试")
-            except ImportError:
-                print("❌ 无法导入GradientBoostingRegressor，跳过测试")
-                cuGradientBoostingRegressor = None
+        # cuML 25.06+ 版本中没有GradientBoostingRegressor，已移除
+        cuGradientBoostingRegressor = None
         
         print("✅ cuML模型导入成功")
         
