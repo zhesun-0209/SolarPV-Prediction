@@ -187,10 +187,25 @@ def main():
     # 设置A100优化
     setup_a100()
     
-    # 创建结果目录
-    if not os.path.exists('result'):
-        os.makedirs('result')
-        print("✅ 创建result目录")
+    # 检查Drive目录并修改配置
+    drive_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    if os.path.exists(drive_dir):
+        print(f"✅ Drive目录存在: {drive_dir}")
+        # 修改配置文件，保存到Drive目录
+        import yaml
+        with open('config/default.yaml', 'r') as f:
+            config = yaml.safe_load(f)
+        config['save_dir'] = drive_dir
+        with open('config/default.yaml', 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+        print(f"✅ 配置已更新，结果将保存到: {drive_dir}")
+    else:
+        print(f"⚠️ Drive目录不存在: {drive_dir}")
+        print("💡 请确保已挂载Google Drive")
+        # 创建本地结果目录
+        if not os.path.exists('result'):
+            os.makedirs('result')
+            print("✅ 创建本地result目录")
     
     # 运行实验
     models = [
