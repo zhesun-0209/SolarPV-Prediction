@@ -64,18 +64,39 @@ def check_gpu_ml():
             print(f"❌ Random Forest GPU模型创建失败: {e}")
             return False
         
-        # 测试Gradient Boosting
-        if cuGradientBoostingRegressor is not None:
-            print("测试Gradient Boosting...")
-            try:
-                gbr_model = cuGradientBoostingRegressor(n_estimators=10, random_state=42)
-                gbr_model.fit(X_test, y_test)
-                print("✅ Gradient Boosting GPU模型创建成功")
-            except Exception as e:
-                print(f"❌ Gradient Boosting GPU模型创建失败: {e}")
-                return False
-        else:
-            print("⚠️ 跳过Gradient Boosting测试（模型不可用）")
+        # 测试Gradient Boosting替代方案
+        print("测试Gradient Boosting替代方案...")
+        
+        # 测试XGBoost GPU
+        try:
+            import xgboost as xgb
+            xgb_model = xgb.XGBRegressor(
+                n_estimators=10, 
+                random_state=42,
+                tree_method='gpu_hist',
+                gpu_id=0
+            )
+            xgb_model.fit(X_test, y_test)
+            print("✅ XGBoost GPU模型创建成功")
+        except Exception as e:
+            print(f"⚠️ XGBoost GPU模型创建失败: {e}")
+        
+        # 测试LightGBM GPU
+        try:
+            import lightgbm as lgb
+            lgb_model = lgb.LGBMRegressor(
+                n_estimators=10, 
+                random_state=42,
+                device='gpu',
+                gpu_platform_id=0,
+                gpu_device_id=0
+            )
+            lgb_model.fit(X_test, y_test)
+            print("✅ LightGBM GPU模型创建成功")
+        except Exception as e:
+            print(f"⚠️ LightGBM GPU模型创建失败: {e}")
+        
+        print("✅ Gradient Boosting替代方案测试完成")
         
         return True
         

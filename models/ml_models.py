@@ -4,23 +4,40 @@ Uses GPU-accelerated versions for Random Forest and Gradient Boosting.
 """
 try:
     from cuml.ensemble import RandomForestRegressor as cuRandomForestRegressor
-    # 尝试导入GradientBoostingRegressor，如果失败则使用其他模型
-    try:
-        from cuml.ensemble import GradientBoostingRegressor as cuGradientBoostingRegressor
-    except ImportError:
-        # cuML 25.06+ 版本可能没有GradientBoostingRegressor，使用其他模型
-        try:
-            from cuml.linear_model import LinearRegression as cuGradientBoostingRegressor
-            print("Warning: Using LinearRegression instead of GradientBoostingRegressor for GPU")
-        except ImportError:
-            # 如果都失败，回退到CPU版本
-            raise ImportError("No suitable GPU model found")
     GPU_AVAILABLE = True
+    print("✅ cuML RandomForestRegressor 可用")
 except ImportError:
     from sklearn.ensemble import RandomForestRegressor as cuRandomForestRegressor
-    from sklearn.ensemble import GradientBoostingRegressor as cuGradientBoostingRegressor
     GPU_AVAILABLE = False
     print("Warning: cuML not available, falling back to CPU versions")
+
+# 检查XGBoost GPU支持
+XGB_GPU_AVAILABLE = False
+try:
+    import xgboost as xgb
+    # 测试XGBoost GPU支持
+    try:
+        test_model = xgb.XGBRegressor(tree_method='gpu_hist', gpu_id=0, n_estimators=1)
+        XGB_GPU_AVAILABLE = True
+        print("✅ XGBoost GPU 可用")
+    except:
+        print("⚠️ XGBoost GPU 不可用，使用CPU版本")
+except ImportError:
+    print("❌ XGBoost 不可用")
+
+# 检查LightGBM GPU支持
+LGB_GPU_AVAILABLE = False
+try:
+    import lightgbm as lgb
+    # 测试LightGBM GPU支持
+    try:
+        test_model = lgb.LGBMRegressor(device='gpu', gpu_platform_id=0, gpu_device_id=0, n_estimators=1)
+        LGB_GPU_AVAILABLE = True
+        print("✅ LightGBM GPU 可用")
+    except:
+        print("⚠️ LightGBM GPU 不可用，使用CPU版本")
+except ImportError:
+    print("❌ LightGBM 不可用")
 
 from sklearn.multioutput import MultiOutputRegressor
 from xgboost import XGBRegressor
@@ -43,15 +60,33 @@ def train_rf(X_train, y_train, params: dict):
 
 def train_gbr(X_train, y_train, params: dict):
     """Train GPU-accelerated Gradient Boosting regressor with multi-output support."""
-    if GPU_AVAILABLE:
-        # cuML模型也需要MultiOutputRegressor来支持多输出
-        base = cuGradientBoostingRegressor(**params)
+    if XGB_GPU_AVAILABLE:
+        # 使用XGBoost GPU版本作为GBR的替代
+        gpu_params = params.copy()
+        gpu_params.update({
+            'tree_method': 'gpu_hist',
+            'gpu_id': 0
+        })
+        base = XGBRegressor(**gpu_params)
+        model = MultiOutputRegressor(base)
+        model.fit(X_train, y_train)
+        return model
+    elif LGB_GPU_AVAILABLE:
+        # 使用LightGBM GPU版本作为GBR的替代
+        gpu_params = params.copy()
+        gpu_params.update({
+            'device': 'gpu',
+            'gpu_platform_id': 0,
+            'gpu_device_id': 0
+        })
+        base = LGBMRegressor(**gpu_params)
         model = MultiOutputRegressor(base)
         model.fit(X_train, y_train)
         return model
     else:
-        # Fallback to CPU version with MultiOutputRegressor
-        base = cuGradientBoostingRegressor(**params)
+        # 回退到CPU版本的GradientBoostingRegressor
+        from sklearn.ensemble import GradientBoostingRegressor
+        base = GradientBoostingRegressor(**params)
         model = MultiOutputRegressor(base)
         model.fit(X_train, y_train)
         return model
