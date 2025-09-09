@@ -1,0 +1,13 @@
+{
+    "remote.SSH.configFile": "~/.ssh/config",
+    "remote.SSH.defaultExtensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-python.pylint"
+    ],
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "jupyter.jupyterServerType": "local",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic"
+}

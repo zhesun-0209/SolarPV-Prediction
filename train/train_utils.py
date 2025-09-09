@@ -5,8 +5,6 @@ Helper utilities for training and evaluation:
   - Optimizer and scheduler creation
   - Early stopping
   - Model parameter counting
-  - Dynamic hour-wise weight computation for meta-weighted loss
-  - Plotting dynamic hour-wise weights per epoch
 """
 import torch
 from typing import Dict, List, Optional
@@ -14,8 +12,7 @@ from typing import Dict, List, Optional
 
 def get_optimizer(
     model: torch.nn.Module,
-    lr: float,
-    weight_decay: float
+    lr: float
 ) -> torch.optim.Optimizer:
     """
     Create an Adam optimizer for the given model.
@@ -23,9 +20,8 @@ def get_optimizer(
     Args:
         model: PyTorch model
         lr: learning rate
-        weight_decay: L2 regularization weight
     """
-    return torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    return torch.optim.Adam(model.parameters(), lr=lr)
 
 
 def get_scheduler(
@@ -98,100 +94,13 @@ def count_parameters(model: torch.nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def compute_dynamic_hour_weights(
-    hour_errors: Dict[int, List[float]],
-    alpha: float = 3.0,
-    threshold: float = 0.005,
-    save_dir: Optional[str] = None,
-    epoch: Optional[int] = None
-) -> torch.Tensor:
-    """
-    Compute dynamic hour-wise weights based on validation errors.
 
-    Steps:
-      1. Compute mean absolute error per hour (0–23).
-      2. Zero out entries below `threshold`.
-      3. Normalize non-zero values to mean=1.
-      4. Scale by `alpha`.
-      5. Optionally plot weights for the epoch.
-
-    Args:
-        hour_errors: mapping from hour to list of error values
-        alpha: scaling factor for weight magnitudes
-        threshold: errors below this are ignored
-        save_dir: root directory to save plots (if provided)
-        epoch: epoch number for naming plot file
-
-    Returns:
-        A Tensor of shape (24,) containing the weight for each hour.
-    """
-    hour_avg = torch.tensor([
-        torch.tensor(hour_errors.get(h, [])).float().mean()
-        if hour_errors.get(h) else 0.0
-        for h in range(24)
-    ])
-    hour_avg = torch.where(hour_avg < threshold, torch.zeros_like(hour_avg), hour_avg)
-    nonzero = hour_avg[hour_avg > 0]
-    if nonzero.numel() > 0:
-        hour_avg = hour_avg / nonzero.mean()
-    else:
-        hour_avg = torch.ones(24)
-    weights = hour_avg * alpha
-    # Optional plotting
-    if save_dir and epoch is not None:
-        plot_hour_weights(weights, save_dir, epoch)
-    return weights
-
-
-def plot_hour_weights(
-    weights: torch.Tensor,
-    save_dir: str,
-    epoch: int
-) -> None:
-    """
-    Plot and save dynamic hour-wise weight bar chart for a given epoch.
-
-    Args:
-        weights: Tensor of shape (24,) with hour weights.
-        save_dir: root directory where 'hour_weights/' subfolder will be created
-        epoch: epoch number for filename
-    """
-    import matplotlib.pyplot as plt
-    import os
-
-    out_dir = os.path.join(save_dir, 'hour_weights')
-    os.makedirs(out_dir, exist_ok=True)
-    save_path = os.path.join(out_dir, f'epoch_{epoch:03d}.png')
-
-    hours = list(range(24))
-    plt.figure(figsize=(8, 3))
-    plt.bar(hours, weights.cpu().numpy())
-    plt.xticks(hours)
-    plt.xlabel("Hour of Day")
-    plt.ylabel("Weight")
-    plt.title(f"Dynamic Hour Weights - Epoch {epoch}")
-    plt.grid(True, linestyle='--', alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(save_path)
-    plt.close()
-
-def get_loss_function(
-    loss_type: str,
-    hour_tensor: Optional[torch.Tensor] = None,
-    hour_weights: Optional[torch.Tensor] = None,
-    peak_start: int = 10,
-    peak_end: int = 14,
-    alpha: float = 3.0
-):
+def get_loss_function(loss_type: str):
     """
     Return a loss function according to the selected type.
 
     Args:
-        loss_type: 'mse', 'weighted_mse', or 'dynamic_weighted_mse'
-        hour_tensor: hour index tensor for per-sample supervision (required for dynamic/weighted)
-        hour_weights: dynamic weight tensor of shape [24] for dynamic_weighted_mse
-        peak_start, peak_end: peak hour window for weighted_mse
-        alpha: additional weight multiplier during peak hours
+        loss_type: 'mse'
 
     Returns:
         A callable loss function
@@ -200,20 +109,5 @@ def get_loss_function(
 
     if loss_type == "mse":
         return lambda preds, target: mse_fn(preds, target)
-
-    elif loss_type == "weighted_mse":
-        def weighted_mse(preds, target, hrs):
-            peak_mask = ((hrs >= peak_start) & (hrs <= peak_end)).float()
-            weights = 1.0 + alpha * peak_mask
-            return torch.mean(weights * (preds - target) ** 2)
-        return weighted_mse
-
-    elif loss_type == "dynamic_weighted_mse":
-        if hour_weights is None:
-            raise ValueError("Dynamic weighted MSE requires hour_weights to be provided.")
-        def dynamic_weighted_mse(preds, target, hrs):
-            return torch.mean(hour_weights[hrs] * (preds - target) ** 2)
-        return dynamic_weighted_mse
-
     else:
         raise ValueError(f"Unknown loss_type: {loss_type}")

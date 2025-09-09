@@ -23,6 +23,7 @@ class TCNModel(nn.Module):
 
         # Forecast feature projection if enabled
         if self.use_fcst and fcst_dim > 0:
+            # 简化的预测特征处理，与ML模型保持一致
             self.fcst_proj = nn.Linear(fcst_dim * future_hours, channels[-1])
         else:
             self.fcst_proj = None
@@ -43,10 +44,11 @@ class TCNModel(nn.Module):
             last = None
 
         if self.use_fcst and fcst is not None and self.fcst_proj is not None:
+            # 简化的预测特征处理，与ML模型保持一致
             f_flat = fcst.reshape(fcst.size(0), -1)
             f_proj = self.fcst_proj(f_flat)
             if last is not None:
-                last = last + f_proj
+                last = last + f_proj  # 简单相加融合
             else:
                 last = f_proj
 

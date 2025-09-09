@@ -21,6 +21,9 @@ def train_ml_model(
     """
 
     def flatten(Xh, Xf):
+        """
+        简单的特征展平，保持DL和ML模型特征一致性
+        """
         h = Xh.reshape(Xh.shape[0], -1)
         if Xf is not None:
             f = Xf.reshape(Xf.shape[0], -1)
@@ -50,6 +53,10 @@ def train_ml_model(
         params['n_estimators'] = int(params['n_estimators'])
     if 'max_depth' in params and params['max_depth'] is not None:
         params['max_depth'] = int(params['max_depth'])
+    if 'random_state' in params:
+        params['random_state'] = int(params['random_state'])
+    if 'verbosity' in params:
+        params['verbosity'] = int(params['verbosity'])
 
     if name == 'RF':
         trainer = train_rf
@@ -66,7 +73,10 @@ def train_ml_model(
     model = trainer(X_train_flat, y_train_flat, params)
     train_time = time.time() - start_time
 
+    # Measure inference time
+    inference_start = time.time()
     preds_flat = model.predict(X_test_flat)
+    inference_time = time.time() - inference_start
     train_preds_flat = model.predict(X_train_flat)
 
     if scaler_target is not None:
@@ -92,9 +102,13 @@ def train_ml_model(
     norm_mae  = mean_absolute_error(y_norm, preds_norm)
 
     save_dir  = config['save_dir']
-    model_dir = os.path.join(save_dir, name)
-    os.makedirs(model_dir, exist_ok=True)
-    joblib.dump(model, os.path.join(model_dir, 'best_model.pkl'))
+    
+    # 根据配置决定是否保存模型
+    save_options = config.get('save_options', {})
+    if save_options.get('save_model', False):
+        model_dir = os.path.join(save_dir, name)
+        os.makedirs(model_dir, exist_ok=True)
+        joblib.dump(model, os.path.join(model_dir, 'best_model.pkl'))
 
     metrics = {
         'test_loss':      mse,
@@ -104,6 +118,7 @@ def train_ml_model(
         'norm_rmse':      norm_rmse,
         'norm_mae':       norm_mae,
         'train_time_sec': round(train_time, 2),
+        'inference_time_sec': round(inference_time, 2),
         'param_count':    X_train_flat.shape[1],
         'predictions':    p_matrix,
         'y_true':         y_matrix,

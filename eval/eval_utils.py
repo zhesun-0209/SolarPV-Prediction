@@ -63,54 +63,75 @@ def save_results(
     else:
         norm_mse = norm_rmse = norm_mae = np.nan
 
+    # 获取保存选项
+    save_options = config.get('save_options', {})
+    
     # ===== 1. Save summary.csv =====
-    summary = {
-        'model':           config['model'],
-        'use_hist_weather':     config.get('use_hist_weather', True),
-        'past_hours':      config['past_hours'],
-        'future_hours':    config['future_hours'],
-        'test_loss':       metrics.get('test_loss'),
-        'train_time_sec':  metrics.get('train_time_sec'),
-        'param_count':     metrics.get('param_count'),
-        'rmse':            metrics.get('rmse', np.nan),
-        'mae':             metrics.get('mae', np.nan),
-        'norm_test_loss':  norm_mse,
-        'norm_rmse':       norm_rmse,
-        'norm_mae':        norm_mae,
-    }
-    pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
+    if save_options.get('save_summary', True):
+        # 使用原始尺度（kWh）作为主要评估指标
+        summary = {
+            'model':           config['model'],
+            'use_hist_weather':     config.get('use_hist_weather', True),
+            'use_forecast':    config.get('use_forecast', False),
+            'past_hours':      config['past_hours'],
+            'future_hours':    config['future_hours'],
+            'test_loss':       metrics.get('test_loss'),  # 原始尺度MSE (kWh²)
+            'train_time_sec':  metrics.get('train_time_sec'),
+            'inference_time_sec': metrics.get('inference_time_sec', np.nan),
+            'param_count':     metrics.get('param_count'),
+            'rmse':            metrics.get('rmse', np.nan),  # 原始尺度RMSE (kWh)
+            'mae':             metrics.get('mae', np.nan),   # 原始尺度MAE (kWh)
+            'norm_test_loss':  norm_mse,   # 标准化尺度MSE (0-1)
+            'norm_rmse':       norm_rmse,  # 标准化尺度RMSE (0-1)
+            'norm_mae':        norm_mae,   # 标准化尺度MAE (0-1)
+        }
+        pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
 
     # ===== 2. Save predictions.csv =====
-    hrs = metrics.get('hours')
-    dates_list = metrics.get('dates', dates)
-    records = []
-    n_samples, horizon = preds.shape
-    for i in range(n_samples):
-        start = pd.to_datetime(dates_list[i]) - pd.Timedelta(hours=horizon - 1)
-        for h in range(horizon):
-            dt = start + pd.Timedelta(hours=h)
-            records.append({
-                'window_index':      i,
-                'forecast_datetime': dt,
-                'hour':              int(hrs[i, h]) if hrs is not None else dt.hour,
-                'y_true':            float(yts[i, h]),
-                'y_pred':            float(preds[i, h])
-            })
-    pd.DataFrame(records).to_csv(os.path.join(save_dir, "predictions.csv"), index=False)
+    if save_options.get('save_predictions', True):
+        hrs = metrics.get('hours')
+        dates_list = metrics.get('dates', dates)
+        records = []
+        n_samples, horizon = preds.shape
+        
+        # Handle case where hours information is not available
+        if hrs is None:
+            # Generate default hour sequence if not provided
+            hrs = np.tile(np.arange(horizon), (n_samples, 1))
+        
+        for i in range(n_samples):
+            start = pd.to_datetime(dates_list[i]) - pd.Timedelta(hours=horizon - 1)
+            for h in range(horizon):
+                dt = start + pd.Timedelta(hours=h)
+                records.append({
+                    'window_index':      i,
+                    'forecast_datetime': dt,
+                    'hour':              int(hrs[i, h]) if hrs is not None else dt.hour,
+                    'y_true':            float(yts[i, h]),
+                    'y_pred':            float(preds[i, h])
+                })
+        pd.DataFrame(records).to_csv(os.path.join(save_dir, "predictions.csv"), index=False)
 
     # ===== 3. Save training log (only if DL) =====
     is_dl = config['model'] in DL_MODELS
-    if is_dl and 'epoch_logs' in metrics:
+    if is_dl and 'epoch_logs' in metrics and save_options.get('save_training_log', True):
         pd.DataFrame(metrics['epoch_logs']).to_csv(
             os.path.join(save_dir, "training_log.csv"), index=False
         )
 
     # ===== 4. Save plots =====
     days = config.get('plot_days', None)
-    plot_forecast(dates_list, yts, preds, save_dir, model_name=config['model'], days=days)
+    
+    # 保存预测对比图
+    if save_options.get('save_forecast_plot', False):
+        plot_forecast(dates_list, yts, preds, save_dir, model_name=config['model'], days=days)
 
-    if is_dl and 'epoch_logs' in metrics:
+    # 保存训练曲线图
+    if is_dl and 'epoch_logs' in metrics and save_options.get('save_training_curve', True):
         plot_training_curve(metrics['epoch_logs'], save_dir, model_name=config['model'])
+    
+    # 保存验证损失图
+    if is_dl and 'epoch_logs' in metrics and save_options.get('save_val_loss_plot', False):
         plot_val_loss_over_time(metrics['epoch_logs'], save_dir, model_name=config['model'])
 
 

@@ -1,183 +1,82 @@
-# Solar Power Forecasting Pipeline
+# SolarPV-Prediction
 
-A unified, end-to-end framework to train, evaluate, and compare multiple machine learning (ML) and deep learning (DL) models for photovoltaic (PV) power forecasting.
+基于机器学习和深度学习的太阳能发电预测系统，支持多种模型架构和特征组合的消融实验。
 
-**Supported models:**  
-- **Deep Learning:** 
-  - Transformer
-  - LSTM
-  - GRU
-  - TCN  
-- **Machine Learning:** 
-  - Random Forest (RF)
-  - Gradient Boosting (GBR)
-  - XGBoost (XGB)
-  - LightGBM (LGBM)
+## 🚀 快速开始
 
----
+### 安装依赖
+```bash
+pip install -r requirements.txt
+```
 
-## 📁 Project Structure  
-    .
-    ├── config/
-    │   └── default.yaml            # Default configuration file
-    ├── data/
-    │   └── data_utils.py           # Loading, preprocessing & windowing
-    ├── eval/
-    │   ├── eval_utils.py           # Save results & aggregate metrics
-    │   └── plot_utils.py           # Forecast & training-curve plotting
-    ├── models/
-    │   ├── transformer.py          # Transformer architecture
-    │   ├── rnn_models.py           # LSTM & GRU definitions
-    │   ├── tcn.py                  # Temporal Convolutional Network
-    │   └── ml_models.py            # RF/GBR/XGB/LGBM training wrappers
-    ├── train/
-    │   ├── train_utils.py          # Optimizer, scheduler, earlystop, weights
-    │   ├── train_dl.py             # DL training & meta-weight loop
-    │   └── train_ml.py             # ML training & single-epoch logging
-    ├── main.py                     # Orchestrates config → data → train → eval
-    ├── requirements.txt            # Python package dependencies
-    └── README.md                   # This file
+### 运行预测
+```bash
+python main.py --config config/default.yaml
+```
 
-## 🚀 Installation  
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/your-org/solar-forecasting.git  
-   cd solar-forecasting
-   ``` 
+### 消融实验
+```bash
+# 模型对比
+python main.py --config config/default.yaml --model Transformer --use_hist_weather true --use_forecast true
 
-2. **Create & activate a virtual environment**  
-   ```bash
-   python3 -m venv venv  
-   source venv/bin/activate
-   ``` 
+# 特征消融
+python main.py --config config/default.yaml --model Transformer --use_hist_weather false --use_forecast true
 
-3. **Install dependencies** 
-   ```bash
-   pip install -r requirements.txt
-   ```  
+# 时间窗口测试
+python main.py --config config/default.yaml --model Transformer --past_days 7
 
-4. **Verify installations**
-   ```bash
-   python -c "import torch, sklearn, xgboost, lightgbm, yaml, pandas; print('OK')"
-   ```
+# 复杂度测试
+python main.py --config config/default.yaml --model Transformer --model_complexity high
+```
 
-## ⚙️ Configuration  
-All pipeline settings live in `config/default.yaml`. Adjust as needed:
+## 📊 支持的模型
 
-    # Paths
-    data_path:      '/path/to/data.csv'
-    save_dir:       '/path/to/outputs'
+### 深度学习模型
+- **Transformer**: 编码器-解码器结构，支持交叉注意力
+- **LSTM**: 长短期记忆网络
+- **GRU**: 门控循环单元
+- **TCN**: 时序卷积网络
 
-    # Model & Ablation
-    model:          'Transformer'      # Transformer, LSTM, GRU, TCN, RF, GBR, XGB, LGBM
-    past_hours:     72
-    future_hours:   24
-    use_feature:    true               # include exogenous features
-    use_time:       true               # include time encodings
-    use_forecast:   true               # include weather forecasts
-    use_stats:      true               # include statistical features
-    use_meta:       true               # enable dynamic meta-weight
+### 机器学习模型
+- **Random Forest**: 随机森林
+- **Gradient Boosting**: 梯度提升
+- **XGBoost**: 极端梯度提升
+- **LightGBM**: 轻量级梯度提升
 
-    # Data splits
-    train_ratio:    0.8
-    val_ratio:      0.1
+## ⚙️ 配置选项
 
-    # Plotting options
-    plot_days:      7
+### 特征配置
+- `use_hist_weather`: 历史天气特征 (true/false)
+- `use_forecast`: 预测天气特征 (true/false)
+- **时间编码特征始终包含**
 
-    # Model-specific parameters
-    model_params:
-      # Deep Learning
-      d_model:       64
-      n_heads:       4
-      n_layers:      4
-      hidden_dim:    64
-      dropout:       0.1
-      tcn_channels:  [64, 64]
-      kernel_size:   3
+### 时间窗口
+- `past_days`: 历史天数 (1, 3, 7)
+- `future_hours`: 预测小时数 (默认24)
 
-      # Machine Learning
-      n_estimators:  100
-      max_depth:     null
-      learning_rate: 0.1
-      random_state:  42
+### 模型复杂度
+- `model_complexity`: 复杂度级别 (low, medium, high)
 
-    # Training parameters
-    train_params:
-      batch_size:           32
-      epochs:               50
-      learning_rate:        1e-3
-      weight_decay:         1e-4
-      early_stop_patience:  10
-      loss_type:            'mse'
-      future_hours:         24
+## 📈 评估指标
 
-Tip: No code changes required—simply update this file and re-run.
-## 🔄 Usage  
-Run the entire pipeline:
+- **MSE**: 均方误差 (kWh²)
+- **RMSE**: 均方根误差 (kWh)
+- **MAE**: 平均绝对误差 (kWh)
+- **训练时间**: 模型训练耗时
+- **推理时间**: 模型推理耗时
 
-    python main.py --config config/default.yaml
+## 💾 结果保存
 
-This will:
-- Load & preprocess data
-- Construct chronological sliding windows
-- Split data into train/validation/test
-- Train the specified model
-- Save outputs in `<save_dir>/<model>/`:
-    - `summary.csv` (aggregated metrics)
-    - `predictions.csv` (hourly true vs. predicted)
-    - `training_log.csv` (epoch losses)
-    - Model weights (`best_model.pth` or `best_model.pkl`)
-    - Forecast plot (`forecast_{plot_days}d.png`)
-    - Training curve (`training_curve.png`)
-    - Meta-weight evolution charts (`hour_weights/*.png`)
+结果保存在 `outputs/` 目录下，包含：
+- `summary.csv`: 评估指标总结
+- `predictions.csv`: 预测结果详情
+- `training_log.csv`: 训练日志 (仅DL模型)
+- `training_curve.png`: 训练曲线 (仅DL模型)
 
-## 📂 Data Requirements  
-Your input CSV must include:
-- Datetime fields
-  - Year
-  - Month
-  - Day
-  - Hour
-- Historical features:
-    - apparent_temperature_min [degF]
-    - relative_humidity_min [percent]
-    - wind_speed_prop_avg [mile/hr]
-    - solar_insolation_total [MJ/m^2]
-- Forecast features: 
-  - temperature_2m
-  - relative_humidity_2m
-  - wind_speed_10m
-  - direct_radiation
-- Statistical features
-  - mean_hour_stat
-  - var_hour_stat
-- Target:
-  - Electricity Generated
+## 📚 详细文档
 
-🔧 Module Overview  
-- `data/data_utils.py`: Data loading, feature selection/scaling, sliding-window creation, chronological split.  
-- `train/train_utils.py`: Optimizer/scheduler creation, early stopping, dynamic weight computation & plotting.  
-- `train/train_dl.py`: Deep learning training loop with optional meta-weight; saves `best_model.pth`.  
-- `train/train_ml.py`: Traditional ML training (RF/GBR/XGB/LGBM); saves `best_model.pkl`.  
-- `eval/eval_utils.py`: Writes `summary.csv`, `predictions.csv`, `training_log.csv`; calls plotting functions.  
-- `eval/plot_utils.py`: Generates continuous forecast vs. true plots and training curves.
+更多详细信息请参考 [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md)
 
-## 📊 Outputs  
-After running, inspect `<save_dir>/<Model>/`:
+## 📄 许可证
 
-    summary.csv
-    predictions.csv
-    training_log.csv
-    best_model.pth   # or best_model.pkl
-    forecast_{plot_days}d.png
-    training_curve.png
-    hour_weights/    # if use_meta=True
-
-## 🛠️ Extending  
-- **Add new model:** implement under `models/` and register in `train_dl.py` or `train_ml.py`.  
-- **New features:** update `BASE_*_FEATURES` in `data/data_utils.py`.  
-- **Alternate loss:** configure via `train_params.loss_type` or modify in `train/train_dl.py`.
-
-## 📜 License  
-MIT License  
+MIT License

@@ -14,6 +14,7 @@ class RNNBase(nn.Module):
         self.hist_proj = nn.Linear(hist_dim, hidden) if hist_dim > 0 else None
         self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None
 
+        # 简化的RNN架构，与ML模型保持一致
         if rnn_type == 'LSTM':
             self.rnn = nn.LSTM(hidden, hidden, num_layers=layers,
                                batch_first=True, dropout=config['dropout'])

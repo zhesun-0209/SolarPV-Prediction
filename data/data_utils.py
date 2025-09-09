@@ -4,19 +4,41 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
+# 基于相关性分析结果选择的天气特征
+# 历史特征：从相关性分析中选择的天气特征
 BASE_HIST_FEATURES = [
-    'apparent_temperature_min [degF]',
-    'relative_humidity_min [percent]',
-    'wind_speed_prop_avg [mile/hr]',
-    'solar_insolation_total [MJ/m^2]',
-    'Month_cos', 'Hour_sin', 'Hour_cos',
+    'global_tilted_irradiance',    # 全球倾斜辐射
+    'relative_humidity_2m',        # 相对湿度
+    'temperature_2m',              # 温度
+    'wind_gusts_10m',             # 10米阵风
+    'cloud_cover_low',            # 低云覆盖
+    'wind_speed_100m',            # 100米风速
+    'snow_depth',                 # 雪深
+    'dew_point_2m',               # 露点温度
+    'surface_pressure',           # 表面气压
+    'precipitation',              # 降水
 ]
-BASE_STAT_FEATURES = ['mean_hour_stat', 'var_hour_stat']
+
+# 预测特征：使用相同的天气特征作为预测输入
 BASE_FCST_FEATURES = [
-    'temperature_2m', 'relative_humidity_2m',
-    'wind_speed_10m', 'direct_radiation'
+    'global_tilted_irradiance',    # 全球倾斜辐射
+    'relative_humidity_2m',        # 相对湿度
+    'temperature_2m',              # 温度
+    'wind_gusts_10m',             # 10米阵风
+    'cloud_cover_low',            # 低云覆盖
+    'wind_speed_100m',            # 100米风速
+    'snow_depth',                 # 雪深
+    'dew_point_2m',               # 露点温度
+    'surface_pressure',           # 表面气压
+    'precipitation',              # 降水
 ]
+
+# 时间编码特征
+TIME_FEATURES = ['month_cos', 'month_sin', 'hour_cos', 'hour_sin']
+
 TARGET_COL = 'Electricity Generated'
+
+# 统计特征函数已移除
 
 def load_raw_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
@@ -68,65 +90,116 @@ def load_raw_data(path: str) -> pd.DataFrame:
 def preprocess_features(df: pd.DataFrame, config: dict):
     df_clean = df.dropna(subset=[TARGET_COL]).copy()
 
-    df_clean['past_generation'] = df_clean[TARGET_COL]
+    # 添加时间编码特征（始终包含）
+    df_clean['month_cos'] = np.cos(2 * np.pi * df_clean['Month'] / 12)
+    df_clean['month_sin'] = np.sin(2 * np.pi * df_clean['Month'] / 12)
+    df_clean['hour_cos'] = np.cos(2 * np.pi * df_clean['Hour'] / 24)
+    df_clean['hour_sin'] = np.sin(2 * np.pi * df_clean['Hour'] / 24)
 
-    hist_feats = ['past_generation']  
+    # 构建特征列表
+    hist_feats = []
     fcst_feats = []
 
+    # 历史天气特征
     if config.get('use_hist_weather', False):
         hist_feats += BASE_HIST_FEATURES
-    if config.get('use_time', False):
-        for col in ('Month_cos', 'Hour_sin', 'Hour_cos'):
-            if col not in hist_feats:
-                hist_feats.append(col)
-    if config.get('use_stats', False):
-        hist_feats += BASE_STAT_FEATURES
+
+    # 时间编码特征（始终包含）
+    hist_feats += TIME_FEATURES
+
+    # 预测特征
     if config.get('use_forecast', False):
         fcst_feats += BASE_FCST_FEATURES
 
-    # Drop rows with missing required features
-    na_check_feats = hist_feats + fcst_feats + [TARGET_COL]
+    # 确保所有特征都存在
+    available_hist_feats = [f for f in hist_feats if f in df_clean.columns]
+    available_fcst_feats = [f for f in fcst_feats if f in df_clean.columns]
+
+    # 删除缺失值
+    na_check_feats = available_hist_feats + available_fcst_feats + [TARGET_COL]
     df_clean = df_clean.dropna(subset=na_check_feats).reset_index(drop=True)
 
-    # Normalize input features
+    # 标准化特征
     scaler_hist = MinMaxScaler()
-    df_clean[hist_feats] = scaler_hist.fit_transform(df_clean[hist_feats])
+    if available_hist_feats:
+        df_clean[available_hist_feats] = scaler_hist.fit_transform(df_clean[available_hist_feats])
 
-    # Normalize target only once (✅ no overwrite)
+    scaler_fcst = MinMaxScaler()
+    if available_fcst_feats:
+        df_clean[available_fcst_feats] = scaler_fcst.fit_transform(df_clean[available_fcst_feats])
+
+    # 标准化目标变量
     scaler_target = MinMaxScaler()
     df_clean[[TARGET_COL]] = scaler_target.fit_transform(df_clean[[TARGET_COL]])
 
-    scaler_fcst = None
-    if fcst_feats:
-        scaler_fcst = MinMaxScaler()
-        df_clean[fcst_feats] = scaler_fcst.fit_transform(df_clean[fcst_feats])
-    else:
-        scaler_fcst = None
-
     df_clean = df_clean.sort_values('Datetime').reset_index(drop=True)
 
-    return df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target
+    return df_clean, available_hist_feats, available_fcst_feats, scaler_hist, scaler_fcst, scaler_target
 
 def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats):
-    X_hist, X_fcst, y, hours, dates = [], [], [], [], []
+    """
+    创建滑动窗口样本，允许时间不连续
+    每个样本包含：前n天历史数据 + 预测当天的预测数据
+    """
+    X_hist, y, hours, dates = [], [], [], []
+    X_fcst = [] if fcst_feats else None  # 只有在需要预测特征时才初始化
     n = len(df)
-
-    for start in range(0, n - past_hours - future_hours + 1, future_hours):
-        h_end = start + past_hours
-        f_end = h_end + future_hours
-
-        hist_win = df.iloc[start:h_end]
-        fut_win = df.iloc[h_end:f_end]
-
+    
+    # 按天分组，每天24小时
+    df['Date'] = df['Datetime'].dt.date
+    daily_groups = df.groupby('Date')
+    daily_dates = list(daily_groups.groups.keys())
+    
+    # 确保有足够的历史天数
+    min_days = past_hours // 24 + 1  # 至少需要这么多天
+    if len(daily_dates) < min_days + 1:  # +1 for prediction day
+        raise ValueError(f"数据不足：需要至少{min_days + 1}天的数据")
+    
+    # 为每个预测日创建样本
+    for pred_date_idx in range(min_days, len(daily_dates)):
+        pred_date = daily_dates[pred_date_idx]
+        pred_day_data = daily_groups.get_group(pred_date)
+        
+        # 收集历史数据（前n天）
+        hist_data = []
+        for hist_date_idx in range(max(0, pred_date_idx - min_days), pred_date_idx):
+            hist_date = daily_dates[hist_date_idx]
+            hist_day_data = daily_groups.get_group(hist_date)
+            hist_data.append(hist_day_data)
+        
+        if len(hist_data) == 0:
+            continue
+            
+        # 合并历史数据
+        hist_combined = pd.concat(hist_data, ignore_index=True)
+        
+        # 如果历史数据不足past_hours，跳过
+        if len(hist_combined) < past_hours:
+            continue
+            
+        # 取最后past_hours小时的历史数据
+        hist_win = hist_combined.tail(past_hours)
+        
+        # 预测数据（预测当天的数据）
+        fut_win = pred_day_data.head(future_hours)
+        
+        if len(fut_win) < future_hours:
+            continue
+        
+        # 构建样本
         X_hist.append(hist_win[hist_feats].values)
-
+        
         if fcst_feats:
+            # 预测天气：使用预测当天的天气数据
             X_fcst.append(fut_win[fcst_feats].values)
-
+        
         y.append(fut_win[TARGET_COL].values)
         hours.append(fut_win['Hour'].values)
         dates.append(fut_win['Datetime'].iloc[-1])
-
+    
+    if len(X_hist) == 0:
+        raise ValueError("无法创建任何有效样本")
+    
     X_hist = np.stack(X_hist)
     y = np.stack(y)
     hours = np.stack(hours)
@@ -135,84 +208,42 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats)
     return X_hist, X_fcst, y, hours, dates
 
 def split_data(X_hist, X_fcst, y, hours, dates, train_ratio=0.8, val_ratio=0.1):
+    """
+    分割数据为训练集、验证集和测试集
+    由于样本已经是非连续的时间窗口，可以直接按比例分割
+    每个样本都是独立的预测日，不存在数据泄漏问题
+    """
     N = X_hist.shape[0]
     i_tr = int(N * train_ratio)
     i_val = int(N * (train_ratio + val_ratio))
-    slice_ = lambda arr: (arr[:i_tr], arr[i_tr:i_val], arr[i_val:])
+    
+    # 定义切片函数
+    def slice_array(arr):
+        if isinstance(arr, np.ndarray):
+            return arr[:i_tr], arr[i_tr:i_val], arr[i_val:]
+        else:
+            # 处理列表类型
+            return arr[:i_tr], arr[i_tr:i_val], arr[i_val:]
 
-    Xh_tr, Xh_va, Xh_te = slice_(X_hist)
-    y_tr, y_va, y_te = slice_(y)
-    hrs_tr, hrs_va, hrs_te = slice_(hours)
-    dates_arr = np.array(dates)
-    dates_tr, dates_va, dates_te = slice_(dates_arr)
+    # 分割所有数组
+    Xh_tr, Xh_va, Xh_te = slice_array(X_hist)
+    y_tr, y_va, y_te = slice_array(y)
+    hrs_tr, hrs_va, hrs_te = slice_array(hours)
+    
+    # 处理日期列表
+    dates_tr = dates[:i_tr]
+    dates_va = dates[i_tr:i_val]
+    dates_te = dates[i_val:]
 
+    # 处理预测特征
     if X_fcst is not None:
-        Xf_tr, Xf_va, Xf_te = slice_(X_fcst)
+        Xf_tr, Xf_va, Xf_te = slice_array(X_fcst)
     else:
         Xf_tr = Xf_va = Xf_te = None
 
     return (
-        Xh_tr, Xf_tr, y_tr, hrs_tr, list(dates_tr),
-        Xh_va, Xf_va, y_va, hrs_va, list(dates_va),
-        Xh_te, Xf_te, y_te, hrs_te, list(dates_te)
+        Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr,
+        Xh_va, Xf_va, y_va, hrs_va, dates_va,
+        Xh_te, Xf_te, y_te, hrs_te, dates_te
     )
 
-# ======== main.py ========
-
-    for pid in df["ProjectID"].unique():
-        df_proj_raw = df[df["ProjectID"] == pid]
-        if df_proj_raw.empty:
-            print(f"[WARN] Project {pid} has no data, skipping")
-            continue
-
-        df_proj, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target = \
-            preprocess_features(df_proj_raw, config)
-
-        Xh, Xf, y, hrs, dates = create_sliding_windows(
-            df_proj,
-            past_hours=config["past_hours"],
-            future_hours=config["future_hours"],
-            hist_feats=hist_feats,
-            fcst_feats=fcst_feats
-        )
-
-        splits = split_data(Xh, Xf, y, hrs, dates,
-                            train_ratio=config["train_ratio"],
-                            val_ratio=config["val_ratio"])
-
-        Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
-        Xh_va, Xf_va, y_va, hrs_va, dates_va, \
-        Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
-
-        proj_dir = os.path.join(
-            config["save_dir"], f"Project_{pid}", alg_type,
-            config["model"].lower(), flag_tag
-        )
-        os.makedirs(proj_dir, exist_ok=True)
-
-        cfg = deepcopy(config)
-        cfg["save_dir"] = proj_dir
-
-        # Train
-        start = time.time()
-        if is_dl:
-            model, metrics = train_dl_model(
-                cfg,
-                (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr),
-                (Xh_va, Xf_va, y_va, hrs_va, dates_va),
-                (Xh_te, Xf_te, y_te, hrs_te, dates_te),
-                (scaler_hist, scaler_fcst, scaler_target)
-            )
-        else:
-            model, metrics = train_ml_model(
-                cfg, Xh_tr, Xf_tr, y_tr,
-                Xh_te, Xf_te, y_te,
-                scaler_target
-            )
-        metrics["train_time_sec"] = round(time.time() - start, 2)
-
-        cfg["scaler_target"] = scaler_target
-        save_results(
-            model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg
-        )
-        print(f"[INFO] Project {pid} | {cfg['model']} done, test_loss={metrics['test_loss']:.4f}")

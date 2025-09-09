@@ -41,13 +41,12 @@ def main():
 
     # === Ablation settings ===
     parser.add_argument("--model", type=str)
+    parser.add_argument("--past_days", type=int, choices=[1, 3, 7])
     parser.add_argument("--past_hours", type=int)
     parser.add_argument("--future_hours", type=int)
     parser.add_argument("--use_hist_weather", type=str, choices=["true", "false"])
-    parser.add_argument("--use_time", type=str, choices=["true", "false"])
     parser.add_argument("--use_forecast", type=str, choices=["true", "false"])
-    parser.add_argument("--use_stats", type=str, choices=["true", "false"])
-    parser.add_argument("--use_meta", type=str, choices=["true", "false"])
+    parser.add_argument("--model_complexity", type=str, choices=["low", "medium", "high"])
     parser.add_argument("--train_ratio", type=float)
     parser.add_argument("--val_ratio", type=float)
     parser.add_argument("--plot_days", type=int)
@@ -71,45 +70,74 @@ def main():
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--learning_rate", type=float)
-    parser.add_argument("--weight_decay", type=float)
     parser.add_argument("--early_stop_patience", type=int)
     parser.add_argument("--loss_type", type=str)
+    
+    # === Save options ===
+    parser.add_argument("--save_model", type=str, choices=["true", "false"])
+    parser.add_argument("--save_summary", type=str, choices=["true", "false"])
+    parser.add_argument("--save_predictions", type=str, choices=["true", "false"])
+    parser.add_argument("--save_training_log", type=str, choices=["true", "false"])
+    parser.add_argument("--save_forecast_plot", type=str, choices=["true", "false"])
+    parser.add_argument("--save_training_curve", type=str, choices=["true", "false"])
+    parser.add_argument("--save_val_loss_plot", type=str, choices=["true", "false"])
 
-    # === Dynamic hour-weighted loss arguments ===
-    parser.add_argument("--alpha", type=float)
-    parser.add_argument("--peak_start", type=int)
-    parser.add_argument("--peak_end", type=int)
-    parser.add_argument("--threshold", type=float)
 
     args = parser.parse_args()
 
     # === Load base config from YAML ===
+    if not os.path.exists(args.config):
+        raise FileNotFoundError(f"Configuration file not found: {args.config}")
+    
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
+    
+    # Validate required config keys
+    required_keys = ['data_path', 'save_dir', 'model', 'past_hours', 'future_hours']
+    for key in required_keys:
+        if key not in config:
+            raise ValueError(f"Missing required configuration key: {key}")
 
     # === Override general settings from CLI ===
     if args.data_path: config["data_path"] = args.data_path
     if args.save_dir: config["save_dir"] = args.save_dir
     if args.model: config["model"] = args.model
+    if args.past_days: config["past_days"] = args.past_days
     if args.past_hours: config["past_hours"] = args.past_hours
     if args.future_hours: config["future_hours"] = args.future_hours
     if args.use_hist_weather: config["use_hist_weather"] = str2bool(args.use_hist_weather)
-    if args.use_time: config["use_time"] = str2bool(args.use_time)
     if args.use_forecast: config["use_forecast"] = str2bool(args.use_forecast)
-    if args.use_stats: config["use_stats"] = str2bool(args.use_stats)
-    if args.use_meta: config["use_meta"] = str2bool(args.use_meta)
     if args.train_ratio: config["train_ratio"] = args.train_ratio
     if args.val_ratio: config["val_ratio"] = args.val_ratio
     if args.plot_days: config["plot_days"] = args.plot_days
+    if args.model_complexity: config["model_complexity"] = args.model_complexity
 
     # === Override model-specific parameters ===
-    mp = config.setdefault("model_params", {})
+    # 根据模型复杂度选择参数
+    complexity = config.get("model_complexity", "medium")
+    is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
+    
+    if is_dl:
+        # 深度学习模型参数
+        dl_params = config["model_params"].get(complexity, config["model_params"]["medium"])
+        config["model_params"] = dl_params
+    else:
+        # 机器学习模型参数
+        ml_params = config["model_params"].get(f"ml_{complexity}", config["model_params"]["ml_medium"])
+        config["model_params"] = ml_params
+    
+    # 仍然允许CLI覆盖
+    mp = config["model_params"]
     if args.d_model: mp["d_model"] = args.d_model
     if args.num_heads: mp["num_heads"] = args.num_heads
     if args.num_layers: mp["num_layers"] = args.num_layers
     if args.hidden_dim: mp["hidden_dim"] = args.hidden_dim
     if args.dropout: mp["dropout"] = args.dropout
-    if args.tcn_channels: mp["tcn_channels"] = eval(args.tcn_channels)
+    if args.tcn_channels: 
+        try:
+            mp["tcn_channels"] = [int(x.strip()) for x in args.tcn_channels.split(',')]
+        except ValueError:
+            raise ValueError("tcn_channels must be comma-separated integers")
     if args.kernel_size: mp["kernel_size"] = args.kernel_size
     if args.n_estimators: mp["n_estimators"] = args.n_estimators
     if args.max_depth is not None: mp["max_depth"] = args.max_depth
@@ -121,24 +149,42 @@ def main():
     if args.batch_size: tp["batch_size"] = args.batch_size
     if args.epochs: tp["epochs"] = args.epochs
     if args.learning_rate: tp["learning_rate"] = args.learning_rate
-    if args.weight_decay: tp["weight_decay"] = args.weight_decay
     if args.early_stop_patience: tp["early_stop_patience"] = args.early_stop_patience
     if args.loss_type: tp["loss_type"] = args.loss_type
-    if args.alpha: tp["alpha"] = args.alpha
-    if args.peak_start: tp["peak_start"] = args.peak_start
-    if args.peak_end: tp["peak_end"] = args.peak_end
-    if args.threshold: tp["threshold"] = args.threshold
+
+    # === Override save options ===
+    save_opts = config.setdefault("save_options", {})
+    if args.save_model: save_opts["save_model"] = str2bool(args.save_model)
+    if args.save_summary: save_opts["save_summary"] = str2bool(args.save_summary)
+    if args.save_predictions: save_opts["save_predictions"] = str2bool(args.save_predictions)
+    if args.save_training_log: save_opts["save_training_log"] = str2bool(args.save_training_log)
+    if args.save_forecast_plot: save_opts["save_forecast_plot"] = str2bool(args.save_forecast_plot)
+    if args.save_training_curve: save_opts["save_training_curve"] = str2bool(args.save_training_curve)
+    if args.save_val_loss_plot: save_opts["save_val_loss_plot"] = str2bool(args.save_val_loss_plot)
+
+    # === Calculate past_hours from past_days ===
+    if "past_days" in config:
+        config["past_hours"] = config["past_days"] * 24
 
     # === Load raw dataset once ===
-    df = load_raw_data(config["data_path"])
+    if not os.path.exists(config["data_path"]):
+        raise FileNotFoundError(f"Data file not found: {config['data_path']}")
+    
+    try:
+        df = load_raw_data(config["data_path"])
+        if df.empty:
+            raise ValueError("Loaded dataset is empty")
+        if 'ProjectID' not in df.columns:
+            raise ValueError("Dataset must contain 'ProjectID' column")
+    except Exception as e:
+        raise RuntimeError(f"Failed to load data: {str(e)}")
 
     # === Compose flag tag to name subfolders ===
     flag_tag = (
         f"feat{config['use_hist_weather']}_"
-        f"time{config['use_time']}_"
         f"fcst{config['use_forecast']}_"
-        f"stats{config['use_stats']}_"
-        f"meta{config['use_meta']}"
+        f"days{config.get('past_days', 3)}_"
+        f"comp{config.get('model_complexity', 'medium')}"
     )
 
     is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
@@ -186,23 +232,27 @@ def main():
 
         # Step 5: Train model
         start = time.time()
-        if is_dl:
-            model, metrics = train_dl_model(
-                cfg,
-                (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr),
-                (Xh_va, Xf_va, y_va, hrs_va, dates_va),
-                (Xh_te, Xf_te, y_te, hrs_te, dates_te),
-                (scaler_hist, scaler_fcst, scaler_target)
-            )
-        else:
-            model, metrics = train_ml_model(
-                cfg,
-                Xh_tr, Xf_tr, y_tr,
-                Xh_te, Xf_te, y_te,
-                dates_te,            
-                scaler_target
-            )
-        metrics["train_time_sec"] = round(time.time() - start, 2)
+        try:
+            if is_dl:
+                model, metrics = train_dl_model(
+                    cfg,
+                    (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr),
+                    (Xh_va, Xf_va, y_va, hrs_va, dates_va),
+                    (Xh_te, Xf_te, y_te, hrs_te, dates_te),
+                    (scaler_hist, scaler_fcst, scaler_target)
+                )
+            else:
+                model, metrics = train_ml_model(
+                    cfg,
+                    Xh_tr, Xf_tr, y_tr,
+                    Xh_te, Xf_te, y_te,
+                    dates_te,            
+                    scaler_target
+                )
+            metrics["train_time_sec"] = round(time.time() - start, 2)
+        except Exception as e:
+            print(f"[ERROR] Training failed for Project {pid}: {str(e)}")
+            continue
 
         # Step 6: Save metrics and plots
         cfg["scaler_target"] = scaler_target
