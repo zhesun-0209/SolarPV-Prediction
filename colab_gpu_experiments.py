@@ -73,11 +73,11 @@ def check_existing_results():
     print(f"📊 找到 {len(existing_experiments)} 个已完成实验")
     return existing_experiments
 
-def get_experiment_id(model, hist_weather, forecast, complexity):
+def get_experiment_id(model, hist_weather, forecast, complexity, past_days):
     """生成实验标识"""
-    return f"{model}_{hist_weather}_{forecast}_{complexity}"
+    return f"{model}_{hist_weather}_{forecast}_{complexity}_{past_days}"
 
-def run_experiment(model, hist_weather, forecast, complexity, description):
+def run_experiment(model, hist_weather, forecast, complexity, past_days, description):
     """运行单个实验"""
     print(f"\n🚀 {description}")
     print("-" * 60)
@@ -89,7 +89,7 @@ def run_experiment(model, hist_weather, forecast, complexity, description):
         '--use_hist_weather', hist_weather,
         '--use_forecast', forecast,
         '--model_complexity', complexity,
-        '--past_days', '3'
+        '--past_days', str(past_days)
     ]
     
     start_time = time.time()
@@ -123,11 +123,14 @@ def run_gpu_experiments():
     # 复杂度组合
     complexities = ['low', 'medium', 'high']
     
+    # 时间窗口组合
+    past_days_options = [1, 3, 7]
+    
     # 检查现有结果
     existing_experiments = check_existing_results()
     
     # 统计信息
-    total_experiments = len(models) * len(feature_configs) * len(complexities)
+    total_experiments = len(models) * len(feature_configs) * len(complexities) * len(past_days_options)
     completed = 0
     failed = 0
     skipped = 0
@@ -146,27 +149,28 @@ def run_gpu_experiments():
             print(f"\n📋 特征组合: {feat_desc}")
             
             for complexity in complexities:
-                exp_id = get_experiment_id(model, hist_weather, forecast, complexity)
-                description = f"{model} - {feat_desc} - {complexity}"
-                
-                if exp_id in existing_experiments:
-                    print(f"⏭️ {description} - 跳过 (已完成)")
-                    skipped += 1
-                    continue
-                
-                if run_experiment(model, hist_weather, forecast, complexity, description):
-                    completed += 1
-                else:
-                    failed += 1
-                
-                # 显示进度
-                total_done = completed + failed + skipped
-                progress = total_done / total_experiments * 100
-                elapsed = time.time() - start_time
-                eta = elapsed / total_done * (total_experiments - total_done) if total_done > 0 else 0
-                
-                print(f"📈 进度: {total_done}/{total_experiments} ({progress:.1f}%)")
-                print(f"⏱️  已用时间: {elapsed/60:.1f}分钟, 预计剩余: {eta/60:.1f}分钟")
+                for past_days in past_days_options:
+                    exp_id = get_experiment_id(model, hist_weather, forecast, complexity, past_days)
+                    description = f"{model} - {feat_desc} - {complexity} - {past_days}天"
+                    
+                    if exp_id in existing_experiments:
+                        print(f"⏭️ {description} - 跳过 (已完成)")
+                        skipped += 1
+                        continue
+                    
+                    if run_experiment(model, hist_weather, forecast, complexity, past_days, description):
+                        completed += 1
+                    else:
+                        failed += 1
+                    
+                    # 显示进度
+                    total_done = completed + failed + skipped
+                    progress = total_done / total_experiments * 100
+                    elapsed = time.time() - start_time
+                    eta = elapsed / total_done * (total_experiments - total_done) if total_done > 0 else 0
+                    
+                    print(f"📈 进度: {total_done}/{total_experiments} ({progress:.1f}%)")
+                    print(f"⏱️  已用时间: {elapsed/60:.1f}分钟, 预计剩余: {eta/60:.1f}分钟")
     
     end_time = time.time()
     total_time = end_time - start_time
