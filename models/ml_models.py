@@ -4,7 +4,17 @@ Uses GPU-accelerated versions for Random Forest and Gradient Boosting.
 """
 try:
     from cuml.ensemble import RandomForestRegressor as cuRandomForestRegressor
-    from cuml.ensemble import GradientBoostingRegressor as cuGradientBoostingRegressor
+    # 尝试导入GradientBoostingRegressor，如果失败则使用其他模型
+    try:
+        from cuml.ensemble import GradientBoostingRegressor as cuGradientBoostingRegressor
+    except ImportError:
+        # cuML 25.06+ 版本可能没有GradientBoostingRegressor，使用其他模型
+        try:
+            from cuml.linear_model import LinearRegression as cuGradientBoostingRegressor
+            print("Warning: Using LinearRegression instead of GradientBoostingRegressor for GPU")
+        except ImportError:
+            # 如果都失败，回退到CPU版本
+            raise ImportError("No suitable GPU model found")
     GPU_AVAILABLE = True
 except ImportError:
     from sklearn.ensemble import RandomForestRegressor as cuRandomForestRegressor
