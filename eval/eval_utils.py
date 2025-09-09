@@ -50,7 +50,65 @@ def save_results(
         preds = scaler.inverse_transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).reshape(preds.shape)
         yts   = scaler.inverse_transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).reshape(yts.shape)
 
-    # ===== 计算标准化误差（用于辅助分析） =====
+    # ===== 计算多种损失指标 =====
+    def calculate_losses(preds, yts, method='overall'):
+        """计算不同方式的损失函数"""
+        if method == 'overall':
+            # 整个测试集平均（当前方式）
+            mse = np.mean((preds - yts) ** 2)
+            rmse = np.sqrt(mse)
+            mae = np.mean(np.abs(preds - yts))
+            
+        elif method == 'hourly':
+            # 每小时平均：先按小时计算，再求平均
+            hourly_errors = []
+            hourly_mae_errors = []
+            for h in range(preds.shape[1]):  # future_hours
+                hour_mse = np.mean((preds[:, h] - yts[:, h]) ** 2)
+                hour_mae = np.mean(np.abs(preds[:, h] - yts[:, h]))
+                hourly_errors.append(hour_mse)
+                hourly_mae_errors.append(hour_mae)
+            mse = np.mean(hourly_errors)
+            rmse = np.sqrt(mse)
+            mae = np.mean(hourly_mae_errors)
+            
+        elif method == 'daily':
+            # 每天平均：每个样本（天）的误差
+            daily_errors = []
+            daily_mae_errors = []
+            for i in range(preds.shape[0]):
+                day_mse = np.mean((preds[i] - yts[i]) ** 2)
+                day_mae = np.mean(np.abs(preds[i] - yts[i]))
+                daily_errors.append(day_mse)
+                daily_mae_errors.append(day_mae)
+            mse = np.mean(daily_errors)
+            rmse = np.sqrt(mse)
+            mae = np.mean(daily_mae_errors)
+            
+        elif method == 'sample':
+            # 每个样本平均：先计算每个样本的误差，再求平均
+            sample_errors = []
+            sample_mae_errors = []
+            for i in range(preds.shape[0]):
+                sample_mse = np.mean((preds[i] - yts[i]) ** 2)
+                sample_mae = np.mean(np.abs(preds[i] - yts[i]))
+                sample_errors.append(sample_mse)
+                sample_mae_errors.append(sample_mae)
+            mse = np.mean(sample_errors)
+            rmse = np.sqrt(mse)
+            mae = np.mean(sample_mae_errors)
+        
+        return mse, rmse, mae
+
+    # 计算主要指标（overall方式）
+    test_mse, test_rmse, test_mae = calculate_losses(preds, yts, 'overall')
+    
+    # 计算辅助指标
+    hourly_mse, hourly_rmse, hourly_mae = calculate_losses(preds, yts, 'hourly')
+    daily_mse, daily_rmse, daily_mae = calculate_losses(preds, yts, 'daily')
+    sample_mse, sample_rmse, sample_mae = calculate_losses(preds, yts, 'sample')
+    
+    # 计算标准化误差（用于辅助分析）
     if scaler is not None and not already_inverse:
         # 使用训练集的scaler进行标准化
         preds_norm = scaler.transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
@@ -74,24 +132,33 @@ def save_results(
     # ===== 1. Save summary.csv =====
     if save_options.get('save_summary', True):
         # 使用原始尺度（kWh）作为主要评估指标
-        # 计算整个测试集的指标
-        test_mse = np.mean((preds - yts) ** 2)
-        test_rmse = np.sqrt(test_mse)
-        test_mae = np.mean(np.abs(preds - yts))
-        
         summary = {
             'model':           config['model'],
             'use_hist_weather': config.get('use_hist_weather', False),
             'use_forecast':    config.get('use_forecast', False),
             'past_hours':      config['past_hours'],
             'future_hours':    config['future_hours'],
+            
+            # 主要指标（overall方式）
             'test_loss':       test_mse,   # 整个测试集MSE (kWh²)
             'rmse':            test_rmse,  # 整个测试集RMSE (kWh)
             'mae':             test_mae,   # 整个测试集MAE (kWh)
+            
+            # 辅助指标
+            'hourly_rmse':     hourly_rmse,  # 每小时平均RMSE
+            'hourly_mae':      hourly_mae,   # 每小时平均MAE
+            'daily_rmse':      daily_rmse,   # 每天平均RMSE
+            'daily_mae':       daily_mae,    # 每天平均MAE
+            'sample_rmse':     sample_rmse,  # 每样本平均RMSE
+            'sample_mae':      sample_mae,   # 每样本平均MAE
+            
+            # 性能指标
             'train_time_sec':  metrics.get('train_time_sec'),
             'inference_time_sec': metrics.get('inference_time_sec', np.nan),
             'param_count':     metrics.get('param_count'),
             'samples_count':   len(preds),  # 测试样本数量
+            
+            # 标准化指标
             'norm_test_loss':  norm_mse,   # 标准化/相对MSE
             'norm_rmse':       norm_rmse,  # 标准化/相对RMSE
             'norm_mae':        norm_mae,   # 标准化/相对MAE
