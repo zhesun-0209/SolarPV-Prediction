@@ -25,15 +25,12 @@ def check_existing_experiments(plant_id, save_dir):
     """
     existing_experiments = set()
     
-    # 检查Drive和本地结果（与run_132_plants.py保持一致）
+    # 只检查Drive结果
     drive_dir = '/content/drive/MyDrive/Solar PV electricity/results'
-    local_dir = 'result'
     
     result_dirs = []
     if os.path.exists(drive_dir):
         result_dirs.append(drive_dir)
-    if os.path.exists(local_dir):
-        result_dirs.append(local_dir)
     
     # 查找现有Excel结果
     print(f"🔍 调试: 检查 {len(result_dirs)} 个目录")
@@ -51,12 +48,16 @@ def check_existing_experiments(plant_id, save_dir):
                 df = pd.read_excel(excel_file)
                 print(f"🔍 调试 {i+1}: Excel行数 {len(df)}")
                 print(f"🔍 调试 {i+1}: Excel列 {list(df.columns)}")
-                if not df.empty and 'exp_id' in df.columns:
-                    existing_experiments = set(df['exp_id'].tolist())
+                if not df.empty:
+                    # 从Excel文件生成实验ID（不需要exp_id列）
+                    existing_experiments = set()
+                    for _, row in df.iterrows():
+                        exp_id = f"{row['model']}_feat{str(row['use_hist_weather']).lower()}_fcst{str(row['use_forecast']).lower()}_days{row['past_days']}_comp{row['model_complexity']}"
+                        existing_experiments.add(exp_id)
                     print(f"🔍 调试 {i+1}: 找到实验ID {len(existing_experiments)} 个")
                     break  # 找到就停止
                 else:
-                    print(f"🔍 调试 {i+1}: Excel为空或缺少exp_id列")
+                    print(f"🔍 调试 {i+1}: Excel为空")
             except Exception as e:
                 print(f"⚠️  读取Excel文件失败 {excel_file}: {e}")
         else:
