@@ -15,7 +15,7 @@ import glob
 
 def check_existing_experiments(plant_id, save_dir):
     """
-    检查已有的实验，返回已完成的实验ID集合
+    检查已有的实验，从summary.csv文件中读取已完成的实验ID
     
     Args:
         plant_id: 厂ID
@@ -26,21 +26,96 @@ def check_existing_experiments(plant_id, save_dir):
     """
     existing_experiments = set()
     
-    # 查找所有summary.csv文件
-    summary_files = glob.glob(os.path.join(save_dir, "**", "summary.csv"), recursive=True)
+    # 检查厂级别的summary.csv文件
+    summary_file = os.path.join(save_dir, "summary.csv")
     
-    for summary_file in summary_files:
+    if os.path.exists(summary_file):
         try:
-            # 从文件路径提取实验ID
-            # 假设路径格式为: save_dir/exp_id/summary.csv
-            path_parts = summary_file.split(os.sep)
-            if len(path_parts) >= 2:
-                exp_id = path_parts[-2]  # 目录名就是实验ID
-                existing_experiments.add(exp_id)
+            df = pd.read_csv(summary_file)
+            if not df.empty and 'exp_id' in df.columns:
+                existing_experiments = set(df['exp_id'].tolist())
         except Exception as e:
-            print(f"⚠️  解析文件路径失败 {summary_file}: {e}")
+            print(f"⚠️  读取summary.csv失败: {e}")
     
     return existing_experiments
+
+def append_experiment_to_summary(plant_id, save_dir, exp_id, model, hist_weather, forecast, 
+                                past_days, complexity, epochs, exp_duration, result_stdout):
+    """
+    将实验结果追加到summary.csv文件
+    
+    Args:
+        plant_id: 厂ID
+        save_dir: 保存目录
+        exp_id: 实验ID
+        model: 模型名称
+        hist_weather: 是否使用历史天气
+        forecast: 是否使用预测天气
+        past_days: 过去天数
+        complexity: 模型复杂度
+        epochs: 训练轮数
+        exp_duration: 实验耗时
+        result_stdout: main.py的输出
+    """
+    summary_file = os.path.join(save_dir, "summary.csv")
+    
+    # 解析test_loss
+    test_loss = 0
+    try:
+        test_loss_match = re.search(r'test_loss=([\d.]+)', result_stdout)
+        if test_loss_match:
+            test_loss = float(test_loss_match.group(1))
+    except:
+        pass
+    
+    # 构建实验数据行
+    exp_data = {
+        'exp_id': exp_id,
+        'plant_id': plant_id,
+        'model': model,
+        'use_hist_weather': hist_weather,
+        'use_forecast': forecast,
+        'past_days': past_days,
+        'model_complexity': complexity,
+        'epochs': epochs,
+        'train_time_sec': round(exp_duration, 4),
+        'test_loss': test_loss,
+        'rmse': 0,  # 暂时设为0，后续可以从summary.csv读取
+        'mae': 0,
+        'nrmse': 0,
+        'r_square': 0,
+        'mape': 0,
+        'smape': 0,
+        'param_count': 0,
+        'samples_count': 0,
+        'best_epoch': np.nan,
+        'final_lr': np.nan,
+        'gpu_memory_used': 0
+    }
+    
+    # 追加到summary.csv
+    try:
+        if os.path.exists(summary_file):
+            # 读取现有数据
+            df = pd.read_csv(summary_file)
+            # 检查是否已存在该实验
+            if exp_id not in df['exp_id'].values:
+                # 追加新行
+                new_row = pd.DataFrame([exp_data])
+                df = pd.concat([df, new_row], ignore_index=True)
+            else:
+                # 更新现有行
+                df.loc[df['exp_id'] == exp_id, list(exp_data.keys())] = list(exp_data.values())
+        else:
+            # 创建新文件
+            df = pd.DataFrame([exp_data])
+        
+        # 保存文件
+        df.to_csv(summary_file, index=False)
+        print(f"✅ 实验结果已保存到: {summary_file}")
+        
+    except Exception as e:
+        print(f"⚠️  保存实验结果失败: {e}")
 
 def run_plant_experiments(plant_id, data_file):
     """运行单个厂的所有252个实验"""
@@ -107,10 +182,6 @@ def run_plant_experiments(plant_id, data_file):
                     
                     print(f"\n🚀 运行实验: {exp_id}")
                     
-                    # 为每个实验创建子目录
-                    exp_save_dir = os.path.join(save_dir, exp_id)
-                    os.makedirs(exp_save_dir, exist_ok=True)
-                    
                     # 构建命令
                     epochs = epoch_map[complexity]
                     
@@ -125,7 +196,7 @@ def run_plant_experiments(plant_id, data_file):
                         '--epochs', str(epochs),
                         '--data_path', data_file,
                         '--plant_id', plant_id,
-                        '--save_dir', exp_save_dir,  # 每个实验一个子目录
+                        '--save_dir', save_dir,  # 直接使用厂级目录
                         '--save_summary', 'true'  # 确保保存summary.csv
                     ]
                     
@@ -140,12 +211,11 @@ def run_plant_experiments(plant_id, data_file):
                             print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
                             completed += 1
                             
-                            # 检查summary.csv是否生成
-                            summary_file = os.path.join(exp_save_dir, "summary.csv")
-                            if os.path.exists(summary_file):
-                                print(f"✅ summary.csv已生成: {summary_file}")
-                            else:
-                                print(f"⚠️  summary.csv未生成: {summary_file}")
+                            # 将实验结果追加到summary.csv
+                            append_experiment_to_summary(
+                                plant_id, save_dir, exp_id, model, hist_weather, forecast,
+                                past_days, complexity, epochs, exp_duration, result.stdout
+                            )
                             
                         else:
                             print(f"❌ 实验失败")
@@ -178,9 +248,17 @@ def run_plant_experiments(plant_id, data_file):
     if completed > 0:
         print(f"平均每实验: {total_duration/completed/60:.1f}分钟")
     
-    # 检查summary.csv文件数量
-    summary_files = glob.glob(os.path.join(save_dir, "**", "summary.csv"), recursive=True)
-    print(f"📊 总共生成了 {len(summary_files)} 个summary.csv文件")
+    # 检查summary.csv文件
+    summary_file = os.path.join(save_dir, "summary.csv")
+    if os.path.exists(summary_file):
+        try:
+            df = pd.read_csv(summary_file)
+            print(f"📊 总共生成了 {len(df)} 个实验结果")
+            print(f"📁 结果文件: {summary_file}")
+        except Exception as e:
+            print(f"⚠️  读取summary.csv失败: {e}")
+    else:
+        print(f"❌ summary.csv文件未生成: {summary_file}")
     
     return completed > 0
 
