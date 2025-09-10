@@ -27,61 +27,21 @@ def get_optimizer(
 def get_scheduler(
     optimizer: torch.optim.Optimizer,
     train_params: dict
-) -> torch.optim.lr_scheduler.ReduceLROnPlateau:
+) -> torch.optim.lr_scheduler.StepLR:
     """
-    Create a ReduceLROnPlateau scheduler.
-    Patience is half of the early stopping patience by default.
+    Create a StepLR scheduler for learning rate decay.
 
     Args:
         optimizer: optimizer to wrap
-        train_params: dict containing 'early_stop_patience'
+        train_params: dict containing training parameters
     """
-    patience = max(1, train_params.get('early_stop_patience', 10) // 2)
-    return torch.optim.lr_scheduler.ReduceLROnPlateau(
+    return torch.optim.lr_scheduler.StepLR(
         optimizer,
-        mode='min',
-        factor=0.5,
-        patience=patience
+        step_size=20,  # 每20个epoch衰减一次
+        gamma=0.5      # 学习率减半
     )
 
 
-class EarlyStopping:
-    """
-    Early stopping utility to halt training when validation loss no longer improves.
-    Saves the best model state dict.
-
-    Args:
-        patience: number of epochs to wait without improvement
-        delta: minimum change in validation loss to qualify as improvement
-    """
-    def __init__(
-        self,
-        patience: int = 20,
-        delta: float = 1e-5
-    ):
-        self.patience = patience
-        self.delta = delta
-        self.best_loss = float('inf')
-        self.counter = 0
-        self.best_state: Dict[str, torch.Tensor] = None
-
-    def step(
-        self,
-        val_loss: float,
-        model: torch.nn.Module
-    ) -> bool:
-        """
-        Call after each validation epoch.
-        Returns True if training should stop.
-        """
-        if val_loss < self.best_loss - self.delta:
-            self.best_loss = val_loss
-            self.best_state = model.state_dict()
-            self.counter = 0
-            return False
-        else:
-            self.counter += 1
-            return self.counter >= self.patience
 
 
 def count_parameters(model: torch.nn.Module) -> int:

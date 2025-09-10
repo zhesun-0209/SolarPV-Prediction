@@ -82,6 +82,10 @@ def run_experiment(model, hist_weather, forecast, complexity, past_days, descrip
     print(f"\n🚀 {description}")
     print("-" * 60)
     
+    # 根据复杂度设置epoch数
+    epoch_map = {'low': 20, 'medium': 50, 'high': 100}
+    epochs = epoch_map.get(complexity, 50)
+    
     cmd = [
         sys.executable, 'main.py',
         '--config', 'config/default.yaml',
@@ -89,7 +93,8 @@ def run_experiment(model, hist_weather, forecast, complexity, past_days, descrip
         '--use_hist_weather', hist_weather,
         '--use_forecast', forecast,
         '--model_complexity', complexity,
-        '--past_days', str(past_days)
+        '--past_days', str(past_days),
+        '--epochs', str(epochs)
     ]
     
     start_time = time.time()

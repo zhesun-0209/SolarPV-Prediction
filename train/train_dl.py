@@ -14,7 +14,7 @@ import pandas as pd
 from collections import defaultdict
 from torch.utils.data import DataLoader, TensorDataset
 from train.train_utils import (
-    get_optimizer, get_scheduler, EarlyStopping,
+    get_optimizer, get_scheduler,
     count_parameters
 )
 from models.transformer import Transformer
@@ -87,7 +87,11 @@ def train_dl_model(
         lr=float(train_params['learning_rate'])
     )
     sched = get_scheduler(opt, train_params)
-    stopper = EarlyStopping(int(train_params['early_stop_patience']))
+    
+    # 根据模型复杂度获取epoch数
+    complexity = config.get('model_complexity', 'medium')
+    epoch_params = config.get('epoch_params', {'low': 20, 'medium': 50, 'high': 100})
+    epochs = epoch_params.get(complexity, 50)
 
     mse_fn = torch.nn.MSELoss()
     logs = []
@@ -95,7 +99,7 @@ def train_dl_model(
     total_train_time = 0.0
     total_inference_time = 0.0
 
-    for ep in range(1, int(train_params['epochs']) + 1):
+    for ep in range(1, epochs + 1):
         model.train()
         train_loss = 0.0
         epoch_start = time.time()
@@ -155,11 +159,7 @@ def train_dl_model(
             'cum_time': total_time
         })
 
-        if stopper.step(val_loss, model):
-            print(f"Early stopping at epoch {ep}")
-            break
-
-    model.load_state_dict(stopper.best_state)
+        # 不再使用早停，训练完整的epoch数
 
         # Test phase
     model.eval()

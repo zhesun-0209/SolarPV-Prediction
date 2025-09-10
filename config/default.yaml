@@ -78,12 +78,15 @@ model_params:
 # Training parameters
 train_params:
   batch_size:           32
-  epochs:               50
   learning_rate:        1e-3
-  early_stop_patience:  10
-
   loss_type:            'mse'    # options: 'mse'
   future_hours:         24
+
+# Epoch parameters by complexity (消融实验)
+epoch_params:
+  low:     20    # 简单模型，较少epoch
+  medium:  50    # 中等模型，适中epoch
+  high:    100   # 复杂模型，更多epoch
 
 # 保存选项
 save_options:

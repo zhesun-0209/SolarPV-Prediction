@@ -70,7 +70,6 @@ def main():
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--learning_rate", type=float)
-    parser.add_argument("--early_stop_patience", type=int)
     parser.add_argument("--loss_type", type=str)
     
     # === Save options ===
@@ -149,7 +148,6 @@ def main():
     if args.batch_size: tp["batch_size"] = args.batch_size
     if args.epochs: tp["epochs"] = args.epochs
     if args.learning_rate: tp["learning_rate"] = args.learning_rate
-    if args.early_stop_patience: tp["early_stop_patience"] = args.early_stop_patience
     if args.loss_type: tp["loss_type"] = args.loss_type
 
     # === Override save options ===
