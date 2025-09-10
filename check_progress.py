@@ -45,18 +45,51 @@ def check_plant_progress(plant_id):
     # 查找现有结果
     existing_experiments = set()
     for result_dir in result_dirs:
+        # 首先尝试标准路径: result_dir/plant_id/
         plant_result_dir = os.path.join(result_dir, plant_id)
         if os.path.exists(plant_result_dir):
+            print(f"   找到标准路径: {plant_result_dir}")
             # 查找所有summary.csv文件
             summary_files = glob.glob(os.path.join(plant_result_dir, '**/summary.csv'), recursive=True)
             for file in summary_files:
                 # 从文件路径提取实验ID
                 path_parts = file.split(os.sep)
-                print(f"   调试: {file} -> {path_parts}")  # 调试信息
                 if len(path_parts) >= 2:
                     exp_id = path_parts[-2]  # 假设实验ID是目录名
                     existing_experiments.add(exp_id)
-                    print(f"   调试: 提取实验ID: {exp_id}")  # 调试信息
+        else:
+            # 如果标准路径不存在，尝试在整个result_dir中查找包含plant_id的目录
+            print(f"   标准路径不存在: {plant_result_dir}")
+            print(f"   在 {result_dir} 中搜索包含 {plant_id} 的目录...")
+            
+            # 递归查找包含plant_id的目录
+            for root, dirs, files in os.walk(result_dir):
+                for dir_name in dirs:
+                    if plant_id in dir_name:
+                        found_dir = os.path.join(root, dir_name)
+                        print(f"   找到相关目录: {found_dir}")
+                        
+                        # 查找summary.csv文件
+                        summary_files = glob.glob(os.path.join(found_dir, '**/summary.csv'), recursive=True)
+                        for file in summary_files:
+                            path_parts = file.split(os.sep)
+                            if len(path_parts) >= 2:
+                                exp_id = path_parts[-2]
+                                existing_experiments.add(exp_id)
+                                print(f"   提取实验ID: {exp_id}")
+            
+            # 如果还是没找到，尝试查找所有summary.csv文件，看是否有匹配的
+            if not existing_experiments:
+                print(f"   在 {result_dir} 中查找所有summary.csv文件...")
+                all_summary_files = glob.glob(os.path.join(result_dir, '**/summary.csv'), recursive=True)
+                print(f"   找到 {len(all_summary_files)} 个summary.csv文件")
+                
+                for file in all_summary_files[:10]:  # 只显示前10个
+                    print(f"     {file}")
+                    path_parts = file.split(os.sep)
+                    if len(path_parts) >= 2:
+                        exp_id = path_parts[-2]
+                        print(f"       实验ID: {exp_id}")
     
     # 计算进度
     total_expected = len(expected_experiments)
