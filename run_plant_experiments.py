@@ -13,12 +13,14 @@ import numpy as np
 import re
 from eval.excel_utils import save_plant_excel_results, load_plant_excel_results
 
-def parse_experiment_output(output_text):
+def parse_experiment_output(output_text, save_dir, exp_id):
     """
-    解析main.py的输出，提取实验指标
+    解析实验输出，从summary.csv文件读取指标
     
     Args:
         output_text: main.py的标准输出文本
+        save_dir: 保存目录
+        exp_id: 实验ID
     
     Returns:
         dict: 解析出的指标字典
@@ -39,13 +41,35 @@ def parse_experiment_output(output_text):
     }
     
     try:
-        # 解析test_loss
+        # 首先尝试从stdout解析test_loss
         test_loss_match = re.search(r'test_loss=([\d.]+)', output_text)
         if test_loss_match:
             metrics['test_loss'] = float(test_loss_match.group(1))
         
-        # 解析其他指标（如果main.py有输出的话）
-        # 这里可以根据main.py的实际输出格式进行调整
+        # 然后尝试从summary.csv文件读取完整指标
+        summary_file = os.path.join(save_dir, "summary.csv")
+        if os.path.exists(summary_file):
+            try:
+                df = pd.read_csv(summary_file)
+                if len(df) > 0:
+                    row = df.iloc[0]
+                    metrics.update({
+                        'test_loss': row.get('test_loss', metrics['test_loss']),
+                        'rmse': row.get('rmse', 0),
+                        'mae': row.get('mae', 0),
+                        'nrmse': row.get('nrmse', 0),
+                        'r_square': row.get('r_square', 0),
+                        'mape': row.get('mape', 0),
+                        'smape': row.get('smape', 0),
+                        'param_count': row.get('param_count', 0),
+                        'samples_count': row.get('samples_count', 0),
+                        'best_epoch': row.get('best_epoch', np.nan),
+                        'final_lr': row.get('final_lr', np.nan),
+                        'gpu_memory_used': row.get('gpu_memory_used', 0)
+                    })
+                    print(f"✅ 从summary.csv读取到指标: test_loss={metrics['test_loss']:.4f}, rmse={metrics['rmse']:.4f}")
+            except Exception as e:
+                print(f"⚠️  读取summary.csv失败: {e}")
         
     except Exception as e:
         print(f"⚠️  解析输出失败: {e}")
@@ -150,7 +174,7 @@ def run_plant_experiments(plant_id, data_file):
                             completed += 1
                             
                             # 解析main.py的输出
-                            parsed_metrics = parse_experiment_output(result.stdout)
+                            parsed_metrics = parse_experiment_output(result.stdout, save_dir, exp_id)
                             
                             # 立即保存到Excel文件
                             try:
