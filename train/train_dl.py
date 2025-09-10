@@ -214,12 +214,11 @@ def train_dl_model(
     gpu_memory_used = get_gpu_memory_used()
     
     metrics = {
-        'test_loss': raw_mse,
+        'mse': raw_mse,
         'rmse': raw_rmse,
         'mae': raw_mae,
         'nrmse': all_metrics['nrmse'],
         'r_square': all_metrics['r_square'],
-        'mape': all_metrics['mape'],
         'smape': all_metrics['smape'],
         'best_epoch': best_epoch,
         'final_lr': final_lr,

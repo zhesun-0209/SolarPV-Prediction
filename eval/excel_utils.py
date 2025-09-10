@@ -34,7 +34,7 @@ def save_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据 (25列)
+        # 构建行数据 (24列)
         row_data = {
             # 实验配置列 (13列)
             'model': config.get('model', ''),
@@ -57,13 +57,12 @@ def save_plant_excel_results(
             'best_epoch': metrics.get('best_epoch', np.nan),
             'final_lr': metrics.get('final_lr', np.nan),
             
-            # 评估指标列 (6列)
-            'test_loss': round(metrics.get('test_loss', 0), 4),
+            # 评估指标列 (5列)
+            'mse': round(metrics.get('mse', 0), 4),
             'rmse': round(metrics.get('rmse', 0), 4),
             'mae': round(metrics.get('mae', 0), 4),
             'nrmse': round(metrics.get('nrmse', 0), 4),
             'r_square': round(metrics.get('r_square', 0), 4),
-            'mape': round(metrics.get('mape', 0), 4),
             'smape': round(metrics.get('smape', 0), 4),
             
             # GPU内存使用列 (1列)
@@ -211,7 +210,7 @@ def append_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据 (25列)
+        # 构建行数据 (24列)
         row_data = {
             # 实验配置列 (13列)
             'model': config.get('model', ''),
@@ -234,13 +233,12 @@ def append_plant_excel_results(
             'best_epoch': metrics.get('best_epoch', np.nan),
             'final_lr': metrics.get('final_lr', np.nan),
             
-            # 评估指标列 (6列)
-            'test_loss': round(metrics.get('test_loss', 0), 4),
+            # 评估指标列 (5列)
+            'mse': round(metrics.get('mse', 0), 4),
             'rmse': round(metrics.get('rmse', 0), 4),
             'mae': round(metrics.get('mae', 0), 4),
             'nrmse': round(metrics.get('nrmse', 0), 4),
             'r_square': round(metrics.get('r_square', 0), 4),
-            'mape': round(metrics.get('mape', 0), 4),
             'smape': round(metrics.get('smape', 0), 4),
             
             # GPU内存使用列 (1列)

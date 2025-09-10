@@ -74,7 +74,7 @@ def save_results(
         'future_hours':    config['future_hours'],
         
         # 主要指标
-        'test_loss':       test_mse,   # 整个测试集MSE (Capacity Factor²)
+        'mse':             test_mse,   # 整个测试集MSE (Capacity Factor²)
         'rmse':            test_rmse,  # 整个测试集RMSE (Capacity Factor)
         'mae':             test_mae,   # 整个测试集MAE (Capacity Factor)
         
@@ -143,12 +143,11 @@ def save_results(
                 'inference_time_sec': summary['inference_time_sec'],
                 'param_count': summary['param_count'],
                 'samples_count': summary['samples_count'],
-                'test_loss': summary['test_loss'],
+                'mse': summary['mse'],
                 'rmse': summary['rmse'],
                 'mae': summary['mae'],
                 'nrmse': metrics.get('nrmse', np.nan),
                 'r_square': metrics.get('r_square', np.nan),
-                'mape': metrics.get('mape', np.nan),
                 'smape': metrics.get('smape', np.nan),
                 'best_epoch': metrics.get('best_epoch', np.nan),
                 'final_lr': metrics.get('final_lr', np.nan),

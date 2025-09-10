@@ -121,12 +121,11 @@ def train_ml_model(
         joblib.dump(model, os.path.join(model_dir, 'best_model.pkl'))
 
     metrics = {
-        'test_loss':      mse,
+        'mse':            mse,
         'rmse':           rmse,
         'mae':            mae,
         'nrmse':          all_metrics['nrmse'],
         'r_square':       all_metrics['r_square'],
-        'mape':           all_metrics['mape'],
         'smape':          all_metrics['smape'],
         'best_epoch':     np.nan,  # ML模型没有epoch概念
         'final_lr':       np.nan,  # ML模型没有学习率概念
