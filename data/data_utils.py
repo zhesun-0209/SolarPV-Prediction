@@ -135,10 +135,13 @@ def preprocess_features(df: pd.DataFrame, config: dict):
 
     return df_clean, available_hist_feats, available_fcst_feats, scaler_hist, scaler_fcst, scaler_target
 
-def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats):
+def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats, no_hist_power=False):
     """
     创建滑动窗口样本，允许时间不连续
     每个样本包含：前n天历史数据 + 预测当天的预测数据
+    
+    Args:
+        no_hist_power: 如果为True，不使用历史发电量数据，只使用预测天气
     """
     X_hist, y, hours, dates = [], [], [], []
     X_fcst = [] if fcst_feats else None  # 只有在需要预测特征时才初始化
@@ -159,42 +162,61 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats)
         pred_date = daily_dates[pred_date_idx]
         pred_day_data = daily_groups.get_group(pred_date)
         
-        # 收集历史数据（前n天）
-        hist_data = []
-        for hist_date_idx in range(max(0, pred_date_idx - min_days), pred_date_idx):
-            hist_date = daily_dates[hist_date_idx]
-            hist_day_data = daily_groups.get_group(hist_date)
-            hist_data.append(hist_day_data)
-        
-        if len(hist_data) == 0:
-            continue
+        if no_hist_power:
+            # 无历史发电量模式：只使用预测天气数据
+            fut_win = pred_day_data.head(future_hours)
             
-        # 合并历史数据
-        hist_combined = pd.concat(hist_data, ignore_index=True)
-        
-        # 如果历史数据不足past_hours，跳过
-        if len(hist_combined) < past_hours:
-            continue
+            if len(fut_win) < future_hours:
+                continue
             
-        # 取最后past_hours小时的历史数据
-        hist_win = hist_combined.tail(past_hours)
-        
-        # 预测数据（预测当天的数据）
-        fut_win = pred_day_data.head(future_hours)
-        
-        if len(fut_win) < future_hours:
-            continue
-        
-        # 构建样本
-        X_hist.append(hist_win[hist_feats].values)
-        
-        if fcst_feats:
-            # 预测天气：使用预测当天的天气数据
-            X_fcst.append(fut_win[fcst_feats].values)
-        
-        y.append(fut_win[TARGET_COL].values)
-        hours.append(fut_win['Hour'].values)
-        dates.append(fut_win['Datetime'].iloc[-1])
+            # 构建样本（只有预测特征）
+            if fcst_feats:
+                X_fcst.append(fut_win[fcst_feats].values)
+            
+            y.append(fut_win[TARGET_COL].values)
+            hours.append(fut_win['Hour'].values)
+            dates.append(fut_win['Datetime'].iloc[-1])
+            
+            # 对于无历史发电量模式，X_hist为空
+            X_hist.append(np.array([]).reshape(0, len(hist_feats)) if hist_feats else np.array([]).reshape(0, 0))
+        else:
+            # 正常模式：使用历史数据
+            # 收集历史数据（前n天）
+            hist_data = []
+            for hist_date_idx in range(max(0, pred_date_idx - min_days), pred_date_idx):
+                hist_date = daily_dates[hist_date_idx]
+                hist_day_data = daily_groups.get_group(hist_date)
+                hist_data.append(hist_day_data)
+            
+            if len(hist_data) == 0:
+                continue
+                
+            # 合并历史数据
+            hist_combined = pd.concat(hist_data, ignore_index=True)
+            
+            # 如果历史数据不足past_hours，跳过
+            if len(hist_combined) < past_hours:
+                continue
+                
+            # 取最后past_hours小时的历史数据
+            hist_win = hist_combined.tail(past_hours)
+            
+            # 预测数据（预测当天的数据）
+            fut_win = pred_day_data.head(future_hours)
+            
+            if len(fut_win) < future_hours:
+                continue
+            
+            # 构建样本
+            X_hist.append(hist_win[hist_feats].values)
+            
+            if fcst_feats:
+                # 预测天气：使用预测当天的天气数据
+                X_fcst.append(fut_win[fcst_feats].values)
+            
+            y.append(fut_win[TARGET_COL].values)
+            hours.append(fut_win['Hour'].values)
+            dates.append(fut_win['Datetime'].iloc[-1])
     
     if len(X_hist) == 0:
         raise ValueError("无法创建任何有效样本")

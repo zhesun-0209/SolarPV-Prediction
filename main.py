@@ -47,6 +47,8 @@ def main():
     parser.add_argument("--future_hours", type=int)
     parser.add_argument("--use_hist_weather", type=str, choices=["true", "false"])
     parser.add_argument("--use_forecast", type=str, choices=["true", "false"])
+    parser.add_argument("--no_hist_power", type=str, choices=["true", "false"], 
+                       help="Only use forecast weather, no historical power data")
     parser.add_argument("--model_complexity", type=str, choices=["low", "medium", "high"])
     parser.add_argument("--train_ratio", type=float)
     parser.add_argument("--val_ratio", type=float)
@@ -107,6 +109,7 @@ def main():
     if args.future_hours: config["future_hours"] = args.future_hours
     if args.use_hist_weather: config["use_hist_weather"] = str2bool(args.use_hist_weather)
     if args.use_forecast: config["use_forecast"] = str2bool(args.use_forecast)
+    if args.no_hist_power: config["no_hist_power"] = str2bool(args.no_hist_power)
     if args.train_ratio: config["train_ratio"] = args.train_ratio
     if args.val_ratio: config["val_ratio"] = args.val_ratio
     if args.plot_days: config["plot_days"] = args.plot_days
@@ -205,7 +208,8 @@ def main():
             past_hours=config["past_hours"],
             future_hours=config["future_hours"],
             hist_feats=hist_feats,
-            fcst_feats=fcst_feats
+            fcst_feats=fcst_feats,
+            no_hist_power=config.get("no_hist_power", False)
         )
 
         # Step 3: Train/val/test split (with shuffle)

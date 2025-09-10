@@ -99,7 +99,8 @@ def run_plant_experiments(plant_id, data_file):
         (False, False),  # 无特征
         (True, False),   # 历史天气
         (False, True),   # 预测天气
-        (True, True)     # 历史+预测天气
+        (True, True),    # 历史+预测天气
+        (False, True, True)  # 仅预测天气（无历史发电量）
     ]
     complexities = ['low', 'medium', 'high']
     past_days_options = [1, 3, 7]
@@ -109,6 +110,7 @@ def run_plant_experiments(plant_id, data_file):
     
     total_experiments = len(models) * len(feature_configs) * len(complexities) * len(past_days_options)
     print(f"📊 总实验数: {total_experiments}")
+    print(f"📊 特征配置: {len(feature_configs)} 种 (包括新的'仅预测天气'模式)")
     
     completed = 0
     failed = 0
@@ -120,11 +122,21 @@ def run_plant_experiments(plant_id, data_file):
     all_results = []
     
     for model in models:
-        for hist_weather, forecast in feature_configs:
+        for feature_config in feature_configs:
+            # 处理不同的特征配置格式
+            if len(feature_config) == 2:
+                hist_weather, forecast = feature_config
+                no_hist_power = False
+            else:  # len == 3
+                hist_weather, forecast, no_hist_power = feature_config
+            
             for complexity in complexities:
                 for past_days in past_days_options:
                     # 生成实验ID
-                    feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_comp{complexity}"
+                    if no_hist_power:
+                        feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_nohist_days{past_days}_comp{complexity}"
+                    else:
+                        feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_comp{complexity}"
                     exp_id = f"{model}_{feat_str}"
                     
                     # 检查是否已存在
@@ -150,6 +162,10 @@ def run_plant_experiments(plant_id, data_file):
                         '--plant_id', plant_id,
                         '--save_dir', save_dir,
                     ]
+                    
+                    # 添加无历史发电量标志
+                    if no_hist_power:
+                        cmd.extend(['--no_hist_power', 'true'])
                     
                     # 运行实验
                     exp_start = time.time()
