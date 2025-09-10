@@ -25,16 +25,29 @@ def check_existing_experiments(plant_id, save_dir):
     """
     existing_experiments = set()
     
-    # 检查厂级别的Excel文件
-    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
+    # 检查Drive和本地结果（与run_132_plants.py保持一致）
+    drive_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    local_dir = 'result'
     
-    if os.path.exists(excel_file):
-        try:
-            df = pd.read_excel(excel_file)
-            if not df.empty and 'exp_id' in df.columns:
-                existing_experiments = set(df['exp_id'].tolist())
-        except Exception as e:
-            print(f"⚠️  读取Excel文件失败: {e}")
+    result_dirs = []
+    if os.path.exists(drive_dir):
+        result_dirs.append(drive_dir)
+    if os.path.exists(local_dir):
+        result_dirs.append(local_dir)
+    
+    # 查找现有Excel结果
+    for result_dir in result_dirs:
+        plant_dir = os.path.join(result_dir, plant_id)
+        excel_file = os.path.join(plant_dir, f"{plant_id}_results.xlsx")
+        
+        if os.path.exists(excel_file):
+            try:
+                df = pd.read_excel(excel_file)
+                if not df.empty and 'exp_id' in df.columns:
+                    existing_experiments = set(df['exp_id'].tolist())
+                    break  # 找到就停止
+            except Exception as e:
+                print(f"⚠️  读取Excel文件失败 {excel_file}: {e}")
     
     return existing_experiments
 
@@ -60,7 +73,7 @@ def run_plant_experiments(plant_id, data_file):
     
     # 检查已有结果
     existing_experiments = check_existing_experiments(plant_id, save_dir)
-    print(f"🔍 检查路径: {os.path.join(save_dir, f'{plant_id}_results.xlsx')}")
+    print(f"🔍 检查Drive路径: /content/drive/MyDrive/Solar PV electricity/results/{plant_id}/{plant_id}_results.xlsx")
     print(f"🔍 找到已有实验: {len(existing_experiments)} 个")
     if existing_experiments:
         print(f"📊 已有 {len(existing_experiments)} 个实验结果，将跳过已完成的实验")
