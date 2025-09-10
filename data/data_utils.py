@@ -4,42 +4,28 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-# 基于相关性分析结果选择的天气特征（按相关度分档）
-# 高相关度特征 (|r| > 0.6)
+# 基于实际数据中的天气特征，按相关度分档
+# 高相关度特征 (|r| > 0.5) - 对发电量影响最大
 HIGH_CORR_FEATURES = [
-    'shortwave_radiation',         # 短波辐射 (r=0.8909)
-    'global_tilted_irradiance',    # 全球倾斜辐射 (r=0.8909)
-    'direct_radiation',            # 直接辐射 (r=0.8588)
-    'terrestrial_radiation',       # 地面辐射 (r=0.8027)
-    'direct_normal_irradiance',    # 直接法向辐射 (r=0.7968)
-    'vapour_pressure_deficit',     # 水汽压差 (r=0.6529)
-    'diffuse_radiation',           # 散射辐射 (r=0.6423)
-    'relative_humidity_2m',        # 相对湿度 (r=-0.584)
+    'global_tilted_irradiance',    # 全球倾斜辐射 (最重要的辐射特征)
+    'vapour_pressure_deficit',     # 水汽压差 (影响大气透明度)
+    'relative_humidity_2m',        # 相对湿度 (影响大气透明度)
 ]
 
-# 中相关度特征 (0.3 < |r| <= 0.6)
+# 中相关度特征 (0.2 < |r| <= 0.5) - 对发电量有中等影响
 MEDIUM_CORR_FEATURES = [
-    'temperature_2m',              # 温度 (r=0.3813)
-    'apparent_temperature',        # 体感温度 (r=0.3429)
-    'wind_gusts_10m',             # 10米阵风 (r=0.2245)
-    'cloud_cover',                # 云覆盖 (r=-0.189)
-    'cloud_cover_low',            # 低云覆盖 (r=-0.1633)
-    'cloud_cover_mid',            # 中云覆盖 (r=-0.1608)
-    'wind_speed_10m',             # 10米风速 (r=-0.1313)
-    'snow_depth',                 # 雪深 (r=-0.1141)
+    'temperature_2m',              # 温度 (影响光伏效率)
+    'wind_gusts_10m',             # 10米阵风 (影响散热)
+    'cloud_cover_low',            # 低云覆盖 (影响辐射)
+    'wind_speed_100m',            # 100米风速 (影响散热)
+    'snow_depth',                 # 雪深 (影响发电)
 ]
 
-# 低相关度特征 (|r| <= 0.3)
+# 低相关度特征 (|r| <= 0.2) - 对发电量影响较小
 LOW_CORR_FEATURES = [
-    'dew_point_2m',               # 露点温度 (r=0.1058)
-    'cloud_cover_high',           # 高云覆盖 (r=-0.0939)
-    'surface_pressure',           # 表面气压 (r=0.0817)
-    'precipitation',              # 降水 (r=-0.0793)
-    'rain',                       # 雨 (r=-0.0662)
-    'snowfall',                   # 雪 (r=-0.0662)
-    'wind_direction_10m',         # 10米风向 (r=0.0624)
-    'wind_speed_100m',            # 100米风速 (r=0.0595)
-    'wind_direction_100m',        # 100米风向 (r=0.0573)
+    'dew_point_2m',               # 露点温度 (间接影响)
+    'surface_pressure',           # 表面气压 (间接影响)
+    'precipitation',              # 降水 (间接影响)
 ]
 
 # 根据相关度档位选择特征

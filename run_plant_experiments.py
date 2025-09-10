@@ -134,7 +134,10 @@ def run_plant_experiments(plant_id, data_file):
     print(f"📊 Linear模型正常模式: {len(linear_models)} × 4 × {len(correlation_levels)} × {len(time_encoding_options)} × 1 × {len(past_days_options)} = {linear_normal}")
     print(f"📊 Linear模型仅预测模式: {len(linear_models)} × 1 × {len(correlation_levels)} × {len(time_encoding_options)} × 1 × 1 = {linear_forecast}")
     print(f"📊 模型类型: {len(models)} 种 (Linear无复杂度区分)")
-    print(f"📊 相关度档位: {correlation_levels} (高/中/全相关度)")
+    print(f"📊 相关度档位: {correlation_levels}")
+    print(f"   - 高相关度: 3个特征 (global_tilted_irradiance, vapour_pressure_deficit, relative_humidity_2m)")
+    print(f"   - 中相关度: 8个特征 (高+中: 3+5个特征)")
+    print(f"   - 全相关度: 11个特征 (高+中+低: 3+5+3个特征)")
     print(f"📊 时间编码: {time_encoding_options} (开启/关闭)")
     
     completed = 0
