@@ -32,14 +32,14 @@ def debug_drive_structure():
         print(f"❌ 无法列出目录内容: {e}")
         return
     
-    # 查找所有可能的Project1033相关目录
-    print(f"\n🔍 查找Project1033相关目录:")
+    # 查找所有可能的Project_133相关目录
+    print(f"\n🔍 查找Project_133相关目录:")
     project_dirs = []
     
-    # 递归查找包含Project1033的目录
+    # 递归查找包含Project_133的目录
     for root, dirs, files in os.walk(drive_dir):
         for dir_name in dirs:
-            if 'Project1033' in dir_name or '1033' in dir_name:
+            if 'Project_133' in dir_name or '133' in dir_name:
                 project_dirs.append(os.path.join(root, dir_name))
     
     if project_dirs:

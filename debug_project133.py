@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-调试Project1033的结果路径
+调试Project_133的结果路径
 """
 
 import os
 import glob
 
-def debug_project1033_paths():
-    """调试Project1033的结果路径"""
+def debug_project133_paths():
+    """调试Project_133的结果路径"""
     
-    print("🔍 调试Project1033的结果路径")
+    print("🔍 调试Project_133的结果路径")
     print("=" * 60)
     
     # 检查Drive和本地结果
@@ -65,6 +65,36 @@ def debug_project1033_paths():
         else:
             print(f"   厂目录不存在")
     
+    # 查找所有可能的Project_133相关目录
+    print(f"\n🔍 查找Project_133相关目录:")
+    project_dirs = []
+    
+    # 递归查找包含Project_133的目录
+    for root, dirs, files in os.walk(drive_dir):
+        for dir_name in dirs:
+            if 'Project_133' in dir_name or '133' in dir_name:
+                project_dirs.append(os.path.join(root, dir_name))
+    
+    if project_dirs:
+        print(f"   找到 {len(project_dirs)} 个相关目录:")
+        for dir_path in project_dirs:
+            print(f"     {dir_path}")
+            
+            # 检查每个目录下的内容
+            try:
+                sub_items = os.listdir(dir_path)
+                print(f"       内容: {len(sub_items)} 项")
+                for sub_item in sub_items[:10]:  # 只显示前10项
+                    sub_path = os.path.join(dir_path, sub_item)
+                    sub_type = "目录" if os.path.isdir(sub_path) else "文件"
+                    print(f"         {sub_item} ({sub_type})")
+                if len(sub_items) > 10:
+                    print(f"         ... 还有 {len(sub_items) - 10} 项")
+            except Exception as e:
+                print(f"       无法访问: {e}")
+    else:
+        print(f"   ❌ 未找到Project_133相关目录")
+    
     # 检查data目录
     print(f"\n📊 检查data目录:")
     data_dir = 'data'
@@ -78,4 +108,4 @@ def debug_project1033_paths():
         print(f"   data目录不存在")
 
 if __name__ == "__main__":
-    debug_project1033_paths()
+    debug_project133_paths()

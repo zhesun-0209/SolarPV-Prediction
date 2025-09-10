@@ -65,7 +65,10 @@ def check_plant_progress(plant_id):
             # 递归查找包含plant_id的目录
             for root, dirs, files in os.walk(result_dir):
                 for dir_name in dirs:
-                    if plant_id in dir_name:
+                    # 支持多种命名方式
+                    if (plant_id in dir_name or 
+                        plant_id.replace('_', '') in dir_name or
+                        plant_id.replace('Project_', '') in dir_name):
                         found_dir = os.path.join(root, dir_name)
                         print(f"   找到相关目录: {found_dir}")
                         
