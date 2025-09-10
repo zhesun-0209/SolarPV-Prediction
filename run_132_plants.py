@@ -45,12 +45,16 @@ def check_existing_results(plant_id):
         result_dirs.append(local_dir)
     
     for result_dir in result_dirs:
-        plant_result_dir = os.path.join(result_dir, plant_id)
-        if os.path.exists(plant_result_dir):
-            # 检查是否有完整的结果
-            summary_files = glob.glob(os.path.join(plant_result_dir, '**/summary.csv'), recursive=True)
-            if len(summary_files) >= 36:  # 至少36个实验（3个模型 × 4个特征组合 × 3个复杂度）
-                return True, plant_result_dir
+        # 检查Excel文件是否存在
+        excel_file = os.path.join(result_dir, f"{plant_id}_results.xlsx")
+        if os.path.exists(excel_file):
+            # 检查Excel文件是否完整（至少252行）
+            try:
+                df = pd.read_excel(excel_file)
+                if len(df) >= 252:  # 252个实验
+                    return True, result_dir
+            except Exception as e:
+                print(f"Warning: 无法读取Excel文件 {excel_file}: {e}")
     
     return False, None
 
@@ -67,44 +71,23 @@ def check_partial_results(plant_id):
     if os.path.exists(local_dir):
         result_dirs.append(local_dir)
     
-    # 定义所有应该存在的实验
-    models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
-    feature_configs = [
-        (False, False),  # 无特征
-        (True, False),   # 历史天气
-        (False, True),   # 预测天气
-        (True, True)     # 历史+预测天气
-    ]
-    complexities = ['low', 'medium', 'high']
-    past_days_options = [1, 3, 7]
-    
-    expected_experiments = []
-    for model in models:
-        for hist_weather, forecast in feature_configs:
-            for complexity in complexities:
-                for past_days in past_days_options:
-                    # 生成实验ID
-                    feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_comp{complexity}"
-                    expected_experiments.append(f"{model}_{feat_str}")
-    
-    # 查找现有结果
-    existing_experiments = set()
+    # 查找现有Excel结果
+    existing_count = 0
     for result_dir in result_dirs:
-        plant_result_dir = os.path.join(result_dir, plant_id)
-        if os.path.exists(plant_result_dir):
-            # 查找所有summary.csv文件
-            summary_files = glob.glob(os.path.join(plant_result_dir, '**/summary.csv'), recursive=True)
-            for file in summary_files:
-                # 从文件路径提取实验ID
-                path_parts = file.split(os.sep)
-                if len(path_parts) >= 2:
-                    exp_id = path_parts[-2]  # 假设实验ID是目录名
-                    existing_experiments.add(exp_id)
+        excel_file = os.path.join(result_dir, f"{plant_id}_results.xlsx")
+        if os.path.exists(excel_file):
+            try:
+                df = pd.read_excel(excel_file)
+                existing_count = len(df)
+                break
+            except Exception as e:
+                print(f"Warning: 无法读取Excel文件 {excel_file}: {e}")
     
-    # 找出缺失的实验
-    missing_experiments = set(expected_experiments) - existing_experiments
+    # 检查是否完整（252个实验）
+    is_complete = existing_count >= 252
+    missing_count = max(0, 252 - existing_count)
     
-    return len(missing_experiments) == 0, missing_experiments, len(existing_experiments)
+    return is_complete, missing_count, existing_count
 
 def run_plant_experiments(plant_id, data_file, force_rerun=False):
     """运行单个厂的所有实验"""
@@ -125,14 +108,13 @@ def run_plant_experiments(plant_id, data_file, force_rerun=False):
         return True
     
     # 检查部分结果
-    is_complete, missing_experiments, existing_count = check_partial_results(plant_id)
+    is_complete, missing_count, existing_count = check_partial_results(plant_id)
     
     if is_complete and not force_rerun:
         print(f"✅ 厂 {plant_id} 所有实验已完成，跳过")
         return True
     elif existing_count > 0:
-        print(f"📊 厂 {plant_id} 已有 {existing_count} 个实验，缺失 {len(missing_experiments)} 个")
-        print(f"   缺失实验: {list(missing_experiments)[:5]}{'...' if len(missing_experiments) > 5 else ''}")
+        print(f"📊 厂 {plant_id} 已有 {existing_count} 个实验，缺失 {missing_count} 个")
     
     # 运行实验 - 使用专门的实验脚本运行所有252个实验
     cmd = [

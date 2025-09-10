@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
 运行单个厂的所有252个实验组合
+每个厂只生成一个Excel文件，不创建子文件夹
 """
 
 import os
 import sys
 import subprocess
 import time
+import pandas as pd
+from eval.excel_utils import save_plant_excel_results, load_plant_excel_results
 
 def run_plant_experiments(plant_id, data_file):
     """运行单个厂的所有252个实验"""
@@ -20,6 +23,20 @@ def run_plant_experiments(plant_id, data_file):
     if not os.path.exists(data_file):
         print(f"❌ 数据文件不存在: {data_file}")
         return False
+    
+    # 设置保存路径
+    save_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # 检查已有结果
+    existing_results = load_plant_excel_results(plant_id, save_dir)
+    existing_experiments = set()
+    if not existing_results.empty:
+        for _, row in existing_results.iterrows():
+            feat_str = f"feat{str(row['use_hist_weather']).lower()}_fcst{str(row['use_forecast']).lower()}_days{row['past_days']}_comp{row['model_complexity']}"
+            exp_id = f"{row['model']}_{feat_str}"
+            existing_experiments.add(exp_id)
+        print(f"📊 已有 {len(existing_experiments)} 个实验结果")
     
     # 定义所有实验组合
     models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
@@ -40,8 +57,12 @@ def run_plant_experiments(plant_id, data_file):
     
     completed = 0
     failed = 0
+    skipped = 0
     
     start_time = time.time()
+    
+    # 收集所有实验结果
+    all_results = []
     
     for model in models:
         for hist_weather, forecast in feature_configs:
@@ -50,6 +71,12 @@ def run_plant_experiments(plant_id, data_file):
                     # 生成实验ID
                     feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_comp{complexity}"
                     exp_id = f"{model}_{feat_str}"
+                    
+                    # 检查是否已存在
+                    if exp_id in existing_experiments:
+                        print(f"⏭️  跳过已完成实验: {exp_id}")
+                        skipped += 1
+                        continue
                     
                     print(f"\n🚀 运行实验: {exp_id}")
                     
@@ -65,7 +92,8 @@ def run_plant_experiments(plant_id, data_file):
                         '--model_complexity', complexity,
                         '--past_days', str(past_days),
                         '--epochs', str(epochs),
-                        '--data_path', data_file
+                        '--data_path', data_file,
+                        '--plant_id', plant_id
                     ]
                     
                     # 运行实验
@@ -78,6 +106,10 @@ def run_plant_experiments(plant_id, data_file):
                         if result.returncode == 0:
                             print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
                             completed += 1
+                            
+                            # 这里可以解析结果并添加到all_results
+                            # 由于main.py已经保存到Excel，我们不需要重复处理
+                            
                         else:
                             print(f"❌ 实验失败")
                             print("错误输出:")
@@ -92,7 +124,7 @@ def run_plant_experiments(plant_id, data_file):
                         failed += 1
                     
                     # 显示进度
-                    current_total = completed + failed
+                    current_total = completed + failed + skipped
                     print(f"📈 进度: {current_total}/{total_experiments} ({current_total/total_experiments*100:.1f}%)")
     
     # 最终统计
@@ -103,9 +135,18 @@ def run_plant_experiments(plant_id, data_file):
     print("=" * 80)
     print(f"总实验数: {total_experiments}")
     print(f"成功: {completed}")
+    print(f"跳过: {skipped}")
     print(f"失败: {failed}")
     print(f"总耗时: {total_duration/3600:.1f}小时")
-    print(f"平均每实验: {total_duration/total_experiments/60:.1f}分钟")
+    if completed > 0:
+        print(f"平均每实验: {total_duration/completed/60:.1f}分钟")
+    
+    # 检查Excel文件是否生成
+    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
+    if os.path.exists(excel_file):
+        print(f"✅ Excel结果文件已生成: {excel_file}")
+    else:
+        print(f"❌ Excel结果文件未生成: {excel_file}")
     
     return completed > 0
 
