@@ -10,7 +10,47 @@ import subprocess
 import time
 import pandas as pd
 import numpy as np
+import re
 from eval.excel_utils import save_plant_excel_results, load_plant_excel_results
+
+def parse_experiment_output(output_text):
+    """
+    解析main.py的输出，提取实验指标
+    
+    Args:
+        output_text: main.py的标准输出文本
+    
+    Returns:
+        dict: 解析出的指标字典
+    """
+    metrics = {
+        'test_loss': 0,
+        'rmse': 0,
+        'mae': 0,
+        'nrmse': 0,
+        'r_square': 0,
+        'mape': 0,
+        'smape': 0,
+        'param_count': 0,
+        'samples_count': 0,
+        'best_epoch': np.nan,
+        'final_lr': np.nan,
+        'gpu_memory_used': 0
+    }
+    
+    try:
+        # 解析test_loss
+        test_loss_match = re.search(r'test_loss=([\d.]+)', output_text)
+        if test_loss_match:
+            metrics['test_loss'] = float(test_loss_match.group(1))
+        
+        # 解析其他指标（如果main.py有输出的话）
+        # 这里可以根据main.py的实际输出格式进行调整
+        
+    except Exception as e:
+        print(f"⚠️  解析输出失败: {e}")
+    
+    return metrics
 
 def run_plant_experiments(plant_id, data_file):
     """运行单个厂的所有252个实验"""
@@ -31,7 +71,7 @@ def run_plant_experiments(plant_id, data_file):
     os.makedirs(save_dir, exist_ok=True)
     
     # 检查已有结果
-    existing_results = load_plant_excel_results(plant_id, base_save_dir)
+    existing_results = load_plant_excel_results(plant_id, save_dir)
     existing_experiments = set()
     if not existing_results.empty:
         for _, row in existing_results.iterrows():
@@ -109,6 +149,9 @@ def run_plant_experiments(plant_id, data_file):
                             print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
                             completed += 1
                             
+                            # 解析main.py的输出
+                            parsed_metrics = parse_experiment_output(result.stdout)
+                            
                             # 立即保存到Excel文件
                             try:
                                 # 构建实验结果数据
@@ -125,25 +168,25 @@ def run_plant_experiments(plant_id, data_file):
                                     },
                                     'metrics': {
                                         'train_time_sec': exp_duration,
-                                        'inference_time_sec': 0,  # 暂时设为0
-                                        'param_count': 0,  # 暂时设为0
-                                        'samples_count': 0,  # 暂时设为0
-                                        'test_loss': 0,  # 暂时设为0，实际值需要从main.py输出解析
-                                        'rmse': 0,
-                                        'mae': 0,
-                                        'nrmse': 0,
-                                        'r_square': 0,
-                                        'mape': 0,
-                                        'smape': 0,
-                                        'best_epoch': np.nan,
-                                        'final_lr': np.nan,
-                                        'gpu_memory_used': 0
+                                        'inference_time_sec': parsed_metrics.get('inference_time_sec', 0),
+                                        'param_count': parsed_metrics.get('param_count', 0),
+                                        'samples_count': parsed_metrics.get('samples_count', 0),
+                                        'test_loss': parsed_metrics.get('test_loss', 0),
+                                        'rmse': parsed_metrics.get('rmse', 0),
+                                        'mae': parsed_metrics.get('mae', 0),
+                                        'nrmse': parsed_metrics.get('nrmse', 0),
+                                        'r_square': parsed_metrics.get('r_square', 0),
+                                        'mape': parsed_metrics.get('mape', 0),
+                                        'smape': parsed_metrics.get('smape', 0),
+                                        'best_epoch': parsed_metrics.get('best_epoch', np.nan),
+                                        'final_lr': parsed_metrics.get('final_lr', np.nan),
+                                        'gpu_memory_used': parsed_metrics.get('gpu_memory_used', 0)
                                     }
                                 }
                                 
                                 # 保存到Excel
                                 from eval.excel_utils import append_plant_excel_results
-                                append_plant_excel_results(plant_id, [result_data], base_save_dir)
+                                append_plant_excel_results(plant_id, [result_data], save_dir)
                                 
                             except Exception as e:
                                 print(f"⚠️  保存Excel结果失败: {e}")
@@ -180,7 +223,7 @@ def run_plant_experiments(plant_id, data_file):
         print(f"平均每实验: {total_duration/completed/60:.1f}分钟")
     
     # 检查Excel文件是否生成
-    excel_file = os.path.join(base_save_dir, f"{plant_id}_results.xlsx")
+    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
     if os.path.exists(excel_file):
         print(f"✅ Excel结果文件已生成: {excel_file}")
     else:
