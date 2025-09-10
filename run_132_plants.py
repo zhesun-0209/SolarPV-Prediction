@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 运行132个厂的完整实验
-支持断点续传和进度跟踪
+支持断点续传、进度跟踪和GPU加速
 """
 
 import os
@@ -10,6 +10,7 @@ import time
 import subprocess
 import pandas as pd
 import glob
+import argparse
 from datetime import datetime
 
 def find_plant_data_files():

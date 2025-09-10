@@ -77,8 +77,7 @@ def main():
     parser.add_argument("--save_summary", type=str, choices=["true", "false"])
     parser.add_argument("--save_predictions", type=str, choices=["true", "false"])
     parser.add_argument("--save_training_log", type=str, choices=["true", "false"])
-    parser.add_argument("--save_forecast_plot", type=str, choices=["true", "false"])
-    parser.add_argument("--save_training_curve", type=str, choices=["true", "false"])
+    # 绘图功能已移除，默认不保存图片
     parser.add_argument("--save_excel_results", type=str, choices=["true", "false"])
 
 
@@ -156,8 +155,7 @@ def main():
     if args.save_summary: save_opts["save_summary"] = str2bool(args.save_summary)
     if args.save_predictions: save_opts["save_predictions"] = str2bool(args.save_predictions)
     if args.save_training_log: save_opts["save_training_log"] = str2bool(args.save_training_log)
-    if args.save_forecast_plot: save_opts["save_forecast_plot"] = str2bool(args.save_forecast_plot)
-    if args.save_training_curve: save_opts["save_training_curve"] = str2bool(args.save_training_curve)
+    # 绘图功能已移除
     if args.save_excel_results: save_opts["save_excel_results"] = str2bool(args.save_excel_results)
 
     # === Calculate past_hours from past_days ===

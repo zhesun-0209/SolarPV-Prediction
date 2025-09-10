@@ -7,7 +7,7 @@ Utilities to save summary, predictions, training logs, and call plotting routine
 import os
 import pandas as pd
 import numpy as np
-from eval.plot_utils import plot_forecast, plot_training_curve
+# 绘图功能已移除，默认不保存图片
 from eval.excel_utils import save_plant_excel_results
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
@@ -116,13 +116,8 @@ def save_results(
     # ===== 4. Save plots =====
     days = config.get('plot_days', None)
     
-    # 保存预测对比图
-    if save_options.get('save_forecast_plot', False):
-        plot_forecast(dates_list, yts, preds, save_dir, model_name=config['model'], days=days)
-
-    # 保存训练曲线图
-    if is_dl and 'epoch_logs' in metrics and save_options.get('save_training_curve', False):
-        plot_training_curve(metrics['epoch_logs'], save_dir, model_name=config['model'])
+    # 绘图功能已移除，默认不保存图片
+    # 如需保存图片，请设置相应的save_options为True
     
     # 保存Excel结果文件（如果启用）
     if save_options.get('save_excel_results', True):
