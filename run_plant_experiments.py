@@ -159,7 +159,9 @@ def run_plant_experiments(plant_id, data_file):
                         '--past_days', str(past_days),
                         '--epochs', str(epochs),
                         '--data_path', data_file,
-                        '--plant_id', plant_id
+                        '--plant_id', plant_id,
+                        '--save_dir', save_dir,
+                        '--save_summary', 'true'  # 确保保存summary.csv
                     ]
                     
                     # 运行实验
