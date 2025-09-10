@@ -23,11 +23,7 @@ def find_plant_data_files():
     
     for file in csv_files:
         filename = os.path.basename(file)
-        # 跳过非厂数据文件
-        if filename in ['Project1033.csv']:
-            continue
-        
-        # 假设厂数据文件格式为 Plant_XXXX.csv 或类似
+        # 包含所有CSV文件作为厂数据文件
         if filename.endswith('.csv'):
             plant_id = filename.replace('.csv', '')
             plant_files.append((plant_id, file))

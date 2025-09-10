@@ -52,9 +52,11 @@ def check_plant_progress(plant_id):
             for file in summary_files:
                 # 从文件路径提取实验ID
                 path_parts = file.split(os.sep)
+                print(f"   调试: {file} -> {path_parts}")  # 调试信息
                 if len(path_parts) >= 2:
                     exp_id = path_parts[-2]  # 假设实验ID是目录名
                     existing_experiments.add(exp_id)
+                    print(f"   调试: 提取实验ID: {exp_id}")  # 调试信息
     
     # 计算进度
     total_expected = len(expected_experiments)
@@ -84,7 +86,7 @@ def check_all_plants_progress():
     csv_files = glob.glob(os.path.join(data_dir, '*.csv'))
     for file in csv_files:
         filename = os.path.basename(file)
-        if filename.endswith('.csv') and filename != 'Project1033.csv':
+        if filename.endswith('.csv'):
             plant_id = filename.replace('.csv', '')
             plant_files.append(plant_id)
     
