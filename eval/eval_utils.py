@@ -8,6 +8,7 @@ import os
 import pandas as pd
 import numpy as np
 from eval.plot_utils import plot_forecast, plot_training_curve
+from eval.excel_utils import save_plant_excel_results
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # ===== Define Deep Learning model names =====
@@ -120,8 +121,47 @@ def save_results(
         plot_forecast(dates_list, yts, preds, save_dir, model_name=config['model'], days=days)
 
     # 保存训练曲线图
-    if is_dl and 'epoch_logs' in metrics and save_options.get('save_training_curve', True):
+    if is_dl and 'epoch_logs' in metrics and save_options.get('save_training_curve', False):
         plot_training_curve(metrics['epoch_logs'], save_dir, model_name=config['model'])
+    
+    # 保存Excel结果文件（如果启用）
+    if save_options.get('save_excel_results', True):
+        # 构建实验结果数据
+        result_data = {
+            'config': {
+                'model': config['model'],
+                'use_hist_weather': config.get('use_hist_weather', False),
+                'use_forecast': config.get('use_forecast', False),
+                'past_days': config.get('past_days', 1),
+                'model_complexity': config.get('model_complexity', 'medium'),
+                'epochs': config.get('epochs', 50),
+                'batch_size': config.get('batch_size', 32),
+                'learning_rate': config.get('learning_rate', 0.001)
+            },
+            'metrics': {
+                'train_time_sec': summary['train_time_sec'],
+                'inference_time_sec': summary['inference_time_sec'],
+                'param_count': summary['param_count'],
+                'samples_count': summary['samples_count'],
+                'test_loss': summary['test_loss'],
+                'rmse': summary['rmse'],
+                'mae': summary['mae'],
+                'nrmse': metrics.get('nrmse', np.nan),
+                'r_square': metrics.get('r_square', np.nan),
+                'mape': metrics.get('mape', np.nan),
+                'smape': metrics.get('smape', np.nan),
+                'best_epoch': metrics.get('best_epoch', np.nan),
+                'final_lr': metrics.get('final_lr', np.nan),
+                'gpu_memory_used': metrics.get('gpu_memory_used', np.nan)
+            }
+        }
+        
+        # 保存到Excel文件
+        excel_file = save_plant_excel_results(
+            plant_id=config.get('plant_id', 'unknown'),
+            results=[result_data],
+            save_dir=save_dir
+        )
     
 
 

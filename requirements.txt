@@ -15,6 +15,7 @@ lightgbm>=3.2
 PyYAML>=6.0
 matplotlib>=3.4
 joblib>=1.0
+openpyxl>=3.0.0
 
 # Optional GPU acceleration
 # cuml>=22.02  # Uncomment if using GPU-accelerated ML

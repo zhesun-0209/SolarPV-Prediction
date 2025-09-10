@@ -3,6 +3,7 @@ import time
 import joblib
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from eval.metrics_utils import calculate_metrics, calculate_mse
 from models.ml_models import train_rf, train_xgb, train_lgbm
 
 def train_ml_model(
@@ -79,16 +80,22 @@ def train_ml_model(
     # Capacity Factor不需要逆标准化（已经是0-100范围）
     # 数据已经是原始尺度
 
-    mse  = mean_squared_error(y_test_flat, preds_flat)
-    rmse = np.sqrt(mse)
-    mae  = mean_absolute_error(y_test_flat, preds_flat)
-    train_mse = mean_squared_error(y_train_flat, train_preds_flat)
-
     fh = int(config['future_hours'])
     y_matrix = y_test_flat.reshape(-1, fh)
     p_matrix = preds_flat.reshape(-1, fh)
 
-    # 只计算原始尺度指标
+    # === 计算所有评估指标 ===
+    # 计算MSE
+    mse = calculate_mse(y_matrix, p_matrix)
+    
+    # 计算所有指标
+    all_metrics = calculate_metrics(y_matrix, p_matrix)
+    
+    # 提取基本指标
+    rmse = all_metrics['rmse']
+    mae = all_metrics['mae']
+    
+    train_mse = mean_squared_error(y_train_flat, train_preds_flat)
 
     save_dir  = config['save_dir']
     
@@ -103,9 +110,16 @@ def train_ml_model(
         'test_loss':      mse,
         'rmse':           rmse,
         'mae':            mae,
+        'nrmse':          all_metrics['nrmse'],
+        'r_square':       all_metrics['r_square'],
+        'mape':           all_metrics['mape'],
+        'smape':          all_metrics['smape'],
+        'best_epoch':     np.nan,  # ML模型没有epoch概念
+        'final_lr':       np.nan,  # ML模型没有学习率概念
         'train_time_sec': round(train_time, 2),
         'inference_time_sec': round(inference_time, 2),
         'param_count':    X_train_flat.shape[1],
+        'samples_count':  len(y_matrix),
         'predictions':    p_matrix,
         'y_true':         y_matrix,
         'dates':          dates_test,

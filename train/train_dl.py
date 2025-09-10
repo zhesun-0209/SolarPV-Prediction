@@ -17,6 +17,7 @@ from train.train_utils import (
     get_optimizer, get_scheduler,
     count_parameters
 )
+from eval.metrics_utils import calculate_metrics, calculate_mse
 from models.transformer import Transformer
 from models.rnn_models import LSTM, GRU
 from models.tcn import TCNModel
@@ -186,13 +187,16 @@ def train_dl_model(
     p_inv = preds_arr.flatten()
     y_inv = y_true_arr.flatten()
 
-    # === Raw test metrics (Capacity Factor scale) ===
-    raw_mse = np.mean((y_inv - p_inv) ** 2)
-    raw_rmse = np.sqrt(raw_mse)
-    raw_mae = np.mean(np.abs(y_inv - p_inv))
-
-    # 只计算原始尺度指标
-
+    # === 计算所有评估指标 ===
+    # 计算MSE
+    raw_mse = calculate_mse(y_true_arr, preds_arr)
+    
+    # 计算所有指标
+    all_metrics = calculate_metrics(y_true_arr, preds_arr)
+    
+    # 提取基本指标
+    raw_rmse = all_metrics['rmse']
+    raw_mae = all_metrics['mae']
 
     # 根据配置决定是否保存模型
     save_options = config.get('save_options', {})
@@ -201,14 +205,25 @@ def train_dl_model(
         os.makedirs(save_dir, exist_ok=True)
         torch.save(model.state_dict(), os.path.join(save_dir, 'model.pth'))
 
+    # 获取最佳epoch和最终学习率
+    best_epoch = max(logs, key=lambda x: x['val_loss'])['epoch'] if logs else 1
+    final_lr = optimizer.param_groups[0]['lr']
+    
     metrics = {
         'test_loss': raw_mse,
         'rmse': raw_rmse,
         'mae': raw_mae,
+        'nrmse': all_metrics['nrmse'],
+        'r_square': all_metrics['r_square'],
+        'mape': all_metrics['mape'],
+        'smape': all_metrics['smape'],
+        'best_epoch': best_epoch,
+        'final_lr': final_lr,
         'epoch_logs': logs,
         'param_count': count_parameters(model),
         'train_time_sec': total_train_time,
         'inference_time_sec': total_inference_time,
+        'samples_count': len(y_te),
         'predictions': p_inv.reshape(y_te.shape),
         'y_true': y_inv.reshape(y_te.shape),
         'dates': dates_te,
