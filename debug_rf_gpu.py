@@ -269,7 +269,10 @@ def test_rf_training_pipeline():
         
         # 分割数据
         print("✂️ 分割数据...")
-        train_data, val_data, test_data = split_data(windows, 0.8, 0.1)
+        # 创建hours和dates数据
+        hours = np.tile(np.arange(24), (len(windows), 1))
+        dates = [f"2024-01-{i+1:02d}" for i in range(len(windows))]
+        train_data, val_data, test_data = split_data(windows, 0.8, 0.1, hours, dates)
         print(f"   训练集: {len(train_data)}")
         print(f"   验证集: {len(val_data)}")
         print(f"   测试集: {len(test_data)}")
@@ -339,7 +342,7 @@ def generate_rf_rerun_commands():
         days = int(parts[2].replace('days', ''))
         comp = parts[3].replace('comp', '')
         
-        cmd = f"!python main.py --config config/default.yaml --model RF --use_hist_weather {feat} --use_forecast {fcst} --model_complexity {comp} --past_days {days}"
+        cmd = f"!python main.py --config config/default.yaml --model RF --use_hist_weather {str(feat).lower()} --use_forecast {str(fcst).lower()} --model_complexity {comp} --past_days {days}"
         print(cmd)
 
 def run_single_rf_test():
@@ -353,8 +356,8 @@ def run_single_rf_test():
         'python', 'main.py',
         '--config', 'config/default.yaml',
         '--model', 'RF',
-        '--use_hist_weather', 'False',
-        '--use_forecast', 'False',
+        '--use_hist_weather', 'false',
+        '--use_forecast', 'false',
         '--model_complexity', 'medium',
         '--past_days', '1'
     ]
@@ -377,6 +380,56 @@ def run_single_rf_test():
         print("❌ RF测试超时（5分钟）")
     except Exception as e:
         print(f"❌ RF测试异常: {e}")
+
+def test_rf_direct():
+    """直接测试RF模型（不通过main.py）"""
+    
+    print("\n🧪 直接测试RF模型...")
+    print("=" * 60)
+    
+    try:
+        from models.ml_models import train_rf
+        import numpy as np
+        
+        # 创建测试数据
+        np.random.seed(42)
+        X_train = np.random.randn(100, 10)
+        y_train = np.random.randn(100, 24)
+        X_val = np.random.randn(20, 10)
+        y_val = np.random.randn(20, 24)
+        X_test = np.random.randn(20, 10)
+        y_test = np.random.randn(20, 24)
+        
+        # 创建数据元组
+        train_data = (X_train, None, y_train, None, None)
+        val_data = (X_val, None, y_val, None, None)
+        test_data = (X_test, None, y_test, None, None)
+        
+        # RF参数
+        rf_params = {
+            'n_estimators': 50,
+            'max_depth': 15,
+            'random_state': 42
+        }
+        
+        config = {'model': 'RF'}
+        
+        print("开始训练RF模型...")
+        start_time = time.time()
+        
+        model, metrics = train_rf(train_data, val_data, test_data, rf_params, config)
+        
+        end_time = time.time()
+        
+        print(f"✅ RF直接测试成功")
+        print(f"   训练时间: {end_time - start_time:.2f}秒")
+        print(f"   测试损失: {metrics['test_loss']:.4f}")
+        print(f"   RMSE: {metrics['rmse']:.4f}")
+        print(f"   MAE: {metrics['mae']:.4f}")
+        
+    except Exception as e:
+        print(f"❌ RF直接测试失败: {e}")
+        traceback.print_exc()
 
 # 运行调试
 if __name__ == "__main__":
@@ -401,10 +454,13 @@ if __name__ == "__main__":
     # 6. 测试RF训练管道
     test_rf_training_pipeline()
     
-    # 7. 运行单个RF测试
+    # 7. 直接测试RF模型
+    test_rf_direct()
+    
+    # 8. 运行单个RF测试
     run_single_rf_test()
     
-    # 8. 生成重新运行命令
+    # 9. 生成重新运行命令
     generate_rf_rerun_commands()
     
     print("\n✅ 调试完成！")
