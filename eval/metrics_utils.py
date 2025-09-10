@@ -55,7 +55,7 @@ def calculate_metrics(y_true, y_pred):
     # R²
     r_square = r2_score(y_true_clean, y_pred_clean)
     
-    # MAPE (当y_t > 0时)
+    # MAPE (当y_t > 0时) - 保持小数形式
     mape_mask = y_true_clean > 0
     if np.any(mape_mask):
         mape = np.mean(np.abs(y_true_clean[mape_mask] - y_pred_clean[mape_mask]) / y_true_clean[mape_mask])
@@ -64,17 +64,26 @@ def calculate_metrics(y_true, y_pred):
     
     # sMAPE (对称平均绝对百分比误差)
     # 公式: sMAPE = (1/n) * Σ[2 * |y_t - ŷ_t| / (|y_t| + |ŷ_t|)]
-    # 特殊情况: 当y_t = 0且ŷ_t = 0时，该项定义为0
+    # 对于太阳能数据，只计算非零值，避免零值导致的异常sMAPE
     
-    # 计算分母 (|y_t| + |ŷ_t|)
-    denominator = np.abs(y_true_clean) + np.abs(y_pred_clean)
+    # 只计算非零值（真实值或预测值至少有一个非零）
+    nonzero_mask = (y_true_clean > 0) | (y_pred_clean > 0)
     
-    # 避免除零错误：当分母为0时（即y_t = 0且ŷ_t = 0），该项为0
-    smape_mask = denominator > 0
-    
-    if np.any(smape_mask):
-        smape = np.mean(2 * np.abs(y_true_clean[smape_mask] - y_pred_clean[smape_mask]) / 
-                       denominator[smape_mask])
+    if np.any(nonzero_mask):
+        y_true_nonzero = y_true_clean[nonzero_mask]
+        y_pred_nonzero = y_pred_clean[nonzero_mask]
+        
+        # 计算分母 (|y_t| + |ŷ_t|)
+        denominator = np.abs(y_true_nonzero) + np.abs(y_pred_nonzero)
+        
+        # 避免除零错误
+        smape_mask = denominator > 0
+        
+        if np.any(smape_mask):
+            smape = np.mean(2 * np.abs(y_true_nonzero[smape_mask] - y_pred_nonzero[smape_mask]) / 
+                           denominator[smape_mask])
+        else:
+            smape = np.nan
     else:
         smape = np.nan
     
@@ -83,8 +92,8 @@ def calculate_metrics(y_true, y_pred):
         'rmse': round(rmse, 4),
         'nrmse': round(nrmse, 4),
         'r_square': round(r_square, 4),
-        'mape': round(mape, 4),
-        'smape': round(smape, 4)
+        'mape': round(mape, 4),  # 保持小数形式
+        'smape': round(smape, 4)  # 保持小数形式
     }
 
 def calculate_mse(y_true, y_pred):
