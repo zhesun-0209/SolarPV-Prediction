@@ -60,27 +60,26 @@ def save_results(
     
     # ===== 1. Save summary.csv (disabled - using run_plant_experiments.py instead) =====
     # 注释掉summary.csv保存，因为run_plant_experiments.py会处理追加逻辑
-    # if save_options.get('save_summary', True):
-    #     # 使用原始尺度（kWh）作为主要评估指标
-    #     summary = {
-    #         'model':           config['model'],
-    #         'use_hist_weather': config.get('use_hist_weather', False),
-    #         'use_forecast':    config.get('use_forecast', False),
-    #         'past_hours':      config['past_hours'],
-    #         'future_hours':    config['future_hours'],
-    #         
-    #         # 主要指标
-    #         'test_loss':       test_mse,   # 整个测试集MSE (Capacity Factor²)
-    #         'rmse':            test_rmse,  # 整个测试集RMSE (Capacity Factor)
-    #         'mae':             test_mae,   # 整个测试集MAE (Capacity Factor)
-    #         
-    #         # 性能指标
-    #         'train_time_sec':  metrics.get('train_time_sec'),
-    #         'inference_time_sec': metrics.get('inference_time_sec', np.nan),
-    #         'param_count':     metrics.get('param_count'),
-    #         'samples_count':   len(preds),  # 测试样本数量
-    #     }
-    #     pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
+    # 但是需要定义summary变量供后续代码使用
+    summary = {
+        'model':           config['model'],
+        'use_hist_weather': config.get('use_hist_weather', False),
+        'use_forecast':    config.get('use_forecast', False),
+        'past_hours':      config['past_hours'],
+        'future_hours':    config['future_hours'],
+        
+        # 主要指标
+        'test_loss':       test_mse,   # 整个测试集MSE (Capacity Factor²)
+        'rmse':            test_rmse,  # 整个测试集RMSE (Capacity Factor)
+        'mae':             test_mae,   # 整个测试集MAE (Capacity Factor)
+        
+        # 性能指标
+        'train_time_sec':  metrics.get('train_time_sec'),
+        'inference_time_sec': metrics.get('inference_time_sec', np.nan),
+        'param_count':     metrics.get('param_count'),
+        'samples_count':   len(preds),  # 测试样本数量
+    }
+    # 不保存summary.csv，因为run_plant_experiments.py会处理
 
     # ===== 2. Save predictions.csv =====
     if save_options.get('save_predictions', True):
