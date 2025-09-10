@@ -40,7 +40,7 @@ def check_existing_experiments(plant_id, save_dir):
     return existing_experiments
 
 def append_experiment_to_summary(plant_id, save_dir, exp_id, model, hist_weather, forecast, 
-                                past_days, complexity, epochs, exp_duration, result_stdout):
+                                past_days, complexity, epochs, exp_duration, result_stdout, result_stderr=""):
     """
     将实验结果追加到summary.csv文件
     
@@ -72,7 +72,7 @@ def append_experiment_to_summary(plant_id, save_dir, exp_id, model, hist_weather
     print(f"🔍 [DEBUG] main.py输出前500字符: {result_stdout[:500]}")
     
     try:
-        # 解析test_loss
+        # 解析test_loss - 从main.py的输出中解析
         test_loss_match = re.search(r'test_loss=([\d.]+)', result_stdout)
         if test_loss_match:
             test_loss = float(test_loss_match.group(1))
@@ -80,17 +80,39 @@ def append_experiment_to_summary(plant_id, save_dir, exp_id, model, hist_weather
         else:
             print(f"🔍 [DEBUG] 未找到test_loss模式")
         
-        # 解析rmse
+        # 解析rmse - 从main.py的输出中解析
         rmse_match = re.search(r'rmse=([\d.]+)', result_stdout)
         if rmse_match:
             rmse = float(rmse_match.group(1))
             print(f"🔍 [DEBUG] 成功解析rmse: {rmse}")
         
-        # 解析mae
+        # 解析mae - 从main.py的输出中解析
         mae_match = re.search(r'mae=([\d.]+)', result_stdout)
         if mae_match:
             mae = float(mae_match.group(1))
             print(f"🔍 [DEBUG] 成功解析mae: {mae}")
+        
+        # 如果从stdout解析不到，尝试从stderr解析
+        if test_loss == 0 and rmse == 0 and mae == 0:
+            print(f"🔍 [DEBUG] 从stdout解析不到指标，尝试从stderr解析...")
+            print(f"🔍 [DEBUG] stderr长度: {len(result_stderr)}")
+            print(f"🔍 [DEBUG] stderr前500字符: {result_stderr[:500]}")
+            
+            # 从stderr解析
+            test_loss_match = re.search(r'test_loss=([\d.]+)', result_stderr)
+            if test_loss_match:
+                test_loss = float(test_loss_match.group(1))
+                print(f"🔍 [DEBUG] 从stderr成功解析test_loss: {test_loss}")
+            
+            rmse_match = re.search(r'rmse=([\d.]+)', result_stderr)
+            if rmse_match:
+                rmse = float(rmse_match.group(1))
+                print(f"🔍 [DEBUG] 从stderr成功解析rmse: {rmse}")
+            
+            mae_match = re.search(r'mae=([\d.]+)', result_stderr)
+            if mae_match:
+                mae = float(mae_match.group(1))
+                print(f"🔍 [DEBUG] 从stderr成功解析mae: {mae}")
             
     except Exception as e:
         print(f"🔍 [DEBUG] 解析指标失败: {e}")
@@ -270,7 +292,7 @@ def run_plant_experiments(plant_id, data_file):
                             print(f"🔍 [DEBUG] 开始调用append_experiment_to_summary...")
                             append_experiment_to_summary(
                                 plant_id, save_dir, exp_id, model, hist_weather, forecast,
-                                past_days, complexity, epochs, exp_duration, result.stdout
+                                past_days, complexity, epochs, exp_duration, result.stdout, result.stderr
                             )
                             
                         else:
