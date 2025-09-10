@@ -108,9 +108,15 @@ def run_plant_experiments(plant_id, data_file):
     # 根据复杂度设置epoch数
     epoch_map = {'low': 15, 'medium': 30, 'high': 50}
     
-    total_experiments = len(models) * len(feature_configs) * len(complexities) * len(past_days_options)
+    # 计算总实验数
+    normal_configs = 4  # 前4种配置使用past_days_options
+    forecast_only_configs = 1  # 最后1种配置不使用past_days
+    total_experiments = (len(models) * normal_configs * len(complexities) * len(past_days_options) + 
+                        len(models) * forecast_only_configs * len(complexities) * 1)
+    
     print(f"📊 总实验数: {total_experiments}")
-    print(f"📊 特征配置: {len(feature_configs)} 种 (包括新的'仅预测天气'模式)")
+    print(f"📊 正常模式: {len(models)} × 4 × {len(complexities)} × {len(past_days_options)} = {len(models) * normal_configs * len(complexities) * len(past_days_options)}")
+    print(f"📊 仅预测模式: {len(models)} × 1 × {len(complexities)} × 1 = {len(models) * forecast_only_configs * len(complexities)}")
     
     completed = 0
     failed = 0
@@ -131,10 +137,17 @@ def run_plant_experiments(plant_id, data_file):
                 hist_weather, forecast, no_hist_power = feature_config
             
             for complexity in complexities:
-                for past_days in past_days_options:
+                if no_hist_power:
+                    # 仅预测天气模式：不使用past_days，只运行一次
+                    past_days_list = [0]  # 0表示不使用历史数据
+                else:
+                    # 正常模式：使用所有past_days选项
+                    past_days_list = past_days_options
+                
+                for past_days in past_days_list:
                     # 生成实验ID
                     if no_hist_power:
-                        feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_nohist_days{past_days}_comp{complexity}"
+                        feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_nohist_comp{complexity}"
                     else:
                         feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_comp{complexity}"
                     exp_id = f"{model}_{feat_str}"
@@ -156,12 +169,15 @@ def run_plant_experiments(plant_id, data_file):
                         '--use_hist_weather', str(hist_weather).lower(),
                         '--use_forecast', str(forecast).lower(),
                         '--model_complexity', complexity,
-                        '--past_days', str(past_days),
                         '--epochs', str(epochs),
                         '--data_path', data_file,
                         '--plant_id', plant_id,
                         '--save_dir', save_dir,
                     ]
+                    
+                    # 添加past_days参数（仅对非仅预测天气模式）
+                    if not no_hist_power:
+                        cmd.extend(['--past_days', str(past_days)])
                     
                     # 添加无历史发电量标志
                     if no_hist_power:

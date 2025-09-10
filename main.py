@@ -165,7 +165,11 @@ def main():
 
     # === Calculate past_hours from past_days ===
     if "past_days" in config:
-        config["past_hours"] = config["past_days"] * 24
+        if config.get("no_hist_power", False):
+            # 仅预测天气模式：不需要历史数据
+            config["past_hours"] = 0
+        else:
+            config["past_hours"] = config["past_days"] * 24
 
     # === Load raw dataset once ===
     if not os.path.exists(config["data_path"]):

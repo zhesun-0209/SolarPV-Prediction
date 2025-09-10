@@ -153,7 +153,11 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats,
     daily_dates = list(daily_groups.groups.keys())
     
     # 确保有足够的历史天数
-    min_days = past_hours // 24 + 1  # 至少需要这么多天
+    if no_hist_power:
+        min_days = 0  # 仅预测天气模式不需要历史数据
+    else:
+        min_days = past_hours // 24 + 1  # 至少需要这么多天
+    
     if len(daily_dates) < min_days + 1:  # +1 for prediction day
         raise ValueError(f"数据不足：需要至少{min_days + 1}天的数据")
     
