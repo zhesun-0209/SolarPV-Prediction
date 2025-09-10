@@ -134,11 +134,10 @@ def run_plant_experiments(plant_id, data_file, force_rerun=False):
         print(f"📊 厂 {plant_id} 已有 {existing_count} 个实验，缺失 {len(missing_experiments)} 个")
         print(f"   缺失实验: {list(missing_experiments)[:5]}{'...' if len(missing_experiments) > 5 else ''}")
     
-    # 运行实验
+    # 运行实验 - 使用专门的实验脚本运行所有252个实验
     cmd = [
-        sys.executable, 'colab_gpu_experiments.py',
-        '--plant_id', plant_id,
-        '--data_file', data_file
+        sys.executable, 'run_plant_experiments.py',
+        plant_id, data_file
     ]
     
     print(f"🚀 运行命令: {' '.join(cmd)}")
