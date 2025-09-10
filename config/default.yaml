@@ -84,9 +84,9 @@ train_params:
 
 # Epoch parameters by complexity (消融实验)
 epoch_params:
-  low:     20    # 简单模型，较少epoch
-  medium:  50    # 中等模型，适中epoch
-  high:    100   # 复杂模型，更多epoch
+  low:     15    # 简单模型，较少epoch
+  medium:  30    # 中等模型，适中epoch
+  high:    50    # 复杂模型，更多epoch
 
 # 保存选项
 save_options:

@@ -2,6 +2,7 @@
 """
 Colab GPU版本全参数组合实验脚本
 支持断点续传和GPU加速的RF/GBR
+支持多厂实验
 """
 
 import os
@@ -13,6 +14,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
+import argparse
 
 def setup_gpu_environment():
     """设置GPU环境"""
@@ -83,8 +85,8 @@ def run_experiment(model, hist_weather, forecast, complexity, past_days, descrip
     print("-" * 60)
     
     # 根据复杂度设置epoch数
-    epoch_map = {'low': 20, 'medium': 50, 'high': 100}
-    epochs = epoch_map.get(complexity, 50)
+    epoch_map = {'low': 15, 'medium': 30, 'high': 50}
+    epochs = epoch_map.get(complexity, 30)
     
     cmd = [
         sys.executable, 'main.py',
@@ -96,6 +98,10 @@ def run_experiment(model, hist_weather, forecast, complexity, past_days, descrip
         '--past_days', str(past_days),
         '--epochs', str(epochs)
     ]
+    
+    # 如果指定了数据文件，添加数据文件参数
+    if data_file:
+        cmd.extend(['--data_path', data_file])
     
     start_time = time.time()
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -109,10 +115,18 @@ def run_experiment(model, hist_weather, forecast, complexity, past_days, descrip
         print("错误:", result.stderr)
         return False
 
-def run_gpu_experiments():
+def run_gpu_experiments(plant_id=None, data_file=None):
     """运行GPU版本实验"""
-    print("\n🔬 GPU版本全参数组合实验")
+    if plant_id:
+        print(f"\n🏭 厂 {plant_id} GPU版本全参数组合实验")
+    else:
+        print("\n🔬 GPU版本全参数组合实验")
     print("=" * 80)
+    
+    # 如果指定了数据文件，检查文件是否存在
+    if data_file and not os.path.exists(data_file):
+        print(f"❌ 数据文件不存在: {data_file}")
+        return
     
     # 模型列表 (已移除GBR)
     models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
