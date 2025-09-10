@@ -52,7 +52,7 @@ def check_existing_results(plant_id):
             # 检查Excel文件是否完整（至少252行）
             try:
                 df = pd.read_excel(excel_file)
-                if len(df) >= 252:  # 252个实验
+                if len(df) >= 1716:  # 1,716个实验
                     return True, result_dir
             except Exception as e:
                 print(f"Warning: 无法读取Excel文件 {excel_file}: {e}")
@@ -85,9 +85,9 @@ def check_partial_results(plant_id):
             except Exception as e:
                 print(f"Warning: 无法读取Excel文件 {excel_file}: {e}")
     
-    # 检查是否完整（252个实验）
-    is_complete = existing_count >= 252
-    missing_count = max(0, 252 - existing_count)
+    # 检查是否完整（1,716个实验）
+    is_complete = existing_count >= 1716
+    missing_count = max(0, 1716 - existing_count)
     
     return is_complete, missing_count, existing_count
 
@@ -166,11 +166,10 @@ def run_all_plants(force_rerun=False):
     print(f"✅ 找到 {len(plant_files)} 个厂数据文件")
     
     # 计算总实验数
-    models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
-    feature_configs = 4  # 无特征, 历史天气, 预测天气, 历史+预测天气
-    complexities = 3     # low, medium, high
-    past_days_options = 3  # 1, 3, 7天
-    experiments_per_plant = len(models) * feature_configs * complexities * past_days_options
+    # 其他模型 (7种): 7 × 4 × 3 × 2 × 3 × 3 + 7 × 1 × 3 × 2 × 3 × 1 = 1,512 + 126 = 1,638
+    # Linear模型 (1种): 1 × 4 × 3 × 2 × 1 × 3 + 1 × 1 × 3 × 2 × 1 × 1 = 72 + 6 = 78
+    # 总计: 1,716 个实验/厂
+    experiments_per_plant = 1716
     total_experiments = len(plant_files) * experiments_per_plant
     
     print(f"📊 实验规模:")
@@ -197,7 +196,7 @@ def run_all_plants(force_rerun=False):
         print(f"🔍 检查厂 {plant_id} 状态...")
         
         if has_complete_results and not force_rerun:
-            print(f"⏭️  厂 {plant_id} 已有完整结果 (252个实验)，跳过")
+            print(f"⏭️  厂 {plant_id} 已有完整结果 (1,716个实验)，跳过")
             skipped_plants += 1
             continue
         elif is_complete and not force_rerun:
@@ -205,11 +204,11 @@ def run_all_plants(force_rerun=False):
             skipped_plants += 1
             continue
         elif existing_count > 0:
-            remaining = 252 - existing_count
-            print(f"🔄 厂 {plant_id} 部分完成 ({existing_count}/252 个实验)，还需完成 {remaining} 个实验")
+            remaining = 1716 - existing_count
+            print(f"🔄 厂 {plant_id} 部分完成 ({existing_count}/1,716 个实验)，还需完成 {remaining} 个实验")
             partial_plants += 1
         else:
-            print(f"🆕 厂 {plant_id} 未开始，将运行所有 252 个实验")
+            print(f"🆕 厂 {plant_id} 未开始，将运行所有 1,716 个实验")
         
         # 运行实验
         success = run_plant_experiments(plant_id, data_file, force_rerun)

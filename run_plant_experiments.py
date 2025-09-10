@@ -188,88 +188,88 @@ def run_plant_experiments(plant_id, data_file):
                                 else:
                                     feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_{correlation_level}_{time_str}_comp{complexity}"
                             exp_id = f"{model}_{feat_str}"
-                    
-                    # 检查是否已存在
-                    if exp_id in existing_experiments:
-                        print(f"⏭️  跳过已完成实验: {exp_id}")
-                        skipped += 1
-                        continue
-                    
-                    print(f"🚀 运行实验: {exp_id} (不在已有实验中)")
-                    
-                    # 构建命令
-                    if model == 'Linear':
-                        # Linear Regression不需要epochs和model_complexity参数
-                        cmd = [
-                            sys.executable, 'main.py',
-                            '--config', 'config/default.yaml',
-                            '--model', model,
-                            '--use_hist_weather', str(hist_weather).lower(),
-                            '--use_forecast', str(forecast).lower(),
-                            '--correlation_level', correlation_level,
-                            '--use_time_encoding', str(time_encoding).lower(),
-                            '--data_path', data_file,
-                            '--plant_id', plant_id,
-                            '--save_dir', save_dir,
-                        ]
-                    else:
-                        # 其他模型需要epochs和model_complexity参数
-                        epochs = epoch_map[complexity]
-                        cmd = [
-                            sys.executable, 'main.py',
-                            '--config', 'config/default.yaml',
-                            '--model', model,
-                            '--use_hist_weather', str(hist_weather).lower(),
-                            '--use_forecast', str(forecast).lower(),
-                            '--correlation_level', correlation_level,
-                            '--use_time_encoding', str(time_encoding).lower(),
-                            '--model_complexity', complexity,
-                            '--epochs', str(epochs),
-                            '--data_path', data_file,
-                            '--plant_id', plant_id,
-                            '--save_dir', save_dir,
-                        ]
-                    
-                    # 添加past_days参数（仅对非仅预测天气模式）
-                    if not no_hist_power:
-                        cmd.extend(['--past_days', str(past_days)])
-                    
-                    # 添加无历史发电量标志
-                    if no_hist_power:
-                        cmd.extend(['--no_hist_power', 'true'])
-                    
-                    # 运行实验
-                    exp_start = time.time()
-                    try:
-                        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)  # 30分钟超时
-                        exp_end = time.time()
-                        exp_duration = exp_end - exp_start
-                        
-                        if result.returncode == 0:
-                            print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
-                            completed += 1
                             
-                        else:
-                            print(f"❌ 实验失败")
-                            print("错误输出:")
-                            print(result.stderr)
-                            failed += 1
+                            # 检查是否已存在
+                            if exp_id in existing_experiments:
+                                print(f"⏭️  跳过已完成实验: {exp_id}")
+                                skipped += 1
+                                continue
                             
-                    except subprocess.TimeoutExpired:
-                        print(f"❌ 实验超时 (30分钟)")
-                        failed += 1
-                    except Exception as e:
-                        print(f"❌ 实验异常: {e}")
-                        failed += 1
-                    
-                    # 显示进度
-                    current_total = completed + failed + skipped
-                    remaining = total_experiments - current_total
-                    print(f"📈 进度: {current_total}/{total_experiments} ({current_total/total_experiments*100:.1f}%) - 剩余: {remaining}")
-                    
-                    # 每20个实验显示一次统计
-                    if current_total % 20 == 0:
-                        print(f"   ✅ 成功: {completed} | ❌ 失败: {failed} | ⏭️ 跳过: {skipped}")
+                            print(f"🚀 运行实验: {exp_id} (不在已有实验中)")
+                            
+                            # 构建命令
+                            if model == 'Linear':
+                                # Linear Regression不需要epochs和model_complexity参数
+                                cmd = [
+                                    sys.executable, 'main.py',
+                                    '--config', 'config/default.yaml',
+                                    '--model', model,
+                                    '--use_hist_weather', str(hist_weather).lower(),
+                                    '--use_forecast', str(forecast).lower(),
+                                    '--correlation_level', correlation_level,
+                                    '--use_time_encoding', str(time_encoding).lower(),
+                                    '--data_path', data_file,
+                                    '--plant_id', plant_id,
+                                    '--save_dir', save_dir,
+                                ]
+                            else:
+                                # 其他模型需要epochs和model_complexity参数
+                                epochs = epoch_map[complexity]
+                                cmd = [
+                                    sys.executable, 'main.py',
+                                    '--config', 'config/default.yaml',
+                                    '--model', model,
+                                    '--use_hist_weather', str(hist_weather).lower(),
+                                    '--use_forecast', str(forecast).lower(),
+                                    '--correlation_level', correlation_level,
+                                    '--use_time_encoding', str(time_encoding).lower(),
+                                    '--model_complexity', complexity,
+                                    '--epochs', str(epochs),
+                                    '--data_path', data_file,
+                                    '--plant_id', plant_id,
+                                    '--save_dir', save_dir,
+                                ]
+                            
+                            # 添加past_days参数（仅对非仅预测天气模式）
+                            if not no_hist_power:
+                                cmd.extend(['--past_days', str(past_days)])
+                            
+                            # 添加无历史发电量标志
+                            if no_hist_power:
+                                cmd.extend(['--no_hist_power', 'true'])
+                            
+                            # 运行实验
+                            exp_start = time.time()
+                            try:
+                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)  # 30分钟超时
+                                exp_end = time.time()
+                                exp_duration = exp_end - exp_start
+                                
+                                if result.returncode == 0:
+                                    print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
+                                    completed += 1
+                                    
+                                else:
+                                    print(f"❌ 实验失败")
+                                    print("错误输出:")
+                                    print(result.stderr)
+                                    failed += 1
+                                    
+                            except subprocess.TimeoutExpired:
+                                print(f"❌ 实验超时 (30分钟)")
+                                failed += 1
+                            except Exception as e:
+                                print(f"❌ 实验异常: {e}")
+                                failed += 1
+                            
+                            # 显示进度
+                            current_total = completed + failed + skipped
+                            remaining = total_experiments - current_total
+                            print(f"📈 进度: {current_total}/{total_experiments} ({current_total/total_experiments*100:.1f}%) - 剩余: {remaining}")
+                            
+                            # 每20个实验显示一次统计
+                            if current_total % 20 == 0:
+                                print(f"   ✅ 成功: {completed} | ❌ 失败: {failed} | ⏭️ 跳过: {skipped}")
     
     # 最终统计
     end_time = time.time()

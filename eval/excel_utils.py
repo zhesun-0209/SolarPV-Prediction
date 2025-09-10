@@ -34,14 +34,17 @@ def save_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据 (20列)
+        # 构建行数据 (25列)
         row_data = {
-            # 实验配置列 (8列)
+            # 实验配置列 (13列)
             'model': config.get('model', ''),
             'use_hist_weather': config.get('use_hist_weather', False),
             'use_forecast': config.get('use_forecast', False),
             'past_days': config.get('past_days', 1),
             'model_complexity': config.get('model_complexity', 'medium'),
+            'correlation_level': config.get('correlation_level', 'high'),
+            'use_time_encoding': config.get('use_time_encoding', True),
+            'no_hist_power': config.get('no_hist_power', False),
             'epochs': config.get('epochs', 50),
             'batch_size': config.get('batch_size', 32),
             'learning_rate': config.get('learning_rate', 0.001),
@@ -208,14 +211,17 @@ def append_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据 (20列)
+        # 构建行数据 (25列)
         row_data = {
-            # 实验配置列 (8列)
+            # 实验配置列 (13列)
             'model': config.get('model', ''),
             'use_hist_weather': config.get('use_hist_weather', False),
             'use_forecast': config.get('use_forecast', False),
             'past_days': config.get('past_days', 1),
             'model_complexity': config.get('model_complexity', 'medium'),
+            'correlation_level': config.get('correlation_level', 'high'),
+            'use_time_encoding': config.get('use_time_encoding', True),
+            'no_hist_power': config.get('no_hist_power', False),
             'epochs': config.get('epochs', 50),
             'batch_size': config.get('batch_size', 32),
             'learning_rate': config.get('learning_rate', 0.001),
@@ -251,7 +257,7 @@ def append_plant_excel_results(
         # 去重：基于实验配置去重
         combined_df = pd.concat([existing_df, new_df], ignore_index=True)
         combined_df = combined_df.drop_duplicates(
-            subset=['model', 'use_hist_weather', 'use_forecast', 'past_days', 'model_complexity'],
+            subset=['model', 'use_hist_weather', 'use_forecast', 'past_days', 'model_complexity', 'correlation_level', 'use_time_encoding'],
             keep='last'
         )
     else:

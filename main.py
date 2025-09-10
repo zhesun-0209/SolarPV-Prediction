@@ -191,12 +191,25 @@ def main():
         raise RuntimeError(f"Failed to load data: {str(e)}")
 
     # === Compose flag tag to name subfolders ===
-    flag_tag = (
-        f"feat{config['use_hist_weather']}_"
-        f"fcst{config['use_forecast']}_"
-        f"days{config.get('past_days', 3)}_"
-        f"comp{config.get('model_complexity', 'medium')}"
-    )
+    if config.get("no_hist_power", False):
+        # 仅预测天气模式
+        flag_tag = (
+            f"feat{config['use_hist_weather']}_"
+            f"fcst{config['use_forecast']}_"
+            f"nohist_{config.get('correlation_level', 'high')}_"
+            f"{'time' if config.get('use_time_encoding', True) else 'notime'}_"
+            f"comp{config.get('model_complexity', 'medium')}"
+        )
+    else:
+        # 正常模式
+        flag_tag = (
+            f"feat{config['use_hist_weather']}_"
+            f"fcst{config['use_forecast']}_"
+            f"days{config.get('past_days', 3)}_"
+            f"{config.get('correlation_level', 'high')}_"
+            f"{'time' if config.get('use_time_encoding', True) else 'notime'}_"
+            f"comp{config.get('model_complexity', 'medium')}"
+        )
 
     is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
     alg_type = "dl" if is_dl else "ml"
