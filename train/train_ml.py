@@ -76,11 +76,8 @@ def train_ml_model(
     inference_time = time.time() - inference_start
     train_preds_flat = model.predict(X_train_flat)
 
-    if scaler_target is not None:
-        preds_flat = scaler_target.inverse_transform(preds_flat.reshape(-1, 1)).flatten()
-        y_test_flat = scaler_target.inverse_transform(y_test_flat.reshape(-1, 1)).flatten()
-        train_preds_flat = scaler_target.inverse_transform(train_preds_flat.reshape(-1, 1)).flatten()
-        y_train_flat = scaler_target.inverse_transform(y_train_flat.reshape(-1, 1)).flatten()
+    # Capacity Factor不需要逆标准化（已经是0-100范围）
+    # 数据已经是原始尺度
 
     mse  = mean_squared_error(y_test_flat, preds_flat)
     rmse = np.sqrt(mse)
@@ -91,12 +88,13 @@ def train_ml_model(
     y_matrix = y_test_flat.reshape(-1, fh)
     p_matrix = preds_flat.reshape(-1, fh)
 
-    # Normalized metrics (even if already inverse-transformed)
-    preds_norm = scaler_target.transform(p_matrix.reshape(-1, 1)).flatten() if scaler_target else preds_flat
-    y_norm     = scaler_target.transform(y_matrix.reshape(-1, 1)).flatten() if scaler_target else y_test_flat
-    norm_mse  = mean_squared_error(y_norm, preds_norm)
-    norm_rmse = np.sqrt(norm_mse)
-    norm_mae  = mean_absolute_error(y_norm, preds_norm)
+    # 相对误差（用于辅助分析）
+    if np.mean(y_test_flat) > 0:
+        norm_mse = np.mean(((y_test_flat - preds_flat) / y_test_flat) ** 2)
+        norm_rmse = np.sqrt(norm_mse)
+        norm_mae = np.mean(np.abs((y_test_flat - preds_flat) / y_test_flat))
+    else:
+        norm_mse = norm_rmse = norm_mae = np.nan
 
     save_dir  = config['save_dir']
     
@@ -121,7 +119,7 @@ def train_ml_model(
         'y_true':         y_matrix,
         'dates':          dates_test,
         'epoch_logs':     [{'epoch': 1, 'train_loss': train_mse, 'val_loss': mse}],
-        'inverse_transformed': scaler_target is not None
+        'inverse_transformed': False  # Capacity Factor不需要逆标准化
     }
 
     return model, metrics

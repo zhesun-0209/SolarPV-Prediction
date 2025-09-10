@@ -36,7 +36,7 @@ BASE_FCST_FEATURES = [
 # 时间编码特征
 TIME_FEATURES = ['month_cos', 'month_sin', 'hour_cos', 'hour_sin']
 
-TARGET_COL = 'Electricity Generated'
+TARGET_COL = 'Capacity Factor'
 
 # 统计特征函数已移除
 
@@ -128,9 +128,8 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     if available_fcst_feats:
         df_clean[available_fcst_feats] = scaler_fcst.fit_transform(df_clean[available_fcst_feats])
 
-    # 标准化目标变量
-    scaler_target = MinMaxScaler()
-    df_clean[[TARGET_COL]] = scaler_target.fit_transform(df_clean[[TARGET_COL]])
+    # Capacity Factor不需要标准化（范围0-100）
+    scaler_target = None
 
     df_clean = df_clean.sort_values('Datetime').reset_index(drop=True)
 

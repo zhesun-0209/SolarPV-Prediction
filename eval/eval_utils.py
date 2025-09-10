@@ -43,12 +43,8 @@ def save_results(
     preds = metrics['predictions']
     yts   = metrics['y_true']
 
-    # ===== [NEW] Optional inverse_transform (only if not already done) =====
-    scaler = config.get("scaler_target", None)
-    already_inverse = metrics.get("inverse_transformed", False)
-    if scaler is not None and not already_inverse:
-        preds = scaler.inverse_transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).reshape(preds.shape)
-        yts   = scaler.inverse_transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).reshape(yts.shape)
+    # ===== Capacity Factor不需要逆标准化（已经是0-100范围） =====
+    # 数据已经是原始尺度，直接使用
 
     # ===== 计算损失指标 =====
     # 所有计算方式在数学上等价，直接计算一次即可
@@ -56,23 +52,13 @@ def save_results(
     test_rmse = np.sqrt(test_mse)
     test_mae = np.mean(np.abs(preds - yts))
     
-    # 计算标准化误差（用于辅助分析）
-    if scaler is not None and not already_inverse:
-        # 使用训练集的scaler进行标准化
-        preds_norm = scaler.transform(pd.DataFrame(preds.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
-        yts_norm   = scaler.transform(pd.DataFrame(yts.reshape(-1, 1), columns=['Electricity Generated'])).flatten()
-        
-        norm_mse  = mean_squared_error(yts_norm, preds_norm)
+    # 计算相对误差（用于辅助分析）
+    if np.mean(yts) > 0:
+        norm_mse  = np.mean(((preds - yts) / yts) ** 2)
         norm_rmse = np.sqrt(norm_mse)
-        norm_mae  = mean_absolute_error(yts_norm, preds_norm)
+        norm_mae  = np.mean(np.abs((preds - yts) / yts))
     else:
-        # 如果已经反标准化或没有scaler，计算相对误差
-        if np.mean(yts) > 0:
-            norm_mse  = np.mean(((preds - yts) / yts) ** 2)
-            norm_rmse = np.sqrt(norm_mse)
-            norm_mae  = np.mean(np.abs((preds - yts) / yts))
-        else:
-            norm_mse = norm_rmse = norm_mae = np.nan
+        norm_mse = norm_rmse = norm_mae = np.nan
 
     # 获取保存选项
     save_options = config.get('save_options', {})
@@ -88,9 +74,9 @@ def save_results(
             'future_hours':    config['future_hours'],
             
             # 主要指标
-            'test_loss':       test_mse,   # 整个测试集MSE (kWh²)
-            'rmse':            test_rmse,  # 整个测试集RMSE (kWh)
-            'mae':             test_mae,   # 整个测试集MAE (kWh)
+            'test_loss':       test_mse,   # 整个测试集MSE (Capacity Factor²)
+            'rmse':            test_rmse,  # 整个测试集RMSE (Capacity Factor)
+            'mae':             test_mae,   # 整个测试集MAE (Capacity Factor)
             
             # 性能指标
             'train_time_sec':  metrics.get('train_time_sec'),

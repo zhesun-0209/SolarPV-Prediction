@@ -182,27 +182,22 @@ def train_dl_model(
     preds_arr = np.vstack(all_preds)
     y_true_arr = y_te  # already numpy
 
-    # Inverse normalization (with column name for compatibility)
-    p_flat = preds_arr.reshape(-1, 1)
-    y_flat = y_true_arr.reshape(-1, 1)
+    # Capacity Factor不需要逆标准化（已经是0-100范围）
+    p_inv = preds_arr.flatten()
+    y_inv = y_true_arr.flatten()
 
-    p_df = pd.DataFrame(p_flat, columns=['Electricity Generated'])
-    y_df = pd.DataFrame(y_flat, columns=['Electricity Generated'])
-
-    p_inv = scaler_target.inverse_transform(p_df).flatten()
-    y_inv = scaler_target.inverse_transform(y_df).flatten()
-
-    # === Raw test metrics (kWh scale) ===
+    # === Raw test metrics (Capacity Factor scale) ===
     raw_mse = np.mean((y_inv - p_inv) ** 2)
     raw_rmse = np.sqrt(raw_mse)
     raw_mae = np.mean(np.abs(y_inv - p_inv))
 
-    # === Normalized test metrics (0–1 scale)
-    p_norm = scaler_target.transform(p_df).flatten()
-    y_norm = scaler_target.transform(y_df).flatten()
-    norm_mse = np.mean((y_norm - p_norm) ** 2)
-    norm_rmse = np.sqrt(norm_mse)
-    norm_mae = np.mean(np.abs(y_norm - p_norm))
+    # === 相对误差（用于辅助分析）
+    if np.mean(y_inv) > 0:
+        norm_mse = np.mean(((y_inv - p_inv) / y_inv) ** 2)
+        norm_rmse = np.sqrt(norm_mse)
+        norm_mae = np.mean(np.abs((y_inv - p_inv) / y_inv))
+    else:
+        norm_mse = norm_rmse = norm_mae = np.nan
 
 
     # 根据配置决定是否保存模型
