@@ -25,12 +25,13 @@ def run_plant_experiments(plant_id, data_file):
         print(f"❌ 数据文件不存在: {data_file}")
         return False
     
-    # 设置保存路径
-    save_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    # 设置保存路径 - 每个厂一个目录
+    base_save_dir = '/content/drive/MyDrive/Solar PV electricity/results'
+    save_dir = os.path.join(base_save_dir, plant_id)  # 每个厂一个目录
     os.makedirs(save_dir, exist_ok=True)
     
     # 检查已有结果
-    existing_results = load_plant_excel_results(plant_id, save_dir)
+    existing_results = load_plant_excel_results(plant_id, base_save_dir)
     existing_experiments = set()
     if not existing_results.empty:
         for _, row in existing_results.iterrows():
@@ -142,7 +143,7 @@ def run_plant_experiments(plant_id, data_file):
                                 
                                 # 保存到Excel
                                 from eval.excel_utils import append_plant_excel_results
-                                append_plant_excel_results(plant_id, [result_data], save_dir)
+                                append_plant_excel_results(plant_id, [result_data], base_save_dir)
                                 
                             except Exception as e:
                                 print(f"⚠️  保存Excel结果失败: {e}")
@@ -179,7 +180,7 @@ def run_plant_experiments(plant_id, data_file):
         print(f"平均每实验: {total_duration/completed/60:.1f}分钟")
     
     # 检查Excel文件是否生成
-    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
+    excel_file = os.path.join(base_save_dir, f"{plant_id}_results.xlsx")
     if os.path.exists(excel_file):
         print(f"✅ Excel结果文件已生成: {excel_file}")
     else:

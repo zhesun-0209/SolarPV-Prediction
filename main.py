@@ -218,17 +218,12 @@ def main():
         Xh_va, Xf_va, y_va, hrs_va, dates_va, \
         Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
 
-        # Step 4: Create save directory
-        proj_dir = os.path.join(
-            config["save_dir"],
-            f"Project_{pid}",
-            alg_type,
-            config["model"].lower(),
-            flag_tag
-        )
-        os.makedirs(proj_dir, exist_ok=True)
+        # Step 4: Use plant-level save directory (no subfolders)
+        # 直接使用厂级别的目录，不创建子文件夹
+        plant_save_dir = config["save_dir"]  # 直接使用配置中的save_dir
+        os.makedirs(plant_save_dir, exist_ok=True)
         cfg = deepcopy(config)
-        cfg["save_dir"] = proj_dir
+        cfg["save_dir"] = plant_save_dir
 
         # Step 5: Train model
         start = time.time()
