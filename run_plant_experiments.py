@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 运行单个厂的所有252个实验组合
-每个厂只生成一个Excel文件，不创建子文件夹
+每个厂生成多个summary.csv文件，不创建Excel文件
 """
 
 import os
@@ -11,70 +11,36 @@ import time
 import pandas as pd
 import numpy as np
 import re
-from eval.excel_utils import save_plant_excel_results, load_plant_excel_results
+import glob
 
-def parse_experiment_output(output_text, save_dir, exp_id):
+def check_existing_experiments(plant_id, save_dir):
     """
-    解析实验输出，从summary.csv文件读取指标
+    检查已有的实验，返回已完成的实验ID集合
     
     Args:
-        output_text: main.py的标准输出文本
+        plant_id: 厂ID
         save_dir: 保存目录
-        exp_id: 实验ID
     
     Returns:
-        dict: 解析出的指标字典
+        set: 已完成的实验ID集合
     """
-    metrics = {
-        'test_loss': 0,
-        'rmse': 0,
-        'mae': 0,
-        'nrmse': 0,
-        'r_square': 0,
-        'mape': 0,
-        'smape': 0,
-        'param_count': 0,
-        'samples_count': 0,
-        'best_epoch': np.nan,
-        'final_lr': np.nan,
-        'gpu_memory_used': 0
-    }
+    existing_experiments = set()
     
-    try:
-        # 首先尝试从stdout解析test_loss
-        test_loss_match = re.search(r'test_loss=([\d.]+)', output_text)
-        if test_loss_match:
-            metrics['test_loss'] = float(test_loss_match.group(1))
-        
-        # 然后尝试从summary.csv文件读取完整指标
-        summary_file = os.path.join(save_dir, "summary.csv")
-        if os.path.exists(summary_file):
-            try:
-                df = pd.read_csv(summary_file)
-                if len(df) > 0:
-                    row = df.iloc[0]
-                    metrics.update({
-                        'test_loss': row.get('test_loss', metrics['test_loss']),
-                        'rmse': row.get('rmse', 0),
-                        'mae': row.get('mae', 0),
-                        'nrmse': row.get('nrmse', 0),
-                        'r_square': row.get('r_square', 0),
-                        'mape': row.get('mape', 0),
-                        'smape': row.get('smape', 0),
-                        'param_count': row.get('param_count', 0),
-                        'samples_count': row.get('samples_count', 0),
-                        'best_epoch': row.get('best_epoch', np.nan),
-                        'final_lr': row.get('final_lr', np.nan),
-                        'gpu_memory_used': row.get('gpu_memory_used', 0)
-                    })
-                    print(f"✅ 从summary.csv读取到指标: test_loss={metrics['test_loss']:.4f}, rmse={metrics['rmse']:.4f}")
-            except Exception as e:
-                print(f"⚠️  读取summary.csv失败: {e}")
-        
-    except Exception as e:
-        print(f"⚠️  解析输出失败: {e}")
+    # 查找所有summary.csv文件
+    summary_files = glob.glob(os.path.join(save_dir, "**", "summary.csv"), recursive=True)
     
-    return metrics
+    for summary_file in summary_files:
+        try:
+            # 从文件路径提取实验ID
+            # 假设路径格式为: save_dir/exp_id/summary.csv
+            path_parts = summary_file.split(os.sep)
+            if len(path_parts) >= 2:
+                exp_id = path_parts[-2]  # 目录名就是实验ID
+                existing_experiments.add(exp_id)
+        except Exception as e:
+            print(f"⚠️  解析文件路径失败 {summary_file}: {e}")
+    
+    return existing_experiments
 
 def run_plant_experiments(plant_id, data_file):
     """运行单个厂的所有252个实验"""
@@ -95,13 +61,8 @@ def run_plant_experiments(plant_id, data_file):
     os.makedirs(save_dir, exist_ok=True)
     
     # 检查已有结果
-    existing_results = load_plant_excel_results(plant_id, save_dir)
-    existing_experiments = set()
-    if not existing_results.empty:
-        for _, row in existing_results.iterrows():
-            feat_str = f"feat{str(row['use_hist_weather']).lower()}_fcst{str(row['use_forecast']).lower()}_days{row['past_days']}_comp{row['model_complexity']}"
-            exp_id = f"{row['model']}_{feat_str}"
-            existing_experiments.add(exp_id)
+    existing_experiments = check_existing_experiments(plant_id, save_dir)
+    if existing_experiments:
         print(f"📊 已有 {len(existing_experiments)} 个实验结果")
     
     # 定义所有实验组合
@@ -146,6 +107,10 @@ def run_plant_experiments(plant_id, data_file):
                     
                     print(f"\n🚀 运行实验: {exp_id}")
                     
+                    # 为每个实验创建子目录
+                    exp_save_dir = os.path.join(save_dir, exp_id)
+                    os.makedirs(exp_save_dir, exist_ok=True)
+                    
                     # 构建命令
                     epochs = epoch_map[complexity]
                     
@@ -160,7 +125,7 @@ def run_plant_experiments(plant_id, data_file):
                         '--epochs', str(epochs),
                         '--data_path', data_file,
                         '--plant_id', plant_id,
-                        '--save_dir', save_dir,
+                        '--save_dir', exp_save_dir,  # 每个实验一个子目录
                         '--save_summary', 'true'  # 确保保存summary.csv
                     ]
                     
@@ -175,47 +140,12 @@ def run_plant_experiments(plant_id, data_file):
                             print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
                             completed += 1
                             
-                            # 解析main.py的输出
-                            parsed_metrics = parse_experiment_output(result.stdout, save_dir, exp_id)
-                            
-                            # 立即保存到Excel文件
-                            try:
-                                # 构建实验结果数据
-                                result_data = {
-                                    'config': {
-                                        'model': model,
-                                        'use_hist_weather': hist_weather,
-                                        'use_forecast': forecast,
-                                        'past_days': past_days,
-                                        'model_complexity': complexity,
-                                        'epochs': epochs,
-                                        'batch_size': 32,  # 默认值
-                                        'learning_rate': 0.001  # 默认值
-                                    },
-                                    'metrics': {
-                                        'train_time_sec': exp_duration,
-                                        'inference_time_sec': parsed_metrics.get('inference_time_sec', 0),
-                                        'param_count': parsed_metrics.get('param_count', 0),
-                                        'samples_count': parsed_metrics.get('samples_count', 0),
-                                        'test_loss': parsed_metrics.get('test_loss', 0),
-                                        'rmse': parsed_metrics.get('rmse', 0),
-                                        'mae': parsed_metrics.get('mae', 0),
-                                        'nrmse': parsed_metrics.get('nrmse', 0),
-                                        'r_square': parsed_metrics.get('r_square', 0),
-                                        'mape': parsed_metrics.get('mape', 0),
-                                        'smape': parsed_metrics.get('smape', 0),
-                                        'best_epoch': parsed_metrics.get('best_epoch', np.nan),
-                                        'final_lr': parsed_metrics.get('final_lr', np.nan),
-                                        'gpu_memory_used': parsed_metrics.get('gpu_memory_used', 0)
-                                    }
-                                }
-                                
-                                # 保存到Excel
-                                from eval.excel_utils import append_plant_excel_results
-                                append_plant_excel_results(plant_id, [result_data], save_dir)
-                                
-                            except Exception as e:
-                                print(f"⚠️  保存Excel结果失败: {e}")
+                            # 检查summary.csv是否生成
+                            summary_file = os.path.join(exp_save_dir, "summary.csv")
+                            if os.path.exists(summary_file):
+                                print(f"✅ summary.csv已生成: {summary_file}")
+                            else:
+                                print(f"⚠️  summary.csv未生成: {summary_file}")
                             
                         else:
                             print(f"❌ 实验失败")
@@ -248,12 +178,9 @@ def run_plant_experiments(plant_id, data_file):
     if completed > 0:
         print(f"平均每实验: {total_duration/completed/60:.1f}分钟")
     
-    # 检查Excel文件是否生成
-    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
-    if os.path.exists(excel_file):
-        print(f"✅ Excel结果文件已生成: {excel_file}")
-    else:
-        print(f"❌ Excel结果文件未生成: {excel_file}")
+    # 检查summary.csv文件数量
+    summary_files = glob.glob(os.path.join(save_dir, "**", "summary.csv"), recursive=True)
+    print(f"📊 总共生成了 {len(summary_files)} 个summary.csv文件")
     
     return completed > 0
 
