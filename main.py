@@ -79,7 +79,6 @@ def main():
     parser.add_argument("--save_training_log", type=str, choices=["true", "false"])
     parser.add_argument("--save_forecast_plot", type=str, choices=["true", "false"])
     parser.add_argument("--save_training_curve", type=str, choices=["true", "false"])
-    parser.add_argument("--save_val_loss_plot", type=str, choices=["true", "false"])
 
 
     args = parser.parse_args()
@@ -158,7 +157,6 @@ def main():
     if args.save_training_log: save_opts["save_training_log"] = str2bool(args.save_training_log)
     if args.save_forecast_plot: save_opts["save_forecast_plot"] = str2bool(args.save_forecast_plot)
     if args.save_training_curve: save_opts["save_training_curve"] = str2bool(args.save_training_curve)
-    if args.save_val_loss_plot: save_opts["save_val_loss_plot"] = str2bool(args.save_val_loss_plot)
 
     # === Calculate past_hours from past_days ===
     if "past_days" in config:

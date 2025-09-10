@@ -7,7 +7,7 @@ Utilities to save summary, predictions, training logs, and call plotting routine
 import os
 import pandas as pd
 import numpy as np
-from eval.plot_utils import plot_forecast, plot_training_curve, plot_val_loss_over_time
+from eval.plot_utils import plot_forecast, plot_training_curve
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # ===== Define Deep Learning model names =====
@@ -123,9 +123,6 @@ def save_results(
     if is_dl and 'epoch_logs' in metrics and save_options.get('save_training_curve', True):
         plot_training_curve(metrics['epoch_logs'], save_dir, model_name=config['model'])
     
-    # 保存验证损失图
-    if is_dl and 'epoch_logs' in metrics and save_options.get('save_val_loss_plot', False):
-        plot_val_loss_over_time(metrics['epoch_logs'], save_dir, model_name=config['model'])
 
 
     print(f"[INFO] Results saved in {save_dir}")

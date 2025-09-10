@@ -96,4 +96,3 @@ save_options:
   save_training_log:    true     # 是否保存training_log.csv (仅DL模型)
   save_forecast_plot:   false    # 是否保存forecast_plots.png
   save_training_curve:  true     # 是否保存training_curve.png (仅DL模型)
-  save_val_loss_plot:   false    # 是否保存val_loss_over_time.png (仅DL模型)
