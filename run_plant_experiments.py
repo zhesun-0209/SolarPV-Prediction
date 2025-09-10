@@ -63,21 +63,37 @@ def append_experiment_to_summary(plant_id, save_dir, exp_id, model, hist_weather
     summary_file = os.path.join(save_dir, "summary.csv")
     print(f"🔍 [DEBUG] summary.csv路径: {summary_file}")
     
-    # 解析test_loss
+    # 解析test_loss和其他指标
     test_loss = 0
-    print(f"🔍 [DEBUG] 开始解析test_loss...")
+    rmse = 0
+    mae = 0
+    print(f"🔍 [DEBUG] 开始解析指标...")
     print(f"🔍 [DEBUG] main.py输出长度: {len(result_stdout)}")
     print(f"🔍 [DEBUG] main.py输出前500字符: {result_stdout[:500]}")
     
     try:
+        # 解析test_loss
         test_loss_match = re.search(r'test_loss=([\d.]+)', result_stdout)
         if test_loss_match:
             test_loss = float(test_loss_match.group(1))
             print(f"🔍 [DEBUG] 成功解析test_loss: {test_loss}")
         else:
             print(f"🔍 [DEBUG] 未找到test_loss模式")
+        
+        # 解析rmse
+        rmse_match = re.search(r'rmse=([\d.]+)', result_stdout)
+        if rmse_match:
+            rmse = float(rmse_match.group(1))
+            print(f"🔍 [DEBUG] 成功解析rmse: {rmse}")
+        
+        # 解析mae
+        mae_match = re.search(r'mae=([\d.]+)', result_stdout)
+        if mae_match:
+            mae = float(mae_match.group(1))
+            print(f"🔍 [DEBUG] 成功解析mae: {mae}")
+            
     except Exception as e:
-        print(f"🔍 [DEBUG] 解析test_loss失败: {e}")
+        print(f"🔍 [DEBUG] 解析指标失败: {e}")
     
     # 构建实验数据行
     print(f"🔍 [DEBUG] 构建实验数据...")
@@ -92,12 +108,12 @@ def append_experiment_to_summary(plant_id, save_dir, exp_id, model, hist_weather
         'epochs': epochs,
         'train_time_sec': round(exp_duration, 4),
         'test_loss': test_loss,
-        'rmse': 0,  # 暂时设为0，后续可以从summary.csv读取
-        'mae': 0,
-        'nrmse': 0,
-        'r_square': 0,
-        'mape': 0,
-        'smape': 0,
+        'rmse': rmse,  # 使用解析到的真实值
+        'mae': mae,    # 使用解析到的真实值
+        'nrmse': 0,    # 暂时设为0，后续可以计算
+        'r_square': 0, # 暂时设为0，后续可以计算
+        'mape': 0,     # 暂时设为0，后续可以计算
+        'smape': 0,    # 暂时设为0，后续可以计算
         'param_count': 0,
         'samples_count': 0,
         'best_epoch': np.nan,
