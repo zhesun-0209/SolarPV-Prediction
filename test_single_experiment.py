@@ -12,6 +12,7 @@ def test_single_experiment():
     """测试单个实验"""
     
     print("🧪 测试单个实验")
+    print("   结果保存到: /content/drive/MyDrive/Solar PV electricity/results")
     print("=" * 60)
     
     # 检查数据文件

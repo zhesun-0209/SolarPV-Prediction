@@ -13,6 +13,7 @@ def run_plant_experiments(plant_id, data_file):
     
     print(f"🏭 开始运行厂 {plant_id} 的所有实验")
     print(f"   数据文件: {data_file}")
+    print(f"   结果保存到: /content/drive/MyDrive/Solar PV electricity/results")
     print("=" * 80)
     
     # 检查数据文件
