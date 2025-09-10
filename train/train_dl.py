@@ -208,7 +208,7 @@ def train_dl_model(
 
     # 获取最佳epoch和最终学习率
     best_epoch = max(logs, key=lambda x: x['val_loss'])['epoch'] if logs else 1
-    final_lr = optimizer.param_groups[0]['lr']
+    final_lr = opt.param_groups[0]['lr']
     
     # 获取GPU内存使用量
     gpu_memory_used = get_gpu_memory_used()
