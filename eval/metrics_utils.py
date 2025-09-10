@@ -62,16 +62,21 @@ def calculate_metrics(y_true, y_pred):
     else:
         mape = np.nan
     
-    # sMAPE (当y_t = 0且ŷ_t > 0时)
-    smape_mask = (y_true_clean == 0) & (y_pred_clean > 0)
+    # sMAPE (对称平均绝对百分比误差)
+    # 公式: sMAPE = (1/n) * Σ[2 * |y_t - ŷ_t| / (|y_t| + |ŷ_t|)]
+    # 特殊情况: 当y_t = 0且ŷ_t = 0时，该项定义为0
+    
+    # 计算分母 (|y_t| + |ŷ_t|)
+    denominator = np.abs(y_true_clean) + np.abs(y_pred_clean)
+    
+    # 避免除零错误：当分母为0时（即y_t = 0且ŷ_t = 0），该项为0
+    smape_mask = denominator > 0
+    
     if np.any(smape_mask):
         smape = np.mean(2 * np.abs(y_true_clean[smape_mask] - y_pred_clean[smape_mask]) / 
-                       (y_true_clean[smape_mask] + y_pred_clean[smape_mask]))
+                       denominator[smape_mask])
     else:
         smape = np.nan
-    
-    # 特殊情况：当y_t = 0且ŷ_t = 0时，该项定义为0
-    # 这种情况在sMAPE计算中已经处理
     
     return {
         'mae': round(mae, 4),
