@@ -36,18 +36,31 @@ def check_existing_experiments(plant_id, save_dir):
         result_dirs.append(local_dir)
     
     # 查找现有Excel结果
-    for result_dir in result_dirs:
+    print(f"🔍 调试: 检查 {len(result_dirs)} 个目录")
+    for i, result_dir in enumerate(result_dirs):
         plant_dir = os.path.join(result_dir, plant_id)
         excel_file = os.path.join(plant_dir, f"{plant_id}_results.xlsx")
+        
+        print(f"🔍 调试 {i+1}: 检查路径 {excel_file}")
+        print(f"🔍 调试 {i+1}: 目录存在 {os.path.exists(result_dir)}")
+        print(f"🔍 调试 {i+1}: 厂目录存在 {os.path.exists(plant_dir)}")
+        print(f"🔍 调试 {i+1}: Excel文件存在 {os.path.exists(excel_file)}")
         
         if os.path.exists(excel_file):
             try:
                 df = pd.read_excel(excel_file)
+                print(f"🔍 调试 {i+1}: Excel行数 {len(df)}")
+                print(f"🔍 调试 {i+1}: Excel列 {list(df.columns)}")
                 if not df.empty and 'exp_id' in df.columns:
                     existing_experiments = set(df['exp_id'].tolist())
+                    print(f"🔍 调试 {i+1}: 找到实验ID {len(existing_experiments)} 个")
                     break  # 找到就停止
+                else:
+                    print(f"🔍 调试 {i+1}: Excel为空或缺少exp_id列")
             except Exception as e:
                 print(f"⚠️  读取Excel文件失败 {excel_file}: {e}")
+        else:
+            print(f"🔍 调试 {i+1}: Excel文件不存在")
     
     return existing_experiments
 
