@@ -181,16 +181,17 @@ def run_plant_experiments(plant_id, data_file):
         print(f"平均每实验: {total_duration/completed/60:.1f}分钟")
     
     # 检查summary.csv文件
-    summary_file = os.path.join(save_dir, "summary.csv")
-    if os.path.exists(summary_file):
+    # 检查Excel结果文件
+    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
+    if os.path.exists(excel_file):
         try:
-            df = pd.read_csv(summary_file)
+            df = pd.read_excel(excel_file)
             print(f"📊 总共生成了 {len(df)} 个实验结果")
-            print(f"📁 结果文件: {summary_file}")
+            print(f"📁 结果文件: {excel_file}")
         except Exception as e:
-            print(f"⚠️  读取summary.csv失败: {e}")
+            print(f"⚠️  读取Excel文件失败: {e}")
     else:
-        print(f"❌ summary.csv文件未生成: {summary_file}")
+        print(f"❌ Excel文件未生成: {excel_file}")
     
     return completed > 0
 
