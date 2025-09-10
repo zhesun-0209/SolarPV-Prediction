@@ -126,18 +126,18 @@ def run_plant_experiments(plant_id, data_file, force_rerun=False):
     start_time = time.time()
     
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=18000)  # 5小时超时
+        # 使用实时输出，显示详细进度
+        print(f"⏳ 开始运行厂 {plant_id} 的所有实验...")
+        result = subprocess.run(cmd, timeout=18000)  # 5小时超时
         
         end_time = time.time()
         duration = end_time - start_time
         
         if result.returncode == 0:
-            print(f"✅ 厂 {plant_id} 实验完成 (耗时: {duration:.1f}秒)")
+            print(f"✅ 厂 {plant_id} 实验完成 (耗时: {duration/60:.1f}分钟)")
             return True
         else:
-            print(f"❌ 厂 {plant_id} 实验失败")
-            print("错误输出:")
-            print(result.stderr)
+            print(f"❌ 厂 {plant_id} 实验失败 (耗时: {duration/60:.1f}分钟)")
             return False
             
     except subprocess.TimeoutExpired:
@@ -194,8 +194,10 @@ def run_all_plants(force_rerun=False):
         has_complete_results, _ = check_existing_results(plant_id)
         is_complete, missing_experiments, existing_count = check_partial_results(plant_id)
         
+        print(f"🔍 检查厂 {plant_id} 状态...")
+        
         if has_complete_results and not force_rerun:
-            print(f"⏭️  厂 {plant_id} 已有完整结果，跳过")
+            print(f"⏭️  厂 {plant_id} 已有完整结果 (252个实验)，跳过")
             skipped_plants += 1
             continue
         elif is_complete and not force_rerun:
@@ -203,8 +205,11 @@ def run_all_plants(force_rerun=False):
             skipped_plants += 1
             continue
         elif existing_count > 0:
-            print(f"🔄 厂 {plant_id} 部分完成 ({existing_count} 个实验)，继续运行")
+            remaining = 252 - existing_count
+            print(f"🔄 厂 {plant_id} 部分完成 ({existing_count}/252 个实验)，还需完成 {remaining} 个实验")
             partial_plants += 1
+        else:
+            print(f"🆕 厂 {plant_id} 未开始，将运行所有 252 个实验")
         
         # 运行实验
         success = run_plant_experiments(plant_id, data_file, force_rerun)

@@ -162,9 +162,14 @@ def run_plant_experiments(plant_id, data_file):
                         print(f"❌ 实验异常: {e}")
                         failed += 1
                     
-                    # 显示进度
+                    # 显示详细进度
                     current_total = completed + failed + skipped
-                    print(f"📈 进度: {current_total}/{total_experiments} ({current_total/total_experiments*100:.1f}%)")
+                    remaining = total_experiments - current_total
+                    print(f"📈 进度: {current_total}/{total_experiments} ({current_total/total_experiments*100:.1f}%) - 剩余: {remaining}")
+                    
+                    # 每10个实验显示一次详细统计
+                    if current_total % 10 == 0:
+                        print(f"   ✅ 成功: {completed} | ❌ 失败: {failed} | ⏭️ 跳过: {skipped}")
     
     # 最终统计
     end_time = time.time()
