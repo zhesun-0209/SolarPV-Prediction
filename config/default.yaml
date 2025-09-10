@@ -15,7 +15,8 @@ past_hours: 72            # 自动计算: past_days * 24
 # Feature options
 use_hist_weather: false   # use history weather features
 use_forecast: false       # include weather forecasts (Open-Meteo forecast API)
-# Note: Time encodings (month/hour sin/cos) are always included
+use_time_encoding: true   # use time encoding features (month/hour sin/cos)
+correlation_level: 'high' # weather feature correlation level: high, medium, all
 
 # Data split ratios
 train_ratio: 0.8          # fraction for training set

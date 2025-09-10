@@ -49,6 +49,8 @@ def main():
     parser.add_argument("--use_forecast", type=str, choices=["true", "false"])
     parser.add_argument("--correlation_level", type=str, choices=["high", "medium", "all"],
                        help="Weather feature correlation level: high, medium, all")
+    parser.add_argument("--use_time_encoding", type=str, choices=["true", "false"],
+                       help="Use time encoding features (month/hour sin/cos)")
     parser.add_argument("--no_hist_power", type=str, choices=["true", "false"], 
                        help="Only use forecast weather, no historical power data")
     parser.add_argument("--model_complexity", type=str, choices=["low", "medium", "high"])
@@ -112,6 +114,7 @@ def main():
     if args.use_hist_weather: config["use_hist_weather"] = str2bool(args.use_hist_weather)
     if args.use_forecast: config["use_forecast"] = str2bool(args.use_forecast)
     if args.correlation_level: config["correlation_level"] = args.correlation_level
+    if args.use_time_encoding: config["use_time_encoding"] = str2bool(args.use_time_encoding)
     if args.no_hist_power: config["no_hist_power"] = str2bool(args.no_hist_power)
     if args.train_ratio: config["train_ratio"] = args.train_ratio
     if args.val_ratio: config["val_ratio"] = args.val_ratio

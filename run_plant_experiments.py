@@ -103,6 +103,7 @@ def run_plant_experiments(plant_id, data_file):
         (False, True, True)  # 仅预测天气（无历史发电量）
     ]
     correlation_levels = ['high', 'medium', 'all']  # 相关度档位
+    time_encoding_options = [True, False]  # 时间编码开关
     complexities = ['low', 'medium', 'high']
     past_days_options = [1, 3, 7]
     
@@ -112,13 +113,14 @@ def run_plant_experiments(plant_id, data_file):
     # 计算总实验数
     normal_configs = 4  # 前4种配置使用past_days_options
     forecast_only_configs = 1  # 最后1种配置不使用past_days
-    total_experiments = (len(models) * normal_configs * len(correlation_levels) * len(complexities) * len(past_days_options) + 
-                        len(models) * forecast_only_configs * len(correlation_levels) * len(complexities) * 1)
+    total_experiments = (len(models) * normal_configs * len(correlation_levels) * len(time_encoding_options) * len(complexities) * len(past_days_options) + 
+                        len(models) * forecast_only_configs * len(correlation_levels) * len(time_encoding_options) * len(complexities) * 1)
     
     print(f"📊 总实验数: {total_experiments}")
-    print(f"📊 正常模式: {len(models)} × 4 × {len(correlation_levels)} × {len(complexities)} × {len(past_days_options)} = {len(models) * normal_configs * len(correlation_levels) * len(complexities) * len(past_days_options)}")
-    print(f"📊 仅预测模式: {len(models)} × 1 × {len(correlation_levels)} × {len(complexities)} × 1 = {len(models) * forecast_only_configs * len(correlation_levels) * len(complexities)}")
+    print(f"📊 正常模式: {len(models)} × 4 × {len(correlation_levels)} × {len(time_encoding_options)} × {len(complexities)} × {len(past_days_options)} = {len(models) * normal_configs * len(correlation_levels) * len(time_encoding_options) * len(complexities) * len(past_days_options)}")
+    print(f"📊 仅预测模式: {len(models)} × 1 × {len(correlation_levels)} × {len(time_encoding_options)} × {len(complexities)} × 1 = {len(models) * forecast_only_configs * len(correlation_levels) * len(time_encoding_options) * len(complexities)}")
     print(f"📊 相关度档位: {correlation_levels} (高/中/全相关度)")
+    print(f"📊 时间编码: {time_encoding_options} (开启/关闭)")
     
     completed = 0
     failed = 0
@@ -139,21 +141,23 @@ def run_plant_experiments(plant_id, data_file):
                 hist_weather, forecast, no_hist_power = feature_config
             
             for correlation_level in correlation_levels:
-                for complexity in complexities:
-                    if no_hist_power:
-                        # 仅预测天气模式：不使用past_days，只运行一次
-                        past_days_list = [0]  # 0表示不使用历史数据
-                    else:
-                        # 正常模式：使用所有past_days选项
-                        past_days_list = past_days_options
-                    
-                    for past_days in past_days_list:
-                        # 生成实验ID
+                for time_encoding in time_encoding_options:
+                    for complexity in complexities:
                         if no_hist_power:
-                            feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_nohist_{correlation_level}_comp{complexity}"
+                            # 仅预测天气模式：不使用past_days，只运行一次
+                            past_days_list = [0]  # 0表示不使用历史数据
                         else:
-                            feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_{correlation_level}_comp{complexity}"
-                        exp_id = f"{model}_{feat_str}"
+                            # 正常模式：使用所有past_days选项
+                            past_days_list = past_days_options
+                        
+                        for past_days in past_days_list:
+                            # 生成实验ID
+                            time_str = "time" if time_encoding else "notime"
+                            if no_hist_power:
+                                feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_nohist_{correlation_level}_{time_str}_comp{complexity}"
+                            else:
+                                feat_str = f"feat{str(hist_weather).lower()}_fcst{str(forecast).lower()}_days{past_days}_{correlation_level}_{time_str}_comp{complexity}"
+                            exp_id = f"{model}_{feat_str}"
                     
                     # 检查是否已存在
                     if exp_id in existing_experiments:
@@ -172,6 +176,7 @@ def run_plant_experiments(plant_id, data_file):
                         '--use_hist_weather', str(hist_weather).lower(),
                         '--use_forecast', str(forecast).lower(),
                         '--correlation_level', correlation_level,
+                        '--use_time_encoding', str(time_encoding).lower(),
                         '--model_complexity', complexity,
                         '--epochs', str(epochs),
                         '--data_path', data_file,

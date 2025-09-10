@@ -123,11 +123,13 @@ def load_raw_data(path: str) -> pd.DataFrame:
 def preprocess_features(df: pd.DataFrame, config: dict):
     df_clean = df.dropna(subset=[TARGET_COL]).copy()
 
-    # 添加时间编码特征（始终包含）
-    df_clean['month_cos'] = np.cos(2 * np.pi * df_clean['Month'] / 12)
-    df_clean['month_sin'] = np.sin(2 * np.pi * df_clean['Month'] / 12)
-    df_clean['hour_cos'] = np.cos(2 * np.pi * df_clean['Hour'] / 24)
-    df_clean['hour_sin'] = np.sin(2 * np.pi * df_clean['Hour'] / 24)
+    # 添加时间编码特征（根据开关决定）
+    use_time_encoding = config.get('use_time_encoding', True)
+    if use_time_encoding:
+        df_clean['month_cos'] = np.cos(2 * np.pi * df_clean['Month'] / 12)
+        df_clean['month_sin'] = np.sin(2 * np.pi * df_clean['Month'] / 12)
+        df_clean['hour_cos'] = np.cos(2 * np.pi * df_clean['Hour'] / 24)
+        df_clean['hour_sin'] = np.sin(2 * np.pi * df_clean['Hour'] / 24)
 
     # 构建特征列表
     hist_feats = []
@@ -140,8 +142,9 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     if config.get('use_hist_weather', False):
         hist_feats += get_weather_features_by_correlation(correlation_level)
 
-    # 时间编码特征（始终包含）
-    hist_feats += TIME_FEATURES
+    # 时间编码特征（根据开关决定）
+    if use_time_encoding:
+        hist_feats += TIME_FEATURES
 
     # 预测特征
     if config.get('use_forecast', False):
