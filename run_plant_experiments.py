@@ -60,8 +60,11 @@ def run_plant_experiments(plant_id, data_file):
     
     # 检查已有结果
     existing_experiments = check_existing_experiments(plant_id, save_dir)
+    print(f"🔍 检查路径: {os.path.join(save_dir, f'{plant_id}_results.xlsx')}")
+    print(f"🔍 找到已有实验: {len(existing_experiments)} 个")
     if existing_experiments:
         print(f"📊 已有 {len(existing_experiments)} 个实验结果，将跳过已完成的实验")
+        print(f"🔍 已有实验示例: {list(existing_experiments)[:5]}")
     
     # 定义所有实验组合
     models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
@@ -103,7 +106,7 @@ def run_plant_experiments(plant_id, data_file):
                         skipped += 1
                         continue
                     
-                    print(f"🚀 运行实验: {exp_id}")
+                    print(f"🚀 运行实验: {exp_id} (不在已有实验中)")
                     
                     # 构建命令
                     epochs = epoch_map[complexity]
