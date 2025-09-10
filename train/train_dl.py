@@ -18,6 +18,7 @@ from train.train_utils import (
     count_parameters
 )
 from eval.metrics_utils import calculate_metrics, calculate_mse
+from utils.gpu_utils import get_gpu_memory_used
 from models.transformer import Transformer
 from models.rnn_models import LSTM, GRU
 from models.tcn import TCNModel
@@ -209,6 +210,9 @@ def train_dl_model(
     best_epoch = max(logs, key=lambda x: x['val_loss'])['epoch'] if logs else 1
     final_lr = optimizer.param_groups[0]['lr']
     
+    # 获取GPU内存使用量
+    gpu_memory_used = get_gpu_memory_used()
+    
     metrics = {
         'test_loss': raw_mse,
         'rmse': raw_rmse,
@@ -219,6 +223,7 @@ def train_dl_model(
         'smape': all_metrics['smape'],
         'best_epoch': best_epoch,
         'final_lr': final_lr,
+        'gpu_memory_used': gpu_memory_used,
         'epoch_logs': logs,
         'param_count': count_parameters(model),
         'train_time_sec': total_train_time,

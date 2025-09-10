@@ -4,6 +4,7 @@ import joblib
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from eval.metrics_utils import calculate_metrics, calculate_mse
+from utils.gpu_utils import get_gpu_memory_used
 from models.ml_models import train_rf, train_xgb, train_lgbm
 
 def train_ml_model(
@@ -97,6 +98,9 @@ def train_ml_model(
     
     train_mse = mean_squared_error(y_train_flat, train_preds_flat)
 
+    # 获取GPU内存使用量
+    gpu_memory_used = get_gpu_memory_used()
+
     save_dir  = config['save_dir']
     
     # 根据配置决定是否保存模型
@@ -116,6 +120,7 @@ def train_ml_model(
         'smape':          all_metrics['smape'],
         'best_epoch':     np.nan,  # ML模型没有epoch概念
         'final_lr':       np.nan,  # ML模型没有学习率概念
+        'gpu_memory_used': gpu_memory_used,
         'train_time_sec': round(train_time, 2),
         'inference_time_sec': round(inference_time, 2),
         'param_count':    X_train_flat.shape[1],

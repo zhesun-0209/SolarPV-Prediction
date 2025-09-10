@@ -34,7 +34,7 @@ def save_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据
+        # 构建行数据 (20列)
         row_data = {
             # 实验配置列 (8列)
             'model': config.get('model', ''),
@@ -63,8 +63,8 @@ def save_plant_excel_results(
             'mape': round(metrics.get('mape', 0), 4),
             'smape': round(metrics.get('smape', 0), 4),
             
-            # 可选列 (1列)
-            'gpu_memory_used': round(metrics.get('gpu_memory_used', np.nan), 4)
+            # GPU内存使用列 (1列)
+            'gpu_memory_used': round(metrics.get('gpu_memory_used', 0), 4)
         }
         
         excel_data.append(row_data)
@@ -144,7 +144,7 @@ def collect_plant_results(plant_id: str, result_dirs: List[str]) -> List[Dict[st
                         'smape': df.iloc[0].get('smape', 0),
                         'best_epoch': df.iloc[0].get('best_epoch', np.nan),
                         'final_lr': df.iloc[0].get('final_lr', np.nan),
-                        'gpu_memory_used': df.iloc[0].get('gpu_memory_used', np.nan)
+                        'gpu_memory_used': df.iloc[0].get('gpu_memory_used', 0)
                     }
                     
                     results.append({

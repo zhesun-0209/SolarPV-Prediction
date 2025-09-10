@@ -152,7 +152,7 @@ def save_results(
                 'smape': metrics.get('smape', np.nan),
                 'best_epoch': metrics.get('best_epoch', np.nan),
                 'final_lr': metrics.get('final_lr', np.nan),
-                'gpu_memory_used': metrics.get('gpu_memory_used', np.nan)
+                'gpu_memory_used': metrics.get('gpu_memory_used', 0)
             }
         }
         
