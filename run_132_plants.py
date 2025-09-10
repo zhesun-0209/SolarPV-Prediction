@@ -126,7 +126,7 @@ def run_plant_experiments(plant_id, data_file, force_rerun=False):
     start_time = time.time()
     
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10800)  # 3小时超时
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=18000)  # 5小时超时
         
         end_time = time.time()
         duration = end_time - start_time
@@ -141,7 +141,7 @@ def run_plant_experiments(plant_id, data_file, force_rerun=False):
             return False
             
     except subprocess.TimeoutExpired:
-        print(f"❌ 厂 {plant_id} 实验超时 (3小时)")
+        print(f"❌ 厂 {plant_id} 实验超时 (5小时)")
         return False
     except Exception as e:
         print(f"❌ 厂 {plant_id} 实验异常: {e}")
