@@ -45,8 +45,9 @@ def check_existing_results(plant_id):
         result_dirs.append(local_dir)
     
     for result_dir in result_dirs:
-        # 检查Excel文件是否存在
-        excel_file = os.path.join(result_dir, f"{plant_id}_results.xlsx")
+        # 检查厂子目录下的Excel文件是否存在
+        plant_dir = os.path.join(result_dir, plant_id)
+        excel_file = os.path.join(plant_dir, f"{plant_id}_results.xlsx")
         if os.path.exists(excel_file):
             # 检查Excel文件是否完整（至少252行）
             try:
@@ -74,7 +75,8 @@ def check_partial_results(plant_id):
     # 查找现有Excel结果
     existing_count = 0
     for result_dir in result_dirs:
-        excel_file = os.path.join(result_dir, f"{plant_id}_results.xlsx")
+        plant_dir = os.path.join(result_dir, plant_id)
+        excel_file = os.path.join(plant_dir, f"{plant_id}_results.xlsx")
         if os.path.exists(excel_file):
             try:
                 df = pd.read_excel(excel_file)
@@ -195,6 +197,9 @@ def run_all_plants(force_rerun=False):
         is_complete, missing_experiments, existing_count = check_partial_results(plant_id)
         
         print(f"🔍 检查厂 {plant_id} 状态...")
+        print(f"   has_complete_results: {has_complete_results}")
+        print(f"   existing_count: {existing_count}")
+        print(f"   is_complete: {is_complete}")
         
         if has_complete_results and not force_rerun:
             print(f"⏭️  厂 {plant_id} 已有完整结果 (252个实验)，跳过")
