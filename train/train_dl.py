@@ -191,13 +191,7 @@ def train_dl_model(
     raw_rmse = np.sqrt(raw_mse)
     raw_mae = np.mean(np.abs(y_inv - p_inv))
 
-    # === 相对误差（用于辅助分析）
-    if np.mean(y_inv) > 0:
-        norm_mse = np.mean(((y_inv - p_inv) / y_inv) ** 2)
-        norm_rmse = np.sqrt(norm_mse)
-        norm_mae = np.mean(np.abs((y_inv - p_inv) / y_inv))
-    else:
-        norm_mse = norm_rmse = norm_mae = np.nan
+    # 只计算原始尺度指标
 
 
     # 根据配置决定是否保存模型
@@ -211,9 +205,6 @@ def train_dl_model(
         'test_loss': raw_mse,
         'rmse': raw_rmse,
         'mae': raw_mae,
-        'norm_test_loss': norm_mse,
-        'norm_rmse': norm_rmse,
-        'norm_mae': norm_mae,
         'epoch_logs': logs,
         'param_count': count_parameters(model),
         'train_time_sec': total_train_time,

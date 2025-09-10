@@ -52,13 +52,7 @@ def save_results(
     test_rmse = np.sqrt(test_mse)
     test_mae = np.mean(np.abs(preds - yts))
     
-    # 计算相对误差（用于辅助分析）
-    if np.mean(yts) > 0:
-        norm_mse  = np.mean(((preds - yts) / yts) ** 2)
-        norm_rmse = np.sqrt(norm_mse)
-        norm_mae  = np.mean(np.abs((preds - yts) / yts))
-    else:
-        norm_mse = norm_rmse = norm_mae = np.nan
+    # 只计算原始尺度指标
 
     # 获取保存选项
     save_options = config.get('save_options', {})
@@ -83,11 +77,6 @@ def save_results(
             'inference_time_sec': metrics.get('inference_time_sec', np.nan),
             'param_count':     metrics.get('param_count'),
             'samples_count':   len(preds),  # 测试样本数量
-            
-            # 标准化指标
-            'norm_test_loss':  norm_mse,   # 标准化/相对MSE
-            'norm_rmse':       norm_rmse,  # 标准化/相对RMSE
-            'norm_mae':        norm_mae,   # 标准化/相对MAE
         }
         pd.DataFrame([summary]).to_csv(os.path.join(save_dir, "summary.csv"), index=False)
 

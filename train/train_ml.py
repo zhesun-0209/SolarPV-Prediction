@@ -88,13 +88,7 @@ def train_ml_model(
     y_matrix = y_test_flat.reshape(-1, fh)
     p_matrix = preds_flat.reshape(-1, fh)
 
-    # 相对误差（用于辅助分析）
-    if np.mean(y_test_flat) > 0:
-        norm_mse = np.mean(((y_test_flat - preds_flat) / y_test_flat) ** 2)
-        norm_rmse = np.sqrt(norm_mse)
-        norm_mae = np.mean(np.abs((y_test_flat - preds_flat) / y_test_flat))
-    else:
-        norm_mse = norm_rmse = norm_mae = np.nan
+    # 只计算原始尺度指标
 
     save_dir  = config['save_dir']
     
@@ -109,9 +103,6 @@ def train_ml_model(
         'test_loss':      mse,
         'rmse':           rmse,
         'mae':            mae,
-        'norm_test_loss': norm_mse,
-        'norm_rmse':      norm_rmse,
-        'norm_mae':       norm_mae,
         'train_time_sec': round(train_time, 2),
         'inference_time_sec': round(inference_time, 2),
         'param_count':    X_train_flat.shape[1],
