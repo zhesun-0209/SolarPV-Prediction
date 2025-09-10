@@ -4,34 +4,67 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-# 基于相关性分析结果选择的天气特征
-# 历史特征：从相关性分析中选择的天气特征
-BASE_HIST_FEATURES = [
-    'global_tilted_irradiance',    # 全球倾斜辐射
-    'relative_humidity_2m',        # 相对湿度
-    'temperature_2m',              # 温度
-    'wind_gusts_10m',             # 10米阵风
-    'cloud_cover_low',            # 低云覆盖
-    'wind_speed_100m',            # 100米风速
-    'snow_depth',                 # 雪深
-    'dew_point_2m',               # 露点温度
-    'surface_pressure',           # 表面气压
-    'precipitation',              # 降水
+# 基于相关性分析结果选择的天气特征（按相关度分档）
+# 高相关度特征 (|r| > 0.6)
+HIGH_CORR_FEATURES = [
+    'shortwave_radiation',         # 短波辐射 (r=0.8909)
+    'global_tilted_irradiance',    # 全球倾斜辐射 (r=0.8909)
+    'direct_radiation',            # 直接辐射 (r=0.8588)
+    'terrestrial_radiation',       # 地面辐射 (r=0.8027)
+    'direct_normal_irradiance',    # 直接法向辐射 (r=0.7968)
+    'vapour_pressure_deficit',     # 水汽压差 (r=0.6529)
+    'diffuse_radiation',           # 散射辐射 (r=0.6423)
+    'relative_humidity_2m',        # 相对湿度 (r=-0.584)
 ]
 
-# 预测特征：使用相同的天气特征作为预测输入
-BASE_FCST_FEATURES = [
-    'global_tilted_irradiance',    # 全球倾斜辐射
-    'relative_humidity_2m',        # 相对湿度
-    'temperature_2m',              # 温度
-    'wind_gusts_10m',             # 10米阵风
-    'cloud_cover_low',            # 低云覆盖
-    'wind_speed_100m',            # 100米风速
-    'snow_depth',                 # 雪深
-    'dew_point_2m',               # 露点温度
-    'surface_pressure',           # 表面气压
-    'precipitation',              # 降水
+# 中相关度特征 (0.3 < |r| <= 0.6)
+MEDIUM_CORR_FEATURES = [
+    'temperature_2m',              # 温度 (r=0.3813)
+    'apparent_temperature',        # 体感温度 (r=0.3429)
+    'wind_gusts_10m',             # 10米阵风 (r=0.2245)
+    'cloud_cover',                # 云覆盖 (r=-0.189)
+    'cloud_cover_low',            # 低云覆盖 (r=-0.1633)
+    'cloud_cover_mid',            # 中云覆盖 (r=-0.1608)
+    'wind_speed_10m',             # 10米风速 (r=-0.1313)
+    'snow_depth',                 # 雪深 (r=-0.1141)
 ]
+
+# 低相关度特征 (|r| <= 0.3)
+LOW_CORR_FEATURES = [
+    'dew_point_2m',               # 露点温度 (r=0.1058)
+    'cloud_cover_high',           # 高云覆盖 (r=-0.0939)
+    'surface_pressure',           # 表面气压 (r=0.0817)
+    'precipitation',              # 降水 (r=-0.0793)
+    'rain',                       # 雨 (r=-0.0662)
+    'snowfall',                   # 雪 (r=-0.0662)
+    'wind_direction_10m',         # 10米风向 (r=0.0624)
+    'wind_speed_100m',            # 100米风速 (r=0.0595)
+    'wind_direction_100m',        # 100米风向 (r=0.0573)
+]
+
+# 根据相关度档位选择特征
+def get_weather_features_by_correlation(correlation_level):
+    """
+    根据相关度档位返回天气特征
+    
+    Args:
+        correlation_level: 'high', 'medium', 'all'
+    
+    Returns:
+        list: 选中的天气特征列表
+    """
+    if correlation_level == 'high':
+        return HIGH_CORR_FEATURES
+    elif correlation_level == 'medium':
+        return HIGH_CORR_FEATURES + MEDIUM_CORR_FEATURES
+    elif correlation_level == 'all':
+        return HIGH_CORR_FEATURES + MEDIUM_CORR_FEATURES + LOW_CORR_FEATURES
+    else:
+        raise ValueError(f"Invalid correlation_level: {correlation_level}")
+
+# 保持向后兼容性
+BASE_HIST_FEATURES = HIGH_CORR_FEATURES
+BASE_FCST_FEATURES = HIGH_CORR_FEATURES
 
 # 时间编码特征
 TIME_FEATURES = ['month_cos', 'month_sin', 'hour_cos', 'hour_sin']
@@ -100,16 +133,19 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     hist_feats = []
     fcst_feats = []
 
+    # 获取相关度档位
+    correlation_level = config.get('correlation_level', 'high')
+
     # 历史天气特征
     if config.get('use_hist_weather', False):
-        hist_feats += BASE_HIST_FEATURES
+        hist_feats += get_weather_features_by_correlation(correlation_level)
 
     # 时间编码特征（始终包含）
     hist_feats += TIME_FEATURES
 
     # 预测特征
     if config.get('use_forecast', False):
-        fcst_feats += BASE_FCST_FEATURES
+        fcst_feats += get_weather_features_by_correlation(correlation_level)
 
     # 确保所有特征都存在
     available_hist_feats = [f for f in hist_feats if f in df_clean.columns]

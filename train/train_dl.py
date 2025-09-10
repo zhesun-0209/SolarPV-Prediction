@@ -92,8 +92,8 @@ def train_dl_model(
     
     # 根据模型复杂度获取epoch数
     complexity = config.get('model_complexity', 'medium')
-    epoch_params = config.get('epoch_params', {'low': 20, 'medium': 50, 'high': 100})
-    epochs = epoch_params.get(complexity, 50)
+    epoch_params = config.get('epoch_params', {'low': 15, 'medium': 30, 'high': 50})
+    epochs = epoch_params.get(complexity, 30)
 
     mse_fn = torch.nn.MSELoss()
     logs = []
