@@ -38,6 +38,7 @@ def main():
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_dir", type=str)
+    parser.add_argument("--plant_id", type=str, help="Plant ID for result tracking")
 
     # === Ablation settings ===
     parser.add_argument("--model", type=str)
@@ -99,6 +100,7 @@ def main():
     # === Override general settings from CLI ===
     if args.data_path: config["data_path"] = args.data_path
     if args.save_dir: config["save_dir"] = args.save_dir
+    if args.plant_id: config["plant_id"] = args.plant_id
     if args.model: config["model"] = args.model
     if args.past_days: config["past_days"] = args.past_days
     if args.past_hours: config["past_hours"] = args.past_hours
