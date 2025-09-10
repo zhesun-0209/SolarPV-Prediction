@@ -255,12 +255,12 @@ def analyze_results():
     all_results = []
     
     for result_dir in result_dirs:
-        # 查找所有summary.csv文件
-        summary_files = glob.glob(os.path.join(result_dir, '**/summary.csv'), recursive=True)
+        # 查找所有Excel文件
+        excel_files = glob.glob(os.path.join(result_dir, '**/*_results.xlsx'), recursive=True)
         
-        for file in summary_files:
+        for file in excel_files:
             try:
-                df = pd.read_csv(file)
+                df = pd.read_excel(file)
                 df['result_file'] = file
                 all_results.append(df)
             except Exception as e:

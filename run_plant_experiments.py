@@ -10,12 +10,11 @@ import subprocess
 import time
 import pandas as pd
 import numpy as np
-import re
 import glob
 
 def check_existing_experiments(plant_id, save_dir):
     """
-    检查已有的实验，从summary.csv文件中读取已完成的实验ID
+    检查已有的实验，从Excel文件中读取已完成的实验ID
     
     Args:
         plant_id: 厂ID
@@ -26,161 +25,20 @@ def check_existing_experiments(plant_id, save_dir):
     """
     existing_experiments = set()
     
-    # 检查厂级别的summary.csv文件
-    summary_file = os.path.join(save_dir, "summary.csv")
+    # 检查厂级别的Excel文件
+    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
     
-    if os.path.exists(summary_file):
+    if os.path.exists(excel_file):
         try:
-            df = pd.read_csv(summary_file)
+            df = pd.read_excel(excel_file)
             if not df.empty and 'exp_id' in df.columns:
                 existing_experiments = set(df['exp_id'].tolist())
         except Exception as e:
-            print(f"⚠️  读取summary.csv失败: {e}")
+            print(f"⚠️  读取Excel文件失败: {e}")
     
     return existing_experiments
 
-def append_experiment_to_summary(plant_id, save_dir, exp_id, model, hist_weather, forecast, 
-                                past_days, complexity, epochs, exp_duration, result_stdout, result_stderr=""):
-    """
-    将实验结果追加到summary.csv文件
-    
-    Args:
-        plant_id: 厂ID
-        save_dir: 保存目录
-        exp_id: 实验ID
-        model: 模型名称
-        hist_weather: 是否使用历史天气
-        forecast: 是否使用预测天气
-        past_days: 过去天数
-        complexity: 模型复杂度
-        epochs: 训练轮数
-        exp_duration: 实验耗时
-        result_stdout: main.py的输出
-    """
-    print(f"🔍 [DEBUG] 开始保存实验结果: {exp_id}")
-    print(f"🔍 [DEBUG] 保存目录: {save_dir}")
-    
-    summary_file = os.path.join(save_dir, "summary.csv")
-    print(f"🔍 [DEBUG] summary.csv路径: {summary_file}")
-    
-    # 解析test_loss和其他指标
-    test_loss = 0
-    rmse = 0
-    mae = 0
-    print(f"🔍 [DEBUG] 开始解析指标...")
-    print(f"🔍 [DEBUG] main.py输出长度: {len(result_stdout)}")
-    print(f"🔍 [DEBUG] main.py输出前500字符: {result_stdout[:500]}")
-    
-    try:
-        # 解析test_loss - 从main.py的输出中解析
-        test_loss_match = re.search(r'test_loss=([\d.]+)', result_stdout)
-        if test_loss_match:
-            test_loss = float(test_loss_match.group(1))
-            print(f"🔍 [DEBUG] 成功解析test_loss: {test_loss}")
-        else:
-            print(f"🔍 [DEBUG] 未找到test_loss模式")
-        
-        # 解析rmse - 从main.py的输出中解析
-        rmse_match = re.search(r'rmse=([\d.]+)', result_stdout)
-        if rmse_match:
-            rmse = float(rmse_match.group(1))
-            print(f"🔍 [DEBUG] 成功解析rmse: {rmse}")
-        
-        # 解析mae - 从main.py的输出中解析
-        mae_match = re.search(r'mae=([\d.]+)', result_stdout)
-        if mae_match:
-            mae = float(mae_match.group(1))
-            print(f"🔍 [DEBUG] 成功解析mae: {mae}")
-        
-        # 如果从stdout解析不到，尝试从stderr解析
-        if test_loss == 0 and rmse == 0 and mae == 0:
-            print(f"🔍 [DEBUG] 从stdout解析不到指标，尝试从stderr解析...")
-            print(f"🔍 [DEBUG] stderr长度: {len(result_stderr)}")
-            print(f"🔍 [DEBUG] stderr前500字符: {result_stderr[:500]}")
-            
-            # 从stderr解析
-            test_loss_match = re.search(r'test_loss=([\d.]+)', result_stderr)
-            if test_loss_match:
-                test_loss = float(test_loss_match.group(1))
-                print(f"🔍 [DEBUG] 从stderr成功解析test_loss: {test_loss}")
-            
-            rmse_match = re.search(r'rmse=([\d.]+)', result_stderr)
-            if rmse_match:
-                rmse = float(rmse_match.group(1))
-                print(f"🔍 [DEBUG] 从stderr成功解析rmse: {rmse}")
-            
-            mae_match = re.search(r'mae=([\d.]+)', result_stderr)
-            if mae_match:
-                mae = float(mae_match.group(1))
-                print(f"🔍 [DEBUG] 从stderr成功解析mae: {mae}")
-            
-    except Exception as e:
-        print(f"🔍 [DEBUG] 解析指标失败: {e}")
-    
-    # 构建实验数据行
-    print(f"🔍 [DEBUG] 构建实验数据...")
-    exp_data = {
-        'exp_id': exp_id,
-        'plant_id': plant_id,
-        'model': model,
-        'use_hist_weather': hist_weather,
-        'use_forecast': forecast,
-        'past_days': past_days,
-        'model_complexity': complexity,
-        'epochs': epochs,
-        'train_time_sec': round(exp_duration, 4),
-        'test_loss': test_loss,
-        'rmse': rmse,  # 使用解析到的真实值
-        'mae': mae,    # 使用解析到的真实值
-        'nrmse': 0,    # 暂时设为0，后续可以计算
-        'r_square': 0, # 暂时设为0，后续可以计算
-        'mape': 0,     # 暂时设为0，后续可以计算
-        'smape': 0,    # 暂时设为0，后续可以计算
-        'param_count': 0,
-        'samples_count': 0,
-        'best_epoch': np.nan,
-        'final_lr': np.nan,
-        'gpu_memory_used': 0
-    }
-    print(f"🔍 [DEBUG] 实验数据: {exp_data}")
-    
-    # 追加到summary.csv
-    print(f"🔍 [DEBUG] 开始保存到summary.csv...")
-    try:
-        if os.path.exists(summary_file):
-            print(f"🔍 [DEBUG] summary.csv已存在，读取现有数据...")
-            # 读取现有数据
-            df = pd.read_csv(summary_file)
-            print(f"🔍 [DEBUG] 现有数据行数: {len(df)}")
-            print(f"🔍 [DEBUG] 现有列: {list(df.columns)}")
-            
-            # 检查是否已存在该实验
-            if 'exp_id' in df.columns and exp_id in df['exp_id'].values:
-                print(f"🔍 [DEBUG] 实验 {exp_id} 已存在，更新数据...")
-                # 更新现有行
-                df.loc[df['exp_id'] == exp_id, list(exp_data.keys())] = list(exp_data.values())
-            else:
-                print(f"🔍 [DEBUG] 实验 {exp_id} 不存在，追加新行...")
-                # 追加新行
-                new_row = pd.DataFrame([exp_data])
-                df = pd.concat([df, new_row], ignore_index=True)
-        else:
-            print(f"🔍 [DEBUG] summary.csv不存在，创建新文件...")
-            # 创建新文件
-            df = pd.DataFrame([exp_data])
-        
-        print(f"🔍 [DEBUG] 最终数据行数: {len(df)}")
-        print(f"🔍 [DEBUG] 最终列: {list(df.columns)}")
-        
-        # 保存文件
-        df.to_csv(summary_file, index=False)
-        print(f"✅ 实验结果已保存到: {summary_file}")
-        print(f"🔍 [DEBUG] 文件大小: {os.path.getsize(summary_file)} bytes")
-        
-    except Exception as e:
-        print(f"⚠️  保存实验结果失败: {e}")
-        import traceback
-        traceback.print_exc()
+# 移除 summary.csv 相关功能，只保留 Excel 文件保存
 
 def run_plant_experiments(plant_id, data_file):
     """运行单个厂的所有252个实验"""
@@ -288,12 +146,8 @@ def run_plant_experiments(plant_id, data_file):
                             
                             completed += 1
                             
-                            # 将实验结果追加到summary.csv
-                            print(f"🔍 [DEBUG] 开始调用append_experiment_to_summary...")
-                            append_experiment_to_summary(
-                                plant_id, save_dir, exp_id, model, hist_weather, forecast,
-                                past_days, complexity, epochs, exp_duration, result.stdout, result.stderr
-                            )
+                            # 实验结果已通过 main.py 保存到 Excel 文件
+                            print(f"✅ 实验结果已保存到 Excel 文件")
                             
                         else:
                             print(f"❌ 实验失败")
