@@ -252,7 +252,7 @@ def main():
         # Step 6: Save metrics and plots
         cfg["scaler_target"] = scaler_target
         save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
-        print(f"[INFO] Project {pid} | {cfg['model']} done, test_loss={metrics['test_loss']:.4f}")
+        print(f"[INFO] Project {pid} | {cfg['model']} done, test_loss={metrics['test_loss']:.4f}, rmse={metrics['rmse']:.4f}, mae={metrics['mae']:.4f}")
 
 if __name__ == "__main__":
     main()

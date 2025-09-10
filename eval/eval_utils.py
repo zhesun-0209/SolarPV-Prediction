@@ -151,8 +151,9 @@ def save_results(
             }
         }
         
-        # 保存到Excel文件
-        excel_file = save_plant_excel_results(
+        # 保存到Excel文件（追加模式）
+        from eval.excel_utils import append_plant_excel_results
+        excel_file = append_plant_excel_results(
             plant_id=config.get('plant_id', 'unknown'),
             results=[result_data],
             save_dir=save_dir
