@@ -124,7 +124,7 @@ def run_plant_experiments(plant_id, data_file):
                         '--data_path', data_file,
                         '--plant_id', plant_id,
                         '--save_dir', save_dir,  # 直接使用厂级目录
-                        '--save_summary', 'true'  # 确保保存summary.csv
+                        # --save_summary 已移除，不再保存summary.csv
                     ]
                     print(f"🔍 [DEBUG] 运行命令: {' '.join(cmd)}")
                     

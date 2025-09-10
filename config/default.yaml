@@ -91,7 +91,7 @@ epoch_params:
 # 保存选项
 save_options:
   save_model:           false    # 是否保存模型文件
-  save_summary:         true     # 是否保存summary.csv
+  save_summary:         false    # 已禁用summary.csv保存
   save_predictions:     false    # 是否保存predictions.csv (默认不保存)
   save_training_log:    false    # 是否保存training_log.csv (仅DL模型，默认不保存)
   # 绘图功能已移除，默认不保存图片

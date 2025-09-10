@@ -58,9 +58,9 @@ def save_results(
     # 获取保存选项
     save_options = config.get('save_options', {})
     
-    # ===== 1. Save summary.csv (disabled - using run_plant_experiments.py instead) =====
-    # 注释掉summary.csv保存，因为run_plant_experiments.py会处理追加逻辑
-    # 但是需要定义summary变量供后续代码使用
+    # ===== 1. summary.csv 已完全禁用 =====
+    # 不再保存summary.csv文件，只保存Excel文件
+    # 定义summary变量供Excel保存使用
     summary = {
         'model':           config['model'],
         'use_hist_weather': config.get('use_hist_weather', False),
@@ -79,7 +79,7 @@ def save_results(
         'param_count':     metrics.get('param_count'),
         'samples_count':   len(preds),  # 测试样本数量
     }
-    # 不保存summary.csv，因为run_plant_experiments.py会处理
+    # 不保存summary.csv，只保存Excel文件
 
     # ===== 2. Save predictions.csv =====
     if save_options.get('save_predictions', True):

@@ -75,7 +75,7 @@ def main():
     
     # === Save options ===
     parser.add_argument("--save_model", type=str, choices=["true", "false"])
-    parser.add_argument("--save_summary", type=str, choices=["true", "false"])
+    # --save_summary 已移除，不再保存summary.csv
     parser.add_argument("--save_predictions", type=str, choices=["true", "false"])
     parser.add_argument("--save_training_log", type=str, choices=["true", "false"])
     # 绘图功能已移除，默认不保存图片
@@ -154,7 +154,7 @@ def main():
     # === Override save options ===
     save_opts = config.setdefault("save_options", {})
     if args.save_model: save_opts["save_model"] = str2bool(args.save_model)
-    if args.save_summary: save_opts["save_summary"] = str2bool(args.save_summary)
+    # save_summary 已移除，不再保存summary.csv
     if args.save_predictions: save_opts["save_predictions"] = str2bool(args.save_predictions)
     if args.save_training_log: save_opts["save_training_log"] = str2bool(args.save_training_log)
     # 绘图功能已移除
