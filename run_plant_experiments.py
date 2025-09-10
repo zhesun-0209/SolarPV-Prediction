@@ -9,6 +9,7 @@ import sys
 import subprocess
 import time
 import pandas as pd
+import numpy as np
 from eval.excel_utils import save_plant_excel_results, load_plant_excel_results
 
 def run_plant_experiments(plant_id, data_file):
@@ -107,8 +108,44 @@ def run_plant_experiments(plant_id, data_file):
                             print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
                             completed += 1
                             
-                            # 这里可以解析结果并添加到all_results
-                            # 由于main.py已经保存到Excel，我们不需要重复处理
+                            # 立即保存到Excel文件
+                            try:
+                                # 构建实验结果数据
+                                result_data = {
+                                    'config': {
+                                        'model': model,
+                                        'use_hist_weather': hist_weather,
+                                        'use_forecast': forecast,
+                                        'past_days': past_days,
+                                        'model_complexity': complexity,
+                                        'epochs': epochs,
+                                        'batch_size': 32,  # 默认值
+                                        'learning_rate': 0.001  # 默认值
+                                    },
+                                    'metrics': {
+                                        'train_time_sec': exp_duration,
+                                        'inference_time_sec': 0,  # 暂时设为0
+                                        'param_count': 0,  # 暂时设为0
+                                        'samples_count': 0,  # 暂时设为0
+                                        'test_loss': 0,  # 暂时设为0，实际值需要从main.py输出解析
+                                        'rmse': 0,
+                                        'mae': 0,
+                                        'nrmse': 0,
+                                        'r_square': 0,
+                                        'mape': 0,
+                                        'smape': 0,
+                                        'best_epoch': np.nan,
+                                        'final_lr': np.nan,
+                                        'gpu_memory_used': 0
+                                    }
+                                }
+                                
+                                # 保存到Excel
+                                from eval.excel_utils import append_plant_excel_results
+                                append_plant_excel_results(plant_id, [result_data], save_dir)
+                                
+                            except Exception as e:
+                                print(f"⚠️  保存Excel结果失败: {e}")
                             
                         else:
                             print(f"❌ 实验失败")
