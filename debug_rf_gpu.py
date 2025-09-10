@@ -99,14 +99,17 @@ def test_rf_gpu_parameters():
                 rf_single.fit(X_test, y_test[:, 0])  # 只使用第一列
                 print("    ✅ 单输出RF成功")
                 
-                # 测试多输出RF
+                # 测试多输出RF（需要转换数据格式）
                 print("  - 测试多输出MultiOutputRegressor...")
+                # 将CuPy数组转换为NumPy数组
+                X_test_np = X_test.get()
+                y_test_np = y_test.get()
                 rf_multi = MultiOutputRegressor(cuRandomForestRegressor(**params))
-                rf_multi.fit(X_test, y_test)
+                rf_multi.fit(X_test_np, y_test_np)
                 print("    ✅ 多输出RF成功")
                 
                 # 测试预测
-                pred = rf_multi.predict(X_test[:5])
+                pred = rf_multi.predict(X_test_np[:5])
                 print(f"    ✅ 预测成功，形状: {pred.shape}")
                 
                 end_time = time.time()

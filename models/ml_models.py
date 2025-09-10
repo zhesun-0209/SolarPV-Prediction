@@ -47,6 +47,13 @@ def train_rf(X_train, y_train, params: dict):
     """Train GPU-accelerated Random Forest regressor with multi-output support."""
     if GPU_AVAILABLE:
         # cuML Random Forest不支持多输出，需要使用MultiOutputRegressor
+        # 需要确保数据是NumPy数组格式
+        import cupy as cp
+        if hasattr(X_train, 'get'):  # 如果是CuPy数组
+            X_train = X_train.get()
+        if hasattr(y_train, 'get'):  # 如果是CuPy数组
+            y_train = y_train.get()
+        
         base = cuRandomForestRegressor(**params)
         model = MultiOutputRegressor(base)
         model.fit(X_train, y_train)
