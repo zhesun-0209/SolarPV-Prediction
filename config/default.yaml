@@ -65,13 +65,13 @@ model_params:
   
   ml_medium:
     n_estimators:  100
-    max_depth:      null
+    max_depth:      15
     learning_rate:  0.1
     random_state:   42
   
   ml_high:
     n_estimators:  200
-    max_depth:      null
+    max_depth:      25
     learning_rate:  0.05
     random_state:   42
 
