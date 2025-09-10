@@ -94,7 +94,7 @@ def run_plant_experiments(plant_id, data_file):
         print(f"🔍 已有实验示例: {list(existing_experiments)[:5]}")
     
     # 定义所有实验组合
-    models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
+    models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM', 'Linear']
     feature_configs = [
         (False, False),  # 无特征
         (True, False),   # 历史天气
@@ -119,6 +119,7 @@ def run_plant_experiments(plant_id, data_file):
     print(f"📊 总实验数: {total_experiments}")
     print(f"📊 正常模式: {len(models)} × 4 × {len(correlation_levels)} × {len(time_encoding_options)} × {len(complexities)} × {len(past_days_options)} = {len(models) * normal_configs * len(correlation_levels) * len(time_encoding_options) * len(complexities) * len(past_days_options)}")
     print(f"📊 仅预测模式: {len(models)} × 1 × {len(correlation_levels)} × {len(time_encoding_options)} × {len(complexities)} × 1 = {len(models) * forecast_only_configs * len(correlation_levels) * len(time_encoding_options) * len(complexities)}")
+    print(f"📊 模型类型: {len(models)} 种 (包括新增的Linear Regression)")
     print(f"📊 相关度档位: {correlation_levels} (高/中/全相关度)")
     print(f"📊 时间编码: {time_encoding_options} (开启/关闭)")
     

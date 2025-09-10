@@ -3,6 +3,7 @@ import time
 import joblib
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.linear_model import LinearRegression
 from eval.metrics_utils import calculate_metrics, calculate_mse
 from utils.gpu_utils import get_gpu_memory_used
 from models.ml_models import train_rf, train_xgb, train_lgbm
@@ -40,9 +41,10 @@ def train_ml_model(
     name = config['model']
 
     ml_param_keys = {
-        'RF':   ['n_estimators', 'max_depth', 'random_state'],
-        'XGB':  ['n_estimators', 'max_depth', 'learning_rate', 'verbosity'],
-        'LGBM': ['n_estimators', 'max_depth', 'learning_rate', 'random_state']
+        'RF':     ['n_estimators', 'max_depth', 'random_state'],
+        'XGB':    ['n_estimators', 'max_depth', 'learning_rate', 'verbosity'],
+        'LGBM':   ['n_estimators', 'max_depth', 'learning_rate', 'random_state'],
+        'Linear': []  # Linear Regression has no hyperparameters
     }
     all_params = config.get('model_params', {})
     allowed_keys = ml_param_keys.get(name, [])
@@ -65,11 +67,19 @@ def train_ml_model(
         trainer = train_xgb
     elif name == 'LGBM':
         trainer = train_lgbm
+    elif name == 'Linear':
+        # Linear Regression不需要特殊的trainer函数
+        trainer = None
     else:
         raise ValueError(f"Unsupported ML model: {name}")
 
     start_time = time.time()
-    model = trainer(X_train_flat, y_train_flat, params)
+    if name == 'Linear':
+        # 直接使用LinearRegression
+        model = LinearRegression()
+        model.fit(X_train_flat, y_train_flat)
+    else:
+        model = trainer(X_train_flat, y_train_flat, params)
     train_time = time.time() - start_time
 
     # Measure inference time
