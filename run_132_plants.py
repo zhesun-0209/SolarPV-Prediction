@@ -124,11 +124,9 @@ def run_plant_experiments(plant_id, data_file, force_rerun=False):
         plant_id, data_file
     ]
     
-    print(f"🚀 运行命令: {' '.join(cmd)}")
     start_time = time.time()
     
     try:
-        # 使用实时输出，显示详细进度
         print(f"⏳ 开始运行厂 {plant_id} 的所有实验...")
         result = subprocess.run(cmd, timeout=18000)  # 5小时超时
         
@@ -197,9 +195,6 @@ def run_all_plants(force_rerun=False):
         is_complete, missing_experiments, existing_count = check_partial_results(plant_id)
         
         print(f"🔍 检查厂 {plant_id} 状态...")
-        print(f"   has_complete_results: {has_complete_results}")
-        print(f"   existing_count: {existing_count}")
-        print(f"   is_complete: {is_complete}")
         
         if has_complete_results and not force_rerun:
             print(f"⏭️  厂 {plant_id} 已有完整结果 (252个实验)，跳过")

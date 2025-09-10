@@ -59,11 +59,9 @@ def run_plant_experiments(plant_id, data_file):
     os.makedirs(save_dir, exist_ok=True)
     
     # 检查已有结果
-    print(f"🔍 [DEBUG] 检查已有实验结果...")
     existing_experiments = check_existing_experiments(plant_id, save_dir)
-    print(f"🔍 [DEBUG] 找到已有实验: {existing_experiments}")
     if existing_experiments:
-        print(f"📊 已有 {len(existing_experiments)} 个实验结果")
+        print(f"📊 已有 {len(existing_experiments)} 个实验结果，将跳过已完成的实验")
     
     # 定义所有实验组合
     models = ['Transformer', 'LSTM', 'GRU', 'TCN', 'RF', 'XGB', 'LGBM']
@@ -105,13 +103,10 @@ def run_plant_experiments(plant_id, data_file):
                         skipped += 1
                         continue
                     
-                    print(f"\n🚀 运行实验: {exp_id}")
-                    print(f"🔍 [DEBUG] 实验参数: model={model}, hist_weather={hist_weather}, forecast={forecast}, past_days={past_days}, complexity={complexity}")
+                    print(f"🚀 运行实验: {exp_id}")
                     
                     # 构建命令
                     epochs = epoch_map[complexity]
-                    print(f"🔍 [DEBUG] 使用epochs: {epochs}")
-                    
                     cmd = [
                         sys.executable, 'main.py',
                         '--config', 'config/default.yaml',
@@ -123,10 +118,8 @@ def run_plant_experiments(plant_id, data_file):
                         '--epochs', str(epochs),
                         '--data_path', data_file,
                         '--plant_id', plant_id,
-                        '--save_dir', save_dir,  # 直接使用厂级目录
-                        # --save_summary 已移除，不再保存summary.csv
+                        '--save_dir', save_dir,
                     ]
-                    print(f"🔍 [DEBUG] 运行命令: {' '.join(cmd)}")
                     
                     # 运行实验
                     exp_start = time.time()
@@ -137,17 +130,7 @@ def run_plant_experiments(plant_id, data_file):
                         
                         if result.returncode == 0:
                             print(f"✅ 实验完成 (耗时: {exp_duration:.1f}秒)")
-                            print(f"🔍 [DEBUG] main.py返回码: {result.returncode}")
-                            print(f"🔍 [DEBUG] stdout长度: {len(result.stdout)}")
-                            print(f"🔍 [DEBUG] stderr长度: {len(result.stderr)}")
-                            print(f"🔍 [DEBUG] stdout前200字符: {result.stdout[:200]}")
-                            if result.stderr:
-                                print(f"🔍 [DEBUG] stderr: {result.stderr}")
-                            
                             completed += 1
-                            
-                            # 实验结果已通过 main.py 保存到 Excel 文件
-                            print(f"✅ 实验结果已保存到 Excel 文件")
                             
                         else:
                             print(f"❌ 实验失败")
@@ -162,13 +145,13 @@ def run_plant_experiments(plant_id, data_file):
                         print(f"❌ 实验异常: {e}")
                         failed += 1
                     
-                    # 显示详细进度
+                    # 显示进度
                     current_total = completed + failed + skipped
                     remaining = total_experiments - current_total
                     print(f"📈 进度: {current_total}/{total_experiments} ({current_total/total_experiments*100:.1f}%) - 剩余: {remaining}")
                     
-                    # 每10个实验显示一次详细统计
-                    if current_total % 10 == 0:
+                    # 每20个实验显示一次统计
+                    if current_total % 20 == 0:
                         print(f"   ✅ 成功: {completed} | ❌ 失败: {failed} | ⏭️ 跳过: {skipped}")
     
     # 最终统计
