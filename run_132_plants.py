@@ -49,10 +49,10 @@ def check_existing_results(plant_id):
         plant_dir = os.path.join(result_dir, plant_id)
         excel_file = os.path.join(plant_dir, f"{plant_id}_results.xlsx")
         if os.path.exists(excel_file):
-            # 检查Excel文件是否完整（至少252行）
+            # 检查Excel文件是否完整（至少300行）
             try:
                 df = pd.read_excel(excel_file)
-                if len(df) >= 1716:  # 1,716个实验
+                if len(df) >= 300:  # 300个实验
                     return True, result_dir
             except Exception as e:
                 print(f"Warning: 无法读取Excel文件 {excel_file}: {e}")
@@ -86,8 +86,8 @@ def check_partial_results(plant_id):
                 print(f"Warning: 无法读取Excel文件 {excel_file}: {e}")
     
     # 检查是否完整（1,716个实验）
-    is_complete = existing_count >= 1716
-    missing_count = max(0, 1716 - existing_count)
+    is_complete = existing_count >= 300
+    missing_count = max(0, 300 - existing_count)
     
     return is_complete, missing_count, existing_count
 
@@ -118,7 +118,7 @@ def run_plant_experiments(plant_id, data_file, force_rerun=False):
     elif existing_count > 0:
         print(f"📊 厂 {plant_id} 已有 {existing_count} 个实验，缺失 {missing_count} 个")
     
-    # 运行实验 - 使用专门的实验脚本运行所有252个实验
+    # 运行实验 - 使用专门的实验脚本运行所有300个实验
     cmd = [
         sys.executable, 'run_plant_experiments.py',
         plant_id, data_file
@@ -166,10 +166,10 @@ def run_all_plants(force_rerun=False):
     print(f"✅ 找到 {len(plant_files)} 个厂数据文件")
     
     # 计算总实验数
-    # 其他模型 (7种): 7 × 4 × 3 × 2 × 3 × 3 + 7 × 1 × 3 × 2 × 3 × 1 = 1,512 + 126 = 1,638
-    # Linear模型 (1种): 1 × 4 × 3 × 2 × 1 × 3 + 1 × 1 × 3 × 2 × 1 × 1 = 72 + 6 = 78
-    # 总计: 1,716 个实验/厂
-    experiments_per_plant = 1716
+    # 其他模型 (7种): 7 × 20 × 2 = 280
+    # Linear模型 (1种): 1 × 20 × 1 = 20
+    # 总计: 300 个实验/厂
+    experiments_per_plant = 300
     total_experiments = len(plant_files) * experiments_per_plant
     
     print(f"📊 实验规模:")
@@ -204,11 +204,11 @@ def run_all_plants(force_rerun=False):
             skipped_plants += 1
             continue
         elif existing_count > 0:
-            remaining = 1716 - existing_count
-            print(f"🔄 厂 {plant_id} 部分完成 ({existing_count}/1,716 个实验)，还需完成 {remaining} 个实验")
+            remaining = 300 - existing_count
+            print(f"🔄 厂 {plant_id} 部分完成 ({existing_count}/300 个实验)，还需完成 {remaining} 个实验")
             partial_plants += 1
         else:
-            print(f"🆕 厂 {plant_id} 未开始，将运行所有 1,716 个实验")
+            print(f"🆕 厂 {plant_id} 未开始，将运行所有 300 个实验")
         
         # 运行实验
         success = run_plant_experiments(plant_id, data_file, force_rerun)

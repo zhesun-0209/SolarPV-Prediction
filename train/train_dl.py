@@ -146,12 +146,11 @@ def train_dl_model(
                 val_loss += mse_fn(preds, yb).item()
 
         val_loss /= len(val_loader)
-        sched.step(val_loss)
+        sched.step()
         
         # Fix time calculation: separate epoch time from cumulative time
         epoch_time = time.time() - epoch_start
         total_time += epoch_time
-
 
         logs.append({
             'epoch': ep,
@@ -161,9 +160,7 @@ def train_dl_model(
             'cum_time': total_time
         })
 
-        # 不再使用早停，训练完整的epoch数
-
-        # Test phase
+    # Test phase
     model.eval()
     all_preds = []
     inference_start = time.time()
@@ -207,7 +204,7 @@ def train_dl_model(
         torch.save(model.state_dict(), os.path.join(save_dir, 'model.pth'))
 
     # 获取最佳epoch和最终学习率
-    best_epoch = max(logs, key=lambda x: x['val_loss'])['epoch'] if logs else 1
+    best_epoch = min(logs, key=lambda x: x['val_loss'])['epoch'] if logs else 1
     final_lr = opt.param_groups[0]['lr']
     
     # 获取GPU内存使用量

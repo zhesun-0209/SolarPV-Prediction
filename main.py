@@ -42,18 +42,20 @@ def main():
 
     # === Ablation settings ===
     parser.add_argument("--model", type=str)
-    parser.add_argument("--past_days", type=int, choices=[1, 3, 7])
+    parser.add_argument("--past_days", type=int, choices=[1, 3])
     parser.add_argument("--past_hours", type=int)
     parser.add_argument("--future_hours", type=int)
+    parser.add_argument("--use_pv", type=str, choices=["true", "false"],
+                       help="Use historical PV power data")
     parser.add_argument("--use_hist_weather", type=str, choices=["true", "false"])
     parser.add_argument("--use_forecast", type=str, choices=["true", "false"])
-    parser.add_argument("--correlation_level", type=str, choices=["high", "medium", "all"],
-                       help="Weather feature correlation level: high, medium, all")
+    parser.add_argument("--weather_category", type=str, choices=["irradiance", "all_weather"],
+                       help="Weather feature category: irradiance or all_weather")
     parser.add_argument("--use_time_encoding", type=str, choices=["true", "false"],
                        help="Use time encoding features (month/hour sin/cos)")
     parser.add_argument("--no_hist_power", type=str, choices=["true", "false"], 
                        help="Only use forecast weather, no historical power data")
-    parser.add_argument("--model_complexity", type=str, choices=["low", "medium", "high"])
+    parser.add_argument("--model_complexity", type=str, choices=["low", "high"])
     parser.add_argument("--train_ratio", type=float)
     parser.add_argument("--val_ratio", type=float)
     parser.add_argument("--plot_days", type=int)
@@ -111,9 +113,10 @@ def main():
     if args.past_days: config["past_days"] = args.past_days
     if args.past_hours: config["past_hours"] = args.past_hours
     if args.future_hours: config["future_hours"] = args.future_hours
+    if args.use_pv: config["use_pv"] = str2bool(args.use_pv)
     if args.use_hist_weather: config["use_hist_weather"] = str2bool(args.use_hist_weather)
     if args.use_forecast: config["use_forecast"] = str2bool(args.use_forecast)
-    if args.correlation_level: config["correlation_level"] = args.correlation_level
+    if args.weather_category: config["weather_category"] = args.weather_category
     if args.use_time_encoding: config["use_time_encoding"] = str2bool(args.use_time_encoding)
     if args.no_hist_power: config["no_hist_power"] = str2bool(args.no_hist_power)
     if args.train_ratio: config["train_ratio"] = args.train_ratio
@@ -171,7 +174,7 @@ def main():
 
     # === Calculate past_hours from past_days ===
     if "past_days" in config:
-        if config.get("no_hist_power", False):
+        if not config.get("use_pv", True) or config.get("no_hist_power", False):
             # 仅预测天气模式：不需要历史数据
             config["past_hours"] = 0
         else:
@@ -191,24 +194,35 @@ def main():
         raise RuntimeError(f"Failed to load data: {str(e)}")
 
     # === Compose flag tag to name subfolders ===
-    if config.get("no_hist_power", False):
+    use_pv = config.get("use_pv", True)
+    use_hist_weather = config.get("use_hist_weather", False)
+    use_forecast = config.get("use_forecast", False)
+    weather_category = config.get("weather_category", "irradiance")
+    use_time_encoding = config.get("use_time_encoding", True)
+    past_days = config.get("past_days", 3)
+    model_complexity = config.get("model_complexity", "low")
+    
+    if not use_pv:
         # 仅预测天气模式
         flag_tag = (
-            f"feat{config['use_hist_weather']}_"
-            f"fcst{config['use_forecast']}_"
-            f"nohist_{config.get('correlation_level', 'high')}_"
-            f"{'time' if config.get('use_time_encoding', True) else 'notime'}_"
-            f"comp{config.get('model_complexity', 'medium')}"
+            f"pv{str(use_pv).lower()}_"
+            f"hist{str(use_hist_weather).lower()}_"
+            f"fcst{str(use_forecast).lower()}_"
+            f"{weather_category}_"
+            f"{'time' if use_time_encoding else 'notime'}_"
+            f"nohist_"
+            f"comp{model_complexity}"
         )
     else:
         # 正常模式
         flag_tag = (
-            f"feat{config['use_hist_weather']}_"
-            f"fcst{config['use_forecast']}_"
-            f"days{config.get('past_days', 3)}_"
-            f"{config.get('correlation_level', 'high')}_"
-            f"{'time' if config.get('use_time_encoding', True) else 'notime'}_"
-            f"comp{config.get('model_complexity', 'medium')}"
+            f"pv{str(use_pv).lower()}_"
+            f"hist{str(use_hist_weather).lower()}_"
+            f"fcst{str(use_forecast).lower()}_"
+            f"{weather_category}_"
+            f"{'time' if use_time_encoding else 'notime'}_"
+            f"days{past_days}_"
+            f"comp{model_complexity}"
         )
 
     is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
@@ -232,7 +246,7 @@ def main():
             future_hours=config["future_hours"],
             hist_feats=hist_feats,
             fcst_feats=fcst_feats,
-            no_hist_power=config.get("no_hist_power", False)
+            no_hist_power=not config.get("use_pv", True)
         )
 
         # Step 3: Train/val/test split (with shuffle)

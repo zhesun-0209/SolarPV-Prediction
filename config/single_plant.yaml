@@ -1,4 +1,5 @@
-# config/default.yaml
+# config/single_plant.yaml
+# 单厂实验配置 - 保存完整的预测结果和ground truth
 
 # Data & output paths
 data_path: './data/Project1033.csv'  # 数据文件路径
@@ -74,11 +75,11 @@ epoch_params:
   low:     30    # 简单模型，适中epoch
   high:    60    # 复杂模型，更多epoch
 
-# 保存选项
+# 保存选项 - 单厂实验保存完整结果
 save_options:
   save_model:           false    # 是否保存模型文件
   save_summary:         false    # 已禁用summary.csv保存
-  save_predictions:     false    # 是否保存predictions.csv (单厂实验时设为true)
-  save_training_log:    false    # 是否保存training_log.csv (仅DL模型，默认不保存)
+  save_predictions:     true     # 是否保存predictions.csv (单厂实验时设为true)
+  save_training_log:    true     # 是否保存training_log.csv (仅DL模型，单厂实验时设为true)
   # 绘图功能已移除，默认不保存图片
   save_excel_results:   true     # 是否保存Excel结果文件

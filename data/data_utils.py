@@ -4,53 +4,48 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-# 基于实际数据中的天气特征，按相关度分档
-# 高相关度特征 (|r| > 0.5) - 对发电量影响最大
-HIGH_CORR_FEATURES = [
+# 基于实际数据中的天气特征，简化为两种类别
+# 太阳辐射特征 - 最重要的特征
+IRRADIANCE_FEATURES = [
     'global_tilted_irradiance',    # 全球倾斜辐射 (最重要的辐射特征)
-    'vapour_pressure_deficit',     # 水汽压差 (影响大气透明度)
-    'relative_humidity_2m',        # 相对湿度 (影响大气透明度)
 ]
 
-# 中相关度特征 (0.2 < |r| <= 0.5) - 对发电量有中等影响
-MEDIUM_CORR_FEATURES = [
-    'temperature_2m',              # 温度 (影响光伏效率)
-    'wind_gusts_10m',             # 10米阵风 (影响散热)
-    'cloud_cover_low',            # 低云覆盖 (影响辐射)
-    'wind_speed_100m',            # 100米风速 (影响散热)
-    'snow_depth',                 # 雪深 (影响发电)
+# 全部天气特征 - 包含所有天气变量
+ALL_WEATHER_FEATURES = [
+    'global_tilted_irradiance',    # 全球倾斜辐射
+    'vapour_pressure_deficit',     # 水汽压差
+    'relative_humidity_2m',        # 相对湿度
+    'temperature_2m',              # 温度
+    'wind_gusts_10m',             # 10米阵风
+    'cloud_cover_low',            # 低云覆盖
+    'wind_speed_100m',            # 100米风速
+    'snow_depth',                 # 雪深
+    'dew_point_2m',               # 露点温度
+    'surface_pressure',           # 表面气压
+    'precipitation',              # 降水
 ]
 
-# 低相关度特征 (|r| <= 0.2) - 对发电量影响较小
-LOW_CORR_FEATURES = [
-    'dew_point_2m',               # 露点温度 (间接影响)
-    'surface_pressure',           # 表面气压 (间接影响)
-    'precipitation',              # 降水 (间接影响)
-]
-
-# 根据相关度档位选择特征
-def get_weather_features_by_correlation(correlation_level):
+# 根据天气特征类别选择特征
+def get_weather_features_by_category(weather_category):
     """
-    根据相关度档位返回天气特征
+    根据天气特征类别返回天气特征
     
     Args:
-        correlation_level: 'high', 'medium', 'all'
+        weather_category: 'irradiance', 'all_weather'
     
     Returns:
         list: 选中的天气特征列表
     """
-    if correlation_level == 'high':
-        return HIGH_CORR_FEATURES
-    elif correlation_level == 'medium':
-        return HIGH_CORR_FEATURES + MEDIUM_CORR_FEATURES
-    elif correlation_level == 'all':
-        return HIGH_CORR_FEATURES + MEDIUM_CORR_FEATURES + LOW_CORR_FEATURES
+    if weather_category == 'irradiance':
+        return IRRADIANCE_FEATURES
+    elif weather_category == 'all_weather':
+        return ALL_WEATHER_FEATURES
     else:
-        raise ValueError(f"Invalid correlation_level: {correlation_level}")
+        raise ValueError(f"Invalid weather_category: {weather_category}")
 
 # 保持向后兼容性
-BASE_HIST_FEATURES = HIGH_CORR_FEATURES
-BASE_FCST_FEATURES = HIGH_CORR_FEATURES
+BASE_HIST_FEATURES = IRRADIANCE_FEATURES
+BASE_FCST_FEATURES = IRRADIANCE_FEATURES
 
 # 时间编码特征
 TIME_FEATURES = ['month_cos', 'month_sin', 'hour_cos', 'hour_sin']
@@ -121,12 +116,12 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     hist_feats = []
     fcst_feats = []
 
-    # 获取相关度档位
-    correlation_level = config.get('correlation_level', 'high')
+    # 获取天气特征类别
+    weather_category = config.get('weather_category', 'irradiance')
 
     # 历史天气特征
     if config.get('use_hist_weather', False):
-        hist_feats += get_weather_features_by_correlation(correlation_level)
+        hist_feats += get_weather_features_by_category(weather_category)
 
     # 时间编码特征（根据开关决定）
     if use_time_encoding:
@@ -134,7 +129,7 @@ def preprocess_features(df: pd.DataFrame, config: dict):
 
     # 预测特征
     if config.get('use_forecast', False):
-        fcst_feats += get_weather_features_by_correlation(correlation_level)
+        fcst_feats += get_weather_features_by_category(weather_category)
 
     # 确保所有特征都存在
     available_hist_feats = [f for f in hist_feats if f in df_clean.columns]

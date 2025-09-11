@@ -34,18 +34,18 @@ def save_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据 (24列)
+        # 构建行数据 (25列)
         row_data = {
-            # 实验配置列 (13列)
+            # 实验配置列 (14列)
             'model': config.get('model', ''),
+            'use_pv': config.get('use_pv', True),
             'use_hist_weather': config.get('use_hist_weather', False),
             'use_forecast': config.get('use_forecast', False),
-            'past_days': config.get('past_days', 1),
-            'model_complexity': config.get('model_complexity', 'medium'),
-            'correlation_level': config.get('correlation_level', 'high'),
+            'weather_category': config.get('weather_category', 'irradiance'),
             'use_time_encoding': config.get('use_time_encoding', True),
-            'no_hist_power': config.get('no_hist_power', False),
-            'epochs': config.get('epochs', 50),
+            'past_days': config.get('past_days', 1),
+            'model_complexity': config.get('model_complexity', 'low'),
+            'epochs': config.get('epochs', 15),
             'batch_size': config.get('batch_size', 32),
             'learning_rate': config.get('learning_rate', 0.001),
             
@@ -64,9 +64,7 @@ def save_plant_excel_results(
             'nrmse': round(metrics.get('nrmse', 0), 4),
             'r_square': round(metrics.get('r_square', 0), 4),
             'smape': round(metrics.get('smape', 0), 4),
-            
-            # GPU内存使用列 (1列)
-            'gpu_memory_used': round(metrics.get('gpu_memory_used', 0), 4)
+            'gpu_memory_used': metrics.get('gpu_memory_used', 0)
         }
         
         excel_data.append(row_data)
@@ -74,92 +72,13 @@ def save_plant_excel_results(
     # 创建DataFrame
     df = pd.DataFrame(excel_data)
     
-    # 保存Excel文件
-    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
-    df.to_excel(excel_file, index=False, engine='openpyxl')
+    # 保存到Excel文件
+    excel_path = os.path.join(save_dir, f"{plant_id}_results.xlsx")
+    df.to_excel(excel_path, index=False)
     
-    print(f"✅ Excel结果已保存: {excel_file}")
-    print(f"   包含 {len(df)} 个实验结果")
-    
-    return excel_file
-
-def collect_plant_results(plant_id: str, result_dirs: List[str]) -> List[Dict[str, Any]]:
-    """
-    收集单个厂的所有实验结果
-    
-    Args:
-        plant_id: 厂ID
-        result_dirs: 结果目录列表
-    
-    Returns:
-        List[Dict]: 实验结果列表
-    """
-    import glob
-    import json
-    
-    results = []
-    
-    for result_dir in result_dirs:
-        # 查找该厂的所有summary.csv文件
-        summary_pattern = os.path.join(result_dir, '**', plant_id, '**', 'summary.csv')
-        summary_files = glob.glob(summary_pattern, recursive=True)
-        
-        # 也尝试查找包含plant_id的目录
-        if not summary_files:
-            for root, dirs, files in os.walk(result_dir):
-                for dir_name in dirs:
-                    if (plant_id in dir_name or 
-                        plant_id.replace('_', '') in dir_name or
-                        plant_id.replace('Project_', '') in dir_name):
-                        plant_dir = os.path.join(root, dir_name)
-                        summary_files.extend(glob.glob(os.path.join(plant_dir, '**', 'summary.csv'), recursive=True))
-        
-        # 读取每个summary.csv文件
-        for summary_file in summary_files:
-            try:
-                df = pd.read_csv(summary_file)
-                if len(df) > 0:
-                    # 提取配置信息
-                    config = {
-                        'model': df.iloc[0].get('model', ''),
-                        'use_hist_weather': df.iloc[0].get('use_hist_weather', False),
-                        'use_forecast': df.iloc[0].get('use_forecast', False),
-                        'past_days': df.iloc[0].get('past_days', 1),
-                        'model_complexity': df.iloc[0].get('model_complexity', 'medium'),
-                        'epochs': df.iloc[0].get('epochs', 50),
-                        'batch_size': df.iloc[0].get('batch_size', 32),
-                        'learning_rate': df.iloc[0].get('learning_rate', 0.001)
-                    }
-                    
-                    # 提取指标信息
-                    metrics = {
-                        'train_time_sec': df.iloc[0].get('train_time_sec', 0),
-                        'inference_time_sec': df.iloc[0].get('inference_time_sec', 0),
-                        'param_count': df.iloc[0].get('param_count', 0),
-                        'samples_count': df.iloc[0].get('samples_count', 0),
-                        'test_loss': df.iloc[0].get('test_loss', 0),
-                        'rmse': df.iloc[0].get('rmse', 0),
-                        'mae': df.iloc[0].get('mae', 0),
-                        'nrmse': df.iloc[0].get('nrmse', 0),
-                        'r_square': df.iloc[0].get('r_square', 0),
-                        'mape': df.iloc[0].get('mape', 0),
-                        'smape': df.iloc[0].get('smape', 0),
-                        'best_epoch': df.iloc[0].get('best_epoch', np.nan),
-                        'final_lr': df.iloc[0].get('final_lr', np.nan),
-                        'gpu_memory_used': df.iloc[0].get('gpu_memory_used', 0)
-                    }
-                    
-                    results.append({
-                        'config': config,
-                        'metrics': metrics,
-                        'summary_file': summary_file
-                    })
-                    
-            except Exception as e:
-                print(f"❌ 读取summary文件失败 {summary_file}: {e}")
-                continue
-    
-    return results
+    print(f"✅ Excel结果已保存: {excel_path}")
+    print(f"   总实验数: {len(excel_data)}")
+    print(f"   列数: {len(df.columns)}")
 
 def load_plant_excel_results(plant_id: str, save_dir: str) -> pd.DataFrame:
     """
@@ -168,105 +87,167 @@ def load_plant_excel_results(plant_id: str, save_dir: str) -> pd.DataFrame:
     Args:
         plant_id: 厂ID
         save_dir: 保存目录
-    
+        
     Returns:
-        pd.DataFrame: 实验结果DataFrame，如果文件不存在则返回空DataFrame
+        DataFrame: 实验结果数据
     """
+    excel_path = os.path.join(save_dir, f"{plant_id}_results.xlsx")
     
-    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
+    if not os.path.exists(excel_path):
+        return pd.DataFrame()
     
-    if os.path.exists(excel_file):
-        try:
-            df = pd.read_excel(excel_file)
-            return df
-        except Exception as e:
-            print(f"❌ 读取Excel文件失败 {excel_file}: {e}")
-            return pd.DataFrame()
-    else:
+    try:
+        df = pd.read_excel(excel_path)
+        return df
+    except Exception as e:
+        print(f"❌ 加载Excel文件失败: {e}")
         return pd.DataFrame()
 
 def append_plant_excel_results(
     plant_id: str,
-    results: List[Dict[str, Any]],
+    result: Dict[str, Any],
     save_dir: str
 ):
     """
-    追加实验结果到Excel文件（支持断点续传）
+    向单个厂的Excel结果文件追加新的实验结果
     
     Args:
         plant_id: 厂ID
-        results: 新的实验结果列表
+        result: 单个实验结果
         save_dir: 保存目录
     """
     
-    # 加载现有结果
-    existing_df = load_plant_excel_results(plant_id, save_dir)
+    # 创建保存目录
+    os.makedirs(save_dir, exist_ok=True)
     
-    # 准备新数据
-    excel_data = []
+    # 提取配置信息
+    config = result.get('config', {})
+    metrics = result.get('metrics', {})
     
-    for result in results:
-        # 提取配置信息
-        config = result.get('config', {})
-        metrics = result.get('metrics', {})
+    # 构建行数据 (25列)
+    row_data = {
+        # 实验配置列 (14列)
+        'model': config.get('model', ''),
+        'use_pv': config.get('use_pv', True),
+        'use_hist_weather': config.get('use_hist_weather', False),
+        'use_forecast': config.get('use_forecast', False),
+        'weather_category': config.get('weather_category', 'irradiance'),
+        'use_time_encoding': config.get('use_time_encoding', True),
+        'past_days': config.get('past_days', 1),
+        'model_complexity': config.get('model_complexity', 'low'),
+        'epochs': config.get('epochs', 15),
+        'batch_size': config.get('batch_size', 32),
+        'learning_rate': config.get('learning_rate', 0.001),
         
-        # 构建行数据 (24列)
-        row_data = {
-            # 实验配置列 (13列)
-            'model': config.get('model', ''),
-            'use_hist_weather': config.get('use_hist_weather', False),
-            'use_forecast': config.get('use_forecast', False),
-            'past_days': config.get('past_days', 1),
-            'model_complexity': config.get('model_complexity', 'medium'),
-            'correlation_level': config.get('correlation_level', 'high'),
-            'use_time_encoding': config.get('use_time_encoding', True),
-            'no_hist_power': config.get('no_hist_power', False),
-            'epochs': config.get('epochs', 50),
-            'batch_size': config.get('batch_size', 32),
-            'learning_rate': config.get('learning_rate', 0.001),
-            
-            # 性能指标列 (6列)
-            'train_time_sec': round(metrics.get('train_time_sec', 0), 4),
-            'inference_time_sec': round(metrics.get('inference_time_sec', 0), 4),
-            'param_count': metrics.get('param_count', 0),
-            'samples_count': metrics.get('samples_count', 0),
-            'best_epoch': metrics.get('best_epoch', np.nan),
-            'final_lr': metrics.get('final_lr', np.nan),
-            
-            # 评估指标列 (5列)
-            'mse': round(metrics.get('mse', 0), 4),
-            'rmse': round(metrics.get('rmse', 0), 4),
-            'mae': round(metrics.get('mae', 0), 4),
-            'nrmse': round(metrics.get('nrmse', 0), 4),
-            'r_square': round(metrics.get('r_square', 0), 4),
-            'smape': round(metrics.get('smape', 0), 4),
-            
-            # GPU内存使用列 (1列)
-            'gpu_memory_used': round(metrics.get('gpu_memory_used', 0), 4)
-        }
+        # 性能指标列 (6列)
+        'train_time_sec': round(metrics.get('train_time_sec', 0), 4),
+        'inference_time_sec': round(metrics.get('inference_time_sec', 0), 4),
+        'param_count': metrics.get('param_count', 0),
+        'samples_count': metrics.get('samples_count', 0),
+        'best_epoch': metrics.get('best_epoch', np.nan),
+        'final_lr': metrics.get('final_lr', np.nan),
         
-        excel_data.append(row_data)
+        # 评估指标列 (5列)
+        'mse': round(metrics.get('mse', 0), 4),
+        'rmse': round(metrics.get('rmse', 0), 4),
+        'mae': round(metrics.get('mae', 0), 4),
+        'nrmse': round(metrics.get('nrmse', 0), 4),
+        'r_square': round(metrics.get('r_square', 0), 4),
+        'smape': round(metrics.get('smape', 0), 4),
+        'gpu_memory_used': metrics.get('gpu_memory_used', 0)
+    }
     
-    # 创建新DataFrame
-    new_df = pd.DataFrame(excel_data)
+    # 检查文件是否存在
+    excel_path = os.path.join(save_dir, f"{plant_id}_results.xlsx")
     
-    # 合并现有数据和新数据
-    if not existing_df.empty:
-        # 去重：基于实验配置去重
-        combined_df = pd.concat([existing_df, new_df], ignore_index=True)
-        combined_df = combined_df.drop_duplicates(
-            subset=['model', 'use_hist_weather', 'use_forecast', 'past_days', 'model_complexity', 'correlation_level', 'use_time_encoding'],
-            keep='last'
-        )
+    if os.path.exists(excel_path):
+        # 读取现有数据
+        try:
+            existing_df = pd.read_excel(excel_path)
+            
+            # 检查是否已存在相同的实验（基于关键配置列）
+            key_columns = ['model', 'use_pv', 'use_hist_weather', 'use_forecast', 
+                          'weather_category', 'use_time_encoding', 'past_days', 'model_complexity']
+            
+            # 创建新行DataFrame
+            new_row_df = pd.DataFrame([row_data])
+            
+            # 检查重复
+            is_duplicate = False
+            for _, existing_row in existing_df.iterrows():
+                if all(existing_row[col] == row_data[col] for col in key_columns):
+                    is_duplicate = True
+                    break
+            
+            if is_duplicate:
+                print(f"⚠️  实验已存在，跳过: {plant_id}")
+                return
+            
+            # 合并数据
+            combined_df = pd.concat([existing_df, new_row_df], ignore_index=True)
+            
+        except Exception as e:
+            print(f"❌ 读取现有Excel文件失败: {e}")
+            # 如果读取失败，创建新的DataFrame
+            combined_df = pd.DataFrame([row_data])
     else:
-        combined_df = new_df
+        # 文件不存在，创建新的DataFrame
+        combined_df = pd.DataFrame([row_data])
     
-    # 保存合并后的Excel文件
-    excel_file = os.path.join(save_dir, f"{plant_id}_results.xlsx")
-    combined_df.to_excel(excel_file, index=False, engine='openpyxl')
+    # 保存到Excel文件
+    combined_df.to_excel(excel_path, index=False)
     
-    print(f"✅ Excel结果已更新: {excel_file}")
+    print(f"✅ Excel结果已更新: {excel_path}")
     print(f"   总实验数: {len(combined_df)}")
-    print(f"   新增实验数: {len(new_df)}")
+    print(f"   新增实验数: 1")
+
+def get_existing_experiments(plant_id: str, save_dir: str) -> set:
+    """
+    获取已存在的实验ID集合
     
-    return excel_file
+    Args:
+        plant_id: 厂ID
+        save_dir: 保存目录
+        
+    Returns:
+        set: 已存在的实验ID集合
+    """
+    df = load_plant_excel_results(plant_id, save_dir)
+    
+    if df.empty:
+        return set()
+    
+    # 从配置列生成实验ID
+    existing_experiments = set()
+    
+    for _, row in df.iterrows():
+        # 生成实验ID（与run_plant_experiments.py中的逻辑一致）
+        model = row['model']
+        use_pv = row['use_pv']
+        use_hist_weather = row['use_hist_weather']
+        use_forecast = row['use_forecast']
+        weather_category = row['weather_category']
+        use_time_encoding = row['use_time_encoding']
+        past_days = row['past_days']
+        model_complexity = row['model_complexity']
+        
+        time_str = "time" if use_time_encoding else "notime"
+        weather_str = weather_category if weather_category != 'none' else 'none'
+        
+        if past_days == 0:
+            # 仅预测天气模式
+            if model == 'Linear':
+                feat_str = f"pv{str(use_pv).lower()}_hist{str(use_hist_weather).lower()}_fcst{str(use_forecast).lower()}_{weather_str}_{time_str}_nohist"
+            else:
+                feat_str = f"pv{str(use_pv).lower()}_hist{str(use_hist_weather).lower()}_fcst{str(use_forecast).lower()}_{weather_str}_{time_str}_nohist_comp{model_complexity}"
+        else:
+            # 正常模式
+            if model == 'Linear':
+                feat_str = f"pv{str(use_pv).lower()}_hist{str(use_hist_weather).lower()}_fcst{str(use_forecast).lower()}_{weather_str}_{time_str}_days{past_days}"
+            else:
+                feat_str = f"pv{str(use_pv).lower()}_hist{str(use_hist_weather).lower()}_fcst{str(use_forecast).lower()}_{weather_str}_{time_str}_days{past_days}_comp{model_complexity}"
+        
+        exp_id = f"{model}_{feat_str}"
+        existing_experiments.add(exp_id)
+    
+    return existing_experiments

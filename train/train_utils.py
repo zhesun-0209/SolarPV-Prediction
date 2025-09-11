@@ -37,8 +37,8 @@ def get_scheduler(
     """
     return torch.optim.lr_scheduler.StepLR(
         optimizer,
-        step_size=20,  # 每20个epoch衰减一次
-        gamma=0.5      # 学习率减半
+        step_size=15,  # 每15个epoch衰减一次
+        gamma=0.8      # 学习率衰减到80%
     )
 
 

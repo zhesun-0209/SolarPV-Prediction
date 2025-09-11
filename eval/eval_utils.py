@@ -130,11 +130,14 @@ def save_results(
         result_data = {
             'config': {
                 'model': config['model'],
+                'use_pv': config.get('use_pv', True),
                 'use_hist_weather': config.get('use_hist_weather', False),
                 'use_forecast': config.get('use_forecast', False),
+                'weather_category': config.get('weather_category', 'irradiance'),
+                'use_time_encoding': config.get('use_time_encoding', True),
                 'past_days': config.get('past_days', 1),
-                'model_complexity': config.get('model_complexity', 'medium'),
-                'epochs': config.get('epochs', 50),
+                'model_complexity': config.get('model_complexity', 'low'),
+                'epochs': config.get('epochs', 15),
                 'batch_size': config.get('batch_size', 32),
                 'learning_rate': config.get('learning_rate', 0.001)
             },
