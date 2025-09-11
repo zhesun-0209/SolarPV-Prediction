@@ -239,8 +239,10 @@ def main():
         df_clean, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target = \
             preprocess_features(df_proj, config)
 
-        # Step 2: Create sliding windows
-        Xh, Xf, y, hrs, dates = create_sliding_windows(
+        # Step 2: Create sliding windows and split data
+        Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
+        Xh_va, Xf_va, y_va, hrs_va, dates_va, \
+        Xh_te, Xf_te, y_te, hrs_te, dates_te = create_sliding_windows(
             df_clean,
             past_hours=config["past_hours"],
             future_hours=config["future_hours"],
@@ -249,24 +251,14 @@ def main():
             no_hist_power=not config.get("use_pv", True)
         )
 
-        # Step 3: Train/val/test split (with shuffle)
-        splits = split_data(Xh, Xf, y, hrs, dates,
-                            train_ratio=config["train_ratio"],
-                            val_ratio=config["val_ratio"],
-                            shuffle=True,
-                            random_state=42)
-        Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
-        Xh_va, Xf_va, y_va, hrs_va, dates_va, \
-        Xh_te, Xf_te, y_te, hrs_te, dates_te = splits
-
-        # Step 4: Use plant-level save directory (no subfolders)
+        # Step 3: Use plant-level save directory (no subfolders)
         # 直接使用厂级别的目录，不创建子文件夹
         plant_save_dir = config["save_dir"]  # 直接使用配置中的save_dir
         os.makedirs(plant_save_dir, exist_ok=True)
         cfg = deepcopy(config)
         cfg["save_dir"] = plant_save_dir
 
-        # Step 5: Train model
+        # Step 4: Train model
         start = time.time()
         try:
             if is_dl:
@@ -290,7 +282,7 @@ def main():
             print(f"[ERROR] Training failed for Project {pid}: {str(e)}")
             continue
 
-        # Step 6: Save metrics and plots
+        # Step 5: Save metrics and plots
         cfg["scaler_target"] = scaler_target
         save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
         print(f"[INFO] Project {pid} | {cfg['model']} done, mse={metrics['mse']:.4f}, rmse={metrics['rmse']:.4f}, mae={metrics['mae']:.4f}")
