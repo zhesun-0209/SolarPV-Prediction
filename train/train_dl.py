@@ -91,8 +91,8 @@ def train_dl_model(
     sched = get_scheduler(opt, train_params)
     
     # 根据模型复杂度获取epoch数
-    complexity = config.get('model_complexity', 'medium')
-    epoch_params = config.get('epoch_params', {'low': 15, 'medium': 30, 'high': 50})
+    complexity = config.get('model_complexity', 'low')
+    epoch_params = config.get('epoch_params', {'low': 30, 'high': 60})
     epochs = epoch_params.get(complexity, 30)
 
     mse_fn = torch.nn.MSELoss()

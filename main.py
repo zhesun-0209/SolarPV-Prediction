@@ -126,16 +126,16 @@ def main():
 
     # === Override model-specific parameters ===
     # 根据模型复杂度选择参数
-    complexity = config.get("model_complexity", "medium")
+    complexity = config.get("model_complexity", "low")
     is_dl = config["model"] in ["Transformer", "LSTM", "GRU", "TCN"]
     
     if is_dl:
         # 深度学习模型参数
-        dl_params = config["model_params"].get(complexity, config["model_params"]["medium"])
+        dl_params = config["model_params"].get(complexity, config["model_params"]["low"])
         config["model_params"] = dl_params
     else:
         # 机器学习模型参数
-        ml_params = config["model_params"].get(f"ml_{complexity}", config["model_params"]["ml_medium"])
+        ml_params = config["model_params"].get(f"ml_{complexity}", config["model_params"]["ml_low"])
         config["model_params"] = ml_params
     
     # 仍然允许CLI覆盖

@@ -66,7 +66,7 @@ def save_results(
         'use_hist_weather': config.get('use_hist_weather', False),
         'use_forecast':    config.get('use_forecast', False),
         'past_days':       config.get('past_days', 1),
-        'model_complexity': config.get('model_complexity', 'medium'),
+        'model_complexity': config.get('model_complexity', 'low'),
         'correlation_level': config.get('correlation_level', 'high'),
         'use_time_encoding': config.get('use_time_encoding', True),
         'no_hist_power':   config.get('no_hist_power', False),
