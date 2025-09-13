@@ -6,17 +6,18 @@ model: TCN
 model_complexity: high
 model_params:
   high:
-    d_model: 256
     dropout: 0.3
-    hidden_dim: 128
-    num_heads: 16
-    num_layers: 18
+    kernel_size: 5
+    tcn_channels:
+    - 64
+    - 128
+    - 256
   low:
-    d_model: 64
     dropout: 0.1
-    hidden_dim: 32
-    num_heads: 4
-    num_layers: 6
+    kernel_size: 3
+    tcn_channels:
+    - 32
+    - 64
 past_days: 3
 past_hours: 72
 plot_days: 7
@@ -29,15 +30,17 @@ save_options:
   save_training_log: false
 start_date: '2022-01-01'
 train_params:
-  d_model: 256
   dropout: 0.3
-  hidden_dim: 128
-  num_heads: 16
-  num_layers: 18
+  kernel_size: 5
+  tcn_channels:
+  - 64
+  - 128
+  - 256
 train_ratio: 0.8
 use_forecast: true
 use_hist_weather: false
+use_ideal_nwp: true
 use_pv: true
 use_time_encoding: true
 val_ratio: 0.1
-weather_category: forecast_ideal
+weather_category: all_weather

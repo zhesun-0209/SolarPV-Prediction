@@ -2,5 +2,5 @@ projects:
 - config_dir: config/projects/1140
   index_file: config/projects/1140/config_index.yaml
   project_id: '1140'
-total_configs: 360
+total_configs: 340
 total_projects: 1

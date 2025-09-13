@@ -1,1085 +1,1023 @@
 configs:
 - config_id: 1
-  file: LSR_low_PV_24h_noTE.yaml
-  name: LSR_low_PV_24h_noTE
-- config_id: 2
   file: RF_low_PV_24h_noTE.yaml
   name: RF_low_PV_24h_noTE
-- config_id: 3
+- config_id: 2
   file: XGB_low_PV_24h_noTE.yaml
   name: XGB_low_PV_24h_noTE
-- config_id: 4
+- config_id: 3
   file: LGBM_low_PV_24h_noTE.yaml
   name: LGBM_low_PV_24h_noTE
-- config_id: 5
+- config_id: 4
   file: LSTM_low_PV_24h_noTE.yaml
   name: LSTM_low_PV_24h_noTE
-- config_id: 6
+- config_id: 5
   file: GRU_low_PV_24h_noTE.yaml
   name: GRU_low_PV_24h_noTE
-- config_id: 7
+- config_id: 6
   file: TCN_low_PV_24h_noTE.yaml
   name: TCN_low_PV_24h_noTE
-- config_id: 8
+- config_id: 7
   file: Transformer_low_PV_24h_noTE.yaml
   name: Transformer_low_PV_24h_noTE
-- config_id: 9
+- config_id: 8
   file: RF_high_PV_24h_noTE.yaml
   name: RF_high_PV_24h_noTE
-- config_id: 10
+- config_id: 9
   file: XGB_high_PV_24h_noTE.yaml
   name: XGB_high_PV_24h_noTE
-- config_id: 11
+- config_id: 10
   file: LGBM_high_PV_24h_noTE.yaml
   name: LGBM_high_PV_24h_noTE
-- config_id: 12
+- config_id: 11
   file: LSTM_high_PV_24h_noTE.yaml
   name: LSTM_high_PV_24h_noTE
-- config_id: 13
+- config_id: 12
   file: GRU_high_PV_24h_noTE.yaml
   name: GRU_high_PV_24h_noTE
-- config_id: 14
+- config_id: 13
   file: TCN_high_PV_24h_noTE.yaml
   name: TCN_high_PV_24h_noTE
-- config_id: 15
+- config_id: 14
   file: Transformer_high_PV_24h_noTE.yaml
   name: Transformer_high_PV_24h_noTE
-- config_id: 16
-  file: LSR_low_PV_24h_TE.yaml
-  name: LSR_low_PV_24h_TE
-- config_id: 17
+- config_id: 15
   file: RF_low_PV_24h_TE.yaml
   name: RF_low_PV_24h_TE
-- config_id: 18
+- config_id: 16
   file: XGB_low_PV_24h_TE.yaml
   name: XGB_low_PV_24h_TE
-- config_id: 19
+- config_id: 17
   file: LGBM_low_PV_24h_TE.yaml
   name: LGBM_low_PV_24h_TE
-- config_id: 20
+- config_id: 18
   file: LSTM_low_PV_24h_TE.yaml
   name: LSTM_low_PV_24h_TE
-- config_id: 21
+- config_id: 19
   file: GRU_low_PV_24h_TE.yaml
   name: GRU_low_PV_24h_TE
-- config_id: 22
+- config_id: 20
   file: TCN_low_PV_24h_TE.yaml
   name: TCN_low_PV_24h_TE
-- config_id: 23
+- config_id: 21
   file: Transformer_low_PV_24h_TE.yaml
   name: Transformer_low_PV_24h_TE
-- config_id: 24
+- config_id: 22
   file: RF_high_PV_24h_TE.yaml
   name: RF_high_PV_24h_TE
-- config_id: 25
+- config_id: 23
   file: XGB_high_PV_24h_TE.yaml
   name: XGB_high_PV_24h_TE
-- config_id: 26
+- config_id: 24
   file: LGBM_high_PV_24h_TE.yaml
   name: LGBM_high_PV_24h_TE
-- config_id: 27
+- config_id: 25
   file: LSTM_high_PV_24h_TE.yaml
   name: LSTM_high_PV_24h_TE
-- config_id: 28
+- config_id: 26
   file: GRU_high_PV_24h_TE.yaml
   name: GRU_high_PV_24h_TE
-- config_id: 29
+- config_id: 27
   file: TCN_high_PV_24h_TE.yaml
   name: TCN_high_PV_24h_TE
-- config_id: 30
+- config_id: 28
   file: Transformer_high_PV_24h_TE.yaml
   name: Transformer_high_PV_24h_TE
-- config_id: 31
-  file: LSR_low_PV_72h_noTE.yaml
-  name: LSR_low_PV_72h_noTE
-- config_id: 32
+- config_id: 29
   file: RF_low_PV_72h_noTE.yaml
   name: RF_low_PV_72h_noTE
-- config_id: 33
+- config_id: 30
   file: XGB_low_PV_72h_noTE.yaml
   name: XGB_low_PV_72h_noTE
-- config_id: 34
+- config_id: 31
   file: LGBM_low_PV_72h_noTE.yaml
   name: LGBM_low_PV_72h_noTE
-- config_id: 35
+- config_id: 32
   file: LSTM_low_PV_72h_noTE.yaml
   name: LSTM_low_PV_72h_noTE
-- config_id: 36
+- config_id: 33
   file: GRU_low_PV_72h_noTE.yaml
   name: GRU_low_PV_72h_noTE
-- config_id: 37
+- config_id: 34
   file: TCN_low_PV_72h_noTE.yaml
   name: TCN_low_PV_72h_noTE
-- config_id: 38
+- config_id: 35
   file: Transformer_low_PV_72h_noTE.yaml
   name: Transformer_low_PV_72h_noTE
-- config_id: 39
+- config_id: 36
   file: RF_high_PV_72h_noTE.yaml
   name: RF_high_PV_72h_noTE
-- config_id: 40
+- config_id: 37
   file: XGB_high_PV_72h_noTE.yaml
   name: XGB_high_PV_72h_noTE
-- config_id: 41
+- config_id: 38
   file: LGBM_high_PV_72h_noTE.yaml
   name: LGBM_high_PV_72h_noTE
-- config_id: 42
+- config_id: 39
   file: LSTM_high_PV_72h_noTE.yaml
   name: LSTM_high_PV_72h_noTE
-- config_id: 43
+- config_id: 40
   file: GRU_high_PV_72h_noTE.yaml
   name: GRU_high_PV_72h_noTE
-- config_id: 44
+- config_id: 41
   file: TCN_high_PV_72h_noTE.yaml
   name: TCN_high_PV_72h_noTE
-- config_id: 45
+- config_id: 42
   file: Transformer_high_PV_72h_noTE.yaml
   name: Transformer_high_PV_72h_noTE
-- config_id: 46
-  file: LSR_low_PV_72h_TE.yaml
-  name: LSR_low_PV_72h_TE
-- config_id: 47
+- config_id: 43
   file: RF_low_PV_72h_TE.yaml
   name: RF_low_PV_72h_TE
-- config_id: 48
+- config_id: 44
   file: XGB_low_PV_72h_TE.yaml
   name: XGB_low_PV_72h_TE
-- config_id: 49
+- config_id: 45
   file: LGBM_low_PV_72h_TE.yaml
   name: LGBM_low_PV_72h_TE
-- config_id: 50
+- config_id: 46
   file: LSTM_low_PV_72h_TE.yaml
   name: LSTM_low_PV_72h_TE
-- config_id: 51
+- config_id: 47
   file: GRU_low_PV_72h_TE.yaml
   name: GRU_low_PV_72h_TE
-- config_id: 52
+- config_id: 48
   file: TCN_low_PV_72h_TE.yaml
   name: TCN_low_PV_72h_TE
-- config_id: 53
+- config_id: 49
   file: Transformer_low_PV_72h_TE.yaml
   name: Transformer_low_PV_72h_TE
-- config_id: 54
+- config_id: 50
   file: RF_high_PV_72h_TE.yaml
   name: RF_high_PV_72h_TE
-- config_id: 55
+- config_id: 51
   file: XGB_high_PV_72h_TE.yaml
   name: XGB_high_PV_72h_TE
-- config_id: 56
+- config_id: 52
   file: LGBM_high_PV_72h_TE.yaml
   name: LGBM_high_PV_72h_TE
-- config_id: 57
+- config_id: 53
   file: LSTM_high_PV_72h_TE.yaml
   name: LSTM_high_PV_72h_TE
-- config_id: 58
+- config_id: 54
   file: GRU_high_PV_72h_TE.yaml
   name: GRU_high_PV_72h_TE
-- config_id: 59
+- config_id: 55
   file: TCN_high_PV_72h_TE.yaml
   name: TCN_high_PV_72h_TE
-- config_id: 60
+- config_id: 56
   file: Transformer_high_PV_72h_TE.yaml
   name: Transformer_high_PV_72h_TE
-- config_id: 61
-  file: LSR_low_PV_plus_NWP_24h_noTE.yaml
-  name: LSR_low_PV_plus_NWP_24h_noTE
-- config_id: 62
+- config_id: 57
   file: RF_low_PV_plus_NWP_24h_noTE.yaml
   name: RF_low_PV_plus_NWP_24h_noTE
-- config_id: 63
+- config_id: 58
   file: XGB_low_PV_plus_NWP_24h_noTE.yaml
   name: XGB_low_PV_plus_NWP_24h_noTE
-- config_id: 64
+- config_id: 59
   file: LGBM_low_PV_plus_NWP_24h_noTE.yaml
   name: LGBM_low_PV_plus_NWP_24h_noTE
-- config_id: 65
+- config_id: 60
   file: LSTM_low_PV_plus_NWP_24h_noTE.yaml
   name: LSTM_low_PV_plus_NWP_24h_noTE
-- config_id: 66
+- config_id: 61
   file: GRU_low_PV_plus_NWP_24h_noTE.yaml
   name: GRU_low_PV_plus_NWP_24h_noTE
-- config_id: 67
+- config_id: 62
   file: TCN_low_PV_plus_NWP_24h_noTE.yaml
   name: TCN_low_PV_plus_NWP_24h_noTE
-- config_id: 68
+- config_id: 63
   file: Transformer_low_PV_plus_NWP_24h_noTE.yaml
   name: Transformer_low_PV_plus_NWP_24h_noTE
-- config_id: 69
+- config_id: 64
   file: RF_high_PV_plus_NWP_24h_noTE.yaml
   name: RF_high_PV_plus_NWP_24h_noTE
-- config_id: 70
+- config_id: 65
   file: XGB_high_PV_plus_NWP_24h_noTE.yaml
   name: XGB_high_PV_plus_NWP_24h_noTE
-- config_id: 71
+- config_id: 66
   file: LGBM_high_PV_plus_NWP_24h_noTE.yaml
   name: LGBM_high_PV_plus_NWP_24h_noTE
-- config_id: 72
+- config_id: 67
   file: LSTM_high_PV_plus_NWP_24h_noTE.yaml
   name: LSTM_high_PV_plus_NWP_24h_noTE
-- config_id: 73
+- config_id: 68
   file: GRU_high_PV_plus_NWP_24h_noTE.yaml
   name: GRU_high_PV_plus_NWP_24h_noTE
-- config_id: 74
+- config_id: 69
   file: TCN_high_PV_plus_NWP_24h_noTE.yaml
   name: TCN_high_PV_plus_NWP_24h_noTE
-- config_id: 75
+- config_id: 70
   file: Transformer_high_PV_plus_NWP_24h_noTE.yaml
   name: Transformer_high_PV_plus_NWP_24h_noTE
-- config_id: 76
-  file: LSR_low_PV_plus_NWP_24h_TE.yaml
-  name: LSR_low_PV_plus_NWP_24h_TE
-- config_id: 77
+- config_id: 71
   file: RF_low_PV_plus_NWP_24h_TE.yaml
   name: RF_low_PV_plus_NWP_24h_TE
-- config_id: 78
+- config_id: 72
   file: XGB_low_PV_plus_NWP_24h_TE.yaml
   name: XGB_low_PV_plus_NWP_24h_TE
-- config_id: 79
+- config_id: 73
   file: LGBM_low_PV_plus_NWP_24h_TE.yaml
   name: LGBM_low_PV_plus_NWP_24h_TE
-- config_id: 80
+- config_id: 74
   file: LSTM_low_PV_plus_NWP_24h_TE.yaml
   name: LSTM_low_PV_plus_NWP_24h_TE
-- config_id: 81
+- config_id: 75
   file: GRU_low_PV_plus_NWP_24h_TE.yaml
   name: GRU_low_PV_plus_NWP_24h_TE
-- config_id: 82
+- config_id: 76
   file: TCN_low_PV_plus_NWP_24h_TE.yaml
   name: TCN_low_PV_plus_NWP_24h_TE
-- config_id: 83
+- config_id: 77
   file: Transformer_low_PV_plus_NWP_24h_TE.yaml
   name: Transformer_low_PV_plus_NWP_24h_TE
-- config_id: 84
+- config_id: 78
   file: RF_high_PV_plus_NWP_24h_TE.yaml
   name: RF_high_PV_plus_NWP_24h_TE
-- config_id: 85
+- config_id: 79
   file: XGB_high_PV_plus_NWP_24h_TE.yaml
   name: XGB_high_PV_plus_NWP_24h_TE
-- config_id: 86
+- config_id: 80
   file: LGBM_high_PV_plus_NWP_24h_TE.yaml
   name: LGBM_high_PV_plus_NWP_24h_TE
-- config_id: 87
+- config_id: 81
   file: LSTM_high_PV_plus_NWP_24h_TE.yaml
   name: LSTM_high_PV_plus_NWP_24h_TE
-- config_id: 88
+- config_id: 82
   file: GRU_high_PV_plus_NWP_24h_TE.yaml
   name: GRU_high_PV_plus_NWP_24h_TE
-- config_id: 89
+- config_id: 83
   file: TCN_high_PV_plus_NWP_24h_TE.yaml
   name: TCN_high_PV_plus_NWP_24h_TE
-- config_id: 90
+- config_id: 84
   file: Transformer_high_PV_plus_NWP_24h_TE.yaml
   name: Transformer_high_PV_plus_NWP_24h_TE
-- config_id: 91
-  file: LSR_low_PV_plus_NWP_72h_noTE.yaml
-  name: LSR_low_PV_plus_NWP_72h_noTE
-- config_id: 92
+- config_id: 85
   file: RF_low_PV_plus_NWP_72h_noTE.yaml
   name: RF_low_PV_plus_NWP_72h_noTE
-- config_id: 93
+- config_id: 86
   file: XGB_low_PV_plus_NWP_72h_noTE.yaml
   name: XGB_low_PV_plus_NWP_72h_noTE
-- config_id: 94
+- config_id: 87
   file: LGBM_low_PV_plus_NWP_72h_noTE.yaml
   name: LGBM_low_PV_plus_NWP_72h_noTE
-- config_id: 95
+- config_id: 88
   file: LSTM_low_PV_plus_NWP_72h_noTE.yaml
   name: LSTM_low_PV_plus_NWP_72h_noTE
-- config_id: 96
+- config_id: 89
   file: GRU_low_PV_plus_NWP_72h_noTE.yaml
   name: GRU_low_PV_plus_NWP_72h_noTE
-- config_id: 97
+- config_id: 90
   file: TCN_low_PV_plus_NWP_72h_noTE.yaml
   name: TCN_low_PV_plus_NWP_72h_noTE
-- config_id: 98
+- config_id: 91
   file: Transformer_low_PV_plus_NWP_72h_noTE.yaml
   name: Transformer_low_PV_plus_NWP_72h_noTE
-- config_id: 99
+- config_id: 92
   file: RF_high_PV_plus_NWP_72h_noTE.yaml
   name: RF_high_PV_plus_NWP_72h_noTE
-- config_id: 100
+- config_id: 93
   file: XGB_high_PV_plus_NWP_72h_noTE.yaml
   name: XGB_high_PV_plus_NWP_72h_noTE
-- config_id: 101
+- config_id: 94
   file: LGBM_high_PV_plus_NWP_72h_noTE.yaml
   name: LGBM_high_PV_plus_NWP_72h_noTE
-- config_id: 102
+- config_id: 95
   file: LSTM_high_PV_plus_NWP_72h_noTE.yaml
   name: LSTM_high_PV_plus_NWP_72h_noTE
-- config_id: 103
+- config_id: 96
   file: GRU_high_PV_plus_NWP_72h_noTE.yaml
   name: GRU_high_PV_plus_NWP_72h_noTE
-- config_id: 104
+- config_id: 97
   file: TCN_high_PV_plus_NWP_72h_noTE.yaml
   name: TCN_high_PV_plus_NWP_72h_noTE
-- config_id: 105
+- config_id: 98
   file: Transformer_high_PV_plus_NWP_72h_noTE.yaml
   name: Transformer_high_PV_plus_NWP_72h_noTE
-- config_id: 106
-  file: LSR_low_PV_plus_NWP_72h_TE.yaml
-  name: LSR_low_PV_plus_NWP_72h_TE
-- config_id: 107
+- config_id: 99
   file: RF_low_PV_plus_NWP_72h_TE.yaml
   name: RF_low_PV_plus_NWP_72h_TE
-- config_id: 108
+- config_id: 100
   file: XGB_low_PV_plus_NWP_72h_TE.yaml
   name: XGB_low_PV_plus_NWP_72h_TE
-- config_id: 109
+- config_id: 101
   file: LGBM_low_PV_plus_NWP_72h_TE.yaml
   name: LGBM_low_PV_plus_NWP_72h_TE
-- config_id: 110
+- config_id: 102
   file: LSTM_low_PV_plus_NWP_72h_TE.yaml
   name: LSTM_low_PV_plus_NWP_72h_TE
-- config_id: 111
+- config_id: 103
   file: GRU_low_PV_plus_NWP_72h_TE.yaml
   name: GRU_low_PV_plus_NWP_72h_TE
-- config_id: 112
+- config_id: 104
   file: TCN_low_PV_plus_NWP_72h_TE.yaml
   name: TCN_low_PV_plus_NWP_72h_TE
-- config_id: 113
+- config_id: 105
   file: Transformer_low_PV_plus_NWP_72h_TE.yaml
   name: Transformer_low_PV_plus_NWP_72h_TE
-- config_id: 114
+- config_id: 106
   file: RF_high_PV_plus_NWP_72h_TE.yaml
   name: RF_high_PV_plus_NWP_72h_TE
-- config_id: 115
+- config_id: 107
   file: XGB_high_PV_plus_NWP_72h_TE.yaml
   name: XGB_high_PV_plus_NWP_72h_TE
-- config_id: 116
+- config_id: 108
   file: LGBM_high_PV_plus_NWP_72h_TE.yaml
   name: LGBM_high_PV_plus_NWP_72h_TE
-- config_id: 117
+- config_id: 109
   file: LSTM_high_PV_plus_NWP_72h_TE.yaml
   name: LSTM_high_PV_plus_NWP_72h_TE
-- config_id: 118
+- config_id: 110
   file: GRU_high_PV_plus_NWP_72h_TE.yaml
   name: GRU_high_PV_plus_NWP_72h_TE
-- config_id: 119
+- config_id: 111
   file: TCN_high_PV_plus_NWP_72h_TE.yaml
   name: TCN_high_PV_plus_NWP_72h_TE
-- config_id: 120
+- config_id: 112
   file: Transformer_high_PV_plus_NWP_72h_TE.yaml
   name: Transformer_high_PV_plus_NWP_72h_TE
-- config_id: 121
-  file: LSR_low_PV_plus_NWP_plus_24h_noTE.yaml
-  name: LSR_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 122
+- config_id: 113
   file: RF_low_PV_plus_NWP_plus_24h_noTE.yaml
   name: RF_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 123
+- config_id: 114
   file: XGB_low_PV_plus_NWP_plus_24h_noTE.yaml
   name: XGB_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 124
+- config_id: 115
   file: LGBM_low_PV_plus_NWP_plus_24h_noTE.yaml
   name: LGBM_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 125
+- config_id: 116
   file: LSTM_low_PV_plus_NWP_plus_24h_noTE.yaml
   name: LSTM_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 126
+- config_id: 117
   file: GRU_low_PV_plus_NWP_plus_24h_noTE.yaml
   name: GRU_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 127
+- config_id: 118
   file: TCN_low_PV_plus_NWP_plus_24h_noTE.yaml
   name: TCN_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 128
+- config_id: 119
   file: Transformer_low_PV_plus_NWP_plus_24h_noTE.yaml
   name: Transformer_low_PV_plus_NWP_plus_24h_noTE
-- config_id: 129
+- config_id: 120
   file: RF_high_PV_plus_NWP_plus_24h_noTE.yaml
   name: RF_high_PV_plus_NWP_plus_24h_noTE
-- config_id: 130
+- config_id: 121
   file: XGB_high_PV_plus_NWP_plus_24h_noTE.yaml
   name: XGB_high_PV_plus_NWP_plus_24h_noTE
-- config_id: 131
+- config_id: 122
   file: LGBM_high_PV_plus_NWP_plus_24h_noTE.yaml
   name: LGBM_high_PV_plus_NWP_plus_24h_noTE
-- config_id: 132
+- config_id: 123
   file: LSTM_high_PV_plus_NWP_plus_24h_noTE.yaml
   name: LSTM_high_PV_plus_NWP_plus_24h_noTE
-- config_id: 133
+- config_id: 124
   file: GRU_high_PV_plus_NWP_plus_24h_noTE.yaml
   name: GRU_high_PV_plus_NWP_plus_24h_noTE
-- config_id: 134
+- config_id: 125
   file: TCN_high_PV_plus_NWP_plus_24h_noTE.yaml
   name: TCN_high_PV_plus_NWP_plus_24h_noTE
-- config_id: 135
+- config_id: 126
   file: Transformer_high_PV_plus_NWP_plus_24h_noTE.yaml
   name: Transformer_high_PV_plus_NWP_plus_24h_noTE
-- config_id: 136
-  file: LSR_low_PV_plus_NWP_plus_24h_TE.yaml
-  name: LSR_low_PV_plus_NWP_plus_24h_TE
-- config_id: 137
+- config_id: 127
   file: RF_low_PV_plus_NWP_plus_24h_TE.yaml
   name: RF_low_PV_plus_NWP_plus_24h_TE
-- config_id: 138
+- config_id: 128
   file: XGB_low_PV_plus_NWP_plus_24h_TE.yaml
   name: XGB_low_PV_plus_NWP_plus_24h_TE
-- config_id: 139
+- config_id: 129
   file: LGBM_low_PV_plus_NWP_plus_24h_TE.yaml
   name: LGBM_low_PV_plus_NWP_plus_24h_TE
-- config_id: 140
+- config_id: 130
   file: LSTM_low_PV_plus_NWP_plus_24h_TE.yaml
   name: LSTM_low_PV_plus_NWP_plus_24h_TE
-- config_id: 141
+- config_id: 131
   file: GRU_low_PV_plus_NWP_plus_24h_TE.yaml
   name: GRU_low_PV_plus_NWP_plus_24h_TE
-- config_id: 142
+- config_id: 132
   file: TCN_low_PV_plus_NWP_plus_24h_TE.yaml
   name: TCN_low_PV_plus_NWP_plus_24h_TE
-- config_id: 143
+- config_id: 133
   file: Transformer_low_PV_plus_NWP_plus_24h_TE.yaml
   name: Transformer_low_PV_plus_NWP_plus_24h_TE
-- config_id: 144
+- config_id: 134
   file: RF_high_PV_plus_NWP_plus_24h_TE.yaml
   name: RF_high_PV_plus_NWP_plus_24h_TE
-- config_id: 145
+- config_id: 135
   file: XGB_high_PV_plus_NWP_plus_24h_TE.yaml
   name: XGB_high_PV_plus_NWP_plus_24h_TE
-- config_id: 146
+- config_id: 136
   file: LGBM_high_PV_plus_NWP_plus_24h_TE.yaml
   name: LGBM_high_PV_plus_NWP_plus_24h_TE
-- config_id: 147
+- config_id: 137
   file: LSTM_high_PV_plus_NWP_plus_24h_TE.yaml
   name: LSTM_high_PV_plus_NWP_plus_24h_TE
-- config_id: 148
+- config_id: 138
   file: GRU_high_PV_plus_NWP_plus_24h_TE.yaml
   name: GRU_high_PV_plus_NWP_plus_24h_TE
-- config_id: 149
+- config_id: 139
   file: TCN_high_PV_plus_NWP_plus_24h_TE.yaml
   name: TCN_high_PV_plus_NWP_plus_24h_TE
-- config_id: 150
+- config_id: 140
   file: Transformer_high_PV_plus_NWP_plus_24h_TE.yaml
   name: Transformer_high_PV_plus_NWP_plus_24h_TE
-- config_id: 151
-  file: LSR_low_PV_plus_NWP_plus_72h_noTE.yaml
-  name: LSR_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 152
+- config_id: 141
   file: RF_low_PV_plus_NWP_plus_72h_noTE.yaml
   name: RF_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 153
+- config_id: 142
   file: XGB_low_PV_plus_NWP_plus_72h_noTE.yaml
   name: XGB_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 154
+- config_id: 143
   file: LGBM_low_PV_plus_NWP_plus_72h_noTE.yaml
   name: LGBM_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 155
+- config_id: 144
   file: LSTM_low_PV_plus_NWP_plus_72h_noTE.yaml
   name: LSTM_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 156
+- config_id: 145
   file: GRU_low_PV_plus_NWP_plus_72h_noTE.yaml
   name: GRU_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 157
+- config_id: 146
   file: TCN_low_PV_plus_NWP_plus_72h_noTE.yaml
   name: TCN_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 158
+- config_id: 147
   file: Transformer_low_PV_plus_NWP_plus_72h_noTE.yaml
   name: Transformer_low_PV_plus_NWP_plus_72h_noTE
-- config_id: 159
+- config_id: 148
   file: RF_high_PV_plus_NWP_plus_72h_noTE.yaml
   name: RF_high_PV_plus_NWP_plus_72h_noTE
-- config_id: 160
+- config_id: 149
   file: XGB_high_PV_plus_NWP_plus_72h_noTE.yaml
   name: XGB_high_PV_plus_NWP_plus_72h_noTE
-- config_id: 161
+- config_id: 150
   file: LGBM_high_PV_plus_NWP_plus_72h_noTE.yaml
   name: LGBM_high_PV_plus_NWP_plus_72h_noTE
-- config_id: 162
+- config_id: 151
   file: LSTM_high_PV_plus_NWP_plus_72h_noTE.yaml
   name: LSTM_high_PV_plus_NWP_plus_72h_noTE
-- config_id: 163
+- config_id: 152
   file: GRU_high_PV_plus_NWP_plus_72h_noTE.yaml
   name: GRU_high_PV_plus_NWP_plus_72h_noTE
-- config_id: 164
+- config_id: 153
   file: TCN_high_PV_plus_NWP_plus_72h_noTE.yaml
   name: TCN_high_PV_plus_NWP_plus_72h_noTE
-- config_id: 165
+- config_id: 154
   file: Transformer_high_PV_plus_NWP_plus_72h_noTE.yaml
   name: Transformer_high_PV_plus_NWP_plus_72h_noTE
-- config_id: 166
-  file: LSR_low_PV_plus_NWP_plus_72h_TE.yaml
-  name: LSR_low_PV_plus_NWP_plus_72h_TE
-- config_id: 167
+- config_id: 155
   file: RF_low_PV_plus_NWP_plus_72h_TE.yaml
   name: RF_low_PV_plus_NWP_plus_72h_TE
-- config_id: 168
+- config_id: 156
   file: XGB_low_PV_plus_NWP_plus_72h_TE.yaml
   name: XGB_low_PV_plus_NWP_plus_72h_TE
-- config_id: 169
+- config_id: 157
   file: LGBM_low_PV_plus_NWP_plus_72h_TE.yaml
   name: LGBM_low_PV_plus_NWP_plus_72h_TE
-- config_id: 170
+- config_id: 158
   file: LSTM_low_PV_plus_NWP_plus_72h_TE.yaml
   name: LSTM_low_PV_plus_NWP_plus_72h_TE
-- config_id: 171
+- config_id: 159
   file: GRU_low_PV_plus_NWP_plus_72h_TE.yaml
   name: GRU_low_PV_plus_NWP_plus_72h_TE
-- config_id: 172
+- config_id: 160
   file: TCN_low_PV_plus_NWP_plus_72h_TE.yaml
   name: TCN_low_PV_plus_NWP_plus_72h_TE
-- config_id: 173
+- config_id: 161
   file: Transformer_low_PV_plus_NWP_plus_72h_TE.yaml
   name: Transformer_low_PV_plus_NWP_plus_72h_TE
-- config_id: 174
+- config_id: 162
   file: RF_high_PV_plus_NWP_plus_72h_TE.yaml
   name: RF_high_PV_plus_NWP_plus_72h_TE
-- config_id: 175
+- config_id: 163
   file: XGB_high_PV_plus_NWP_plus_72h_TE.yaml
   name: XGB_high_PV_plus_NWP_plus_72h_TE
-- config_id: 176
+- config_id: 164
   file: LGBM_high_PV_plus_NWP_plus_72h_TE.yaml
   name: LGBM_high_PV_plus_NWP_plus_72h_TE
-- config_id: 177
+- config_id: 165
   file: LSTM_high_PV_plus_NWP_plus_72h_TE.yaml
   name: LSTM_high_PV_plus_NWP_plus_72h_TE
-- config_id: 178
+- config_id: 166
   file: GRU_high_PV_plus_NWP_plus_72h_TE.yaml
   name: GRU_high_PV_plus_NWP_plus_72h_TE
-- config_id: 179
+- config_id: 167
   file: TCN_high_PV_plus_NWP_plus_72h_TE.yaml
   name: TCN_high_PV_plus_NWP_plus_72h_TE
-- config_id: 180
+- config_id: 168
   file: Transformer_high_PV_plus_NWP_plus_72h_TE.yaml
   name: Transformer_high_PV_plus_NWP_plus_72h_TE
-- config_id: 181
-  file: LSR_low_PV_plus_HW_24h_noTE.yaml
-  name: LSR_low_PV_plus_HW_24h_noTE
-- config_id: 182
+- config_id: 169
   file: RF_low_PV_plus_HW_24h_noTE.yaml
   name: RF_low_PV_plus_HW_24h_noTE
-- config_id: 183
+- config_id: 170
   file: XGB_low_PV_plus_HW_24h_noTE.yaml
   name: XGB_low_PV_plus_HW_24h_noTE
-- config_id: 184
+- config_id: 171
   file: LGBM_low_PV_plus_HW_24h_noTE.yaml
   name: LGBM_low_PV_plus_HW_24h_noTE
-- config_id: 185
+- config_id: 172
   file: LSTM_low_PV_plus_HW_24h_noTE.yaml
   name: LSTM_low_PV_plus_HW_24h_noTE
-- config_id: 186
+- config_id: 173
   file: GRU_low_PV_plus_HW_24h_noTE.yaml
   name: GRU_low_PV_plus_HW_24h_noTE
-- config_id: 187
+- config_id: 174
   file: TCN_low_PV_plus_HW_24h_noTE.yaml
   name: TCN_low_PV_plus_HW_24h_noTE
-- config_id: 188
+- config_id: 175
   file: Transformer_low_PV_plus_HW_24h_noTE.yaml
   name: Transformer_low_PV_plus_HW_24h_noTE
-- config_id: 189
+- config_id: 176
   file: RF_high_PV_plus_HW_24h_noTE.yaml
   name: RF_high_PV_plus_HW_24h_noTE
-- config_id: 190
+- config_id: 177
   file: XGB_high_PV_plus_HW_24h_noTE.yaml
   name: XGB_high_PV_plus_HW_24h_noTE
-- config_id: 191
+- config_id: 178
   file: LGBM_high_PV_plus_HW_24h_noTE.yaml
   name: LGBM_high_PV_plus_HW_24h_noTE
-- config_id: 192
+- config_id: 179
   file: LSTM_high_PV_plus_HW_24h_noTE.yaml
   name: LSTM_high_PV_plus_HW_24h_noTE
-- config_id: 193
+- config_id: 180
   file: GRU_high_PV_plus_HW_24h_noTE.yaml
   name: GRU_high_PV_plus_HW_24h_noTE
-- config_id: 194
+- config_id: 181
   file: TCN_high_PV_plus_HW_24h_noTE.yaml
   name: TCN_high_PV_plus_HW_24h_noTE
-- config_id: 195
+- config_id: 182
   file: Transformer_high_PV_plus_HW_24h_noTE.yaml
   name: Transformer_high_PV_plus_HW_24h_noTE
-- config_id: 196
-  file: LSR_low_PV_plus_HW_24h_TE.yaml
-  name: LSR_low_PV_plus_HW_24h_TE
-- config_id: 197
+- config_id: 183
   file: RF_low_PV_plus_HW_24h_TE.yaml
   name: RF_low_PV_plus_HW_24h_TE
-- config_id: 198
+- config_id: 184
   file: XGB_low_PV_plus_HW_24h_TE.yaml
   name: XGB_low_PV_plus_HW_24h_TE
-- config_id: 199
+- config_id: 185
   file: LGBM_low_PV_plus_HW_24h_TE.yaml
   name: LGBM_low_PV_plus_HW_24h_TE
-- config_id: 200
+- config_id: 186
   file: LSTM_low_PV_plus_HW_24h_TE.yaml
   name: LSTM_low_PV_plus_HW_24h_TE
-- config_id: 201
+- config_id: 187
   file: GRU_low_PV_plus_HW_24h_TE.yaml
   name: GRU_low_PV_plus_HW_24h_TE
-- config_id: 202
+- config_id: 188
   file: TCN_low_PV_plus_HW_24h_TE.yaml
   name: TCN_low_PV_plus_HW_24h_TE
-- config_id: 203
+- config_id: 189
   file: Transformer_low_PV_plus_HW_24h_TE.yaml
   name: Transformer_low_PV_plus_HW_24h_TE
-- config_id: 204
+- config_id: 190
   file: RF_high_PV_plus_HW_24h_TE.yaml
   name: RF_high_PV_plus_HW_24h_TE
-- config_id: 205
+- config_id: 191
   file: XGB_high_PV_plus_HW_24h_TE.yaml
   name: XGB_high_PV_plus_HW_24h_TE
-- config_id: 206
+- config_id: 192
   file: LGBM_high_PV_plus_HW_24h_TE.yaml
   name: LGBM_high_PV_plus_HW_24h_TE
-- config_id: 207
+- config_id: 193
   file: LSTM_high_PV_plus_HW_24h_TE.yaml
   name: LSTM_high_PV_plus_HW_24h_TE
-- config_id: 208
+- config_id: 194
   file: GRU_high_PV_plus_HW_24h_TE.yaml
   name: GRU_high_PV_plus_HW_24h_TE
-- config_id: 209
+- config_id: 195
   file: TCN_high_PV_plus_HW_24h_TE.yaml
   name: TCN_high_PV_plus_HW_24h_TE
-- config_id: 210
+- config_id: 196
   file: Transformer_high_PV_plus_HW_24h_TE.yaml
   name: Transformer_high_PV_plus_HW_24h_TE
-- config_id: 211
-  file: LSR_low_PV_plus_HW_72h_noTE.yaml
-  name: LSR_low_PV_plus_HW_72h_noTE
-- config_id: 212
+- config_id: 197
   file: RF_low_PV_plus_HW_72h_noTE.yaml
   name: RF_low_PV_plus_HW_72h_noTE
-- config_id: 213
+- config_id: 198
   file: XGB_low_PV_plus_HW_72h_noTE.yaml
   name: XGB_low_PV_plus_HW_72h_noTE
-- config_id: 214
+- config_id: 199
   file: LGBM_low_PV_plus_HW_72h_noTE.yaml
   name: LGBM_low_PV_plus_HW_72h_noTE
-- config_id: 215
+- config_id: 200
   file: LSTM_low_PV_plus_HW_72h_noTE.yaml
   name: LSTM_low_PV_plus_HW_72h_noTE
-- config_id: 216
+- config_id: 201
   file: GRU_low_PV_plus_HW_72h_noTE.yaml
   name: GRU_low_PV_plus_HW_72h_noTE
-- config_id: 217
+- config_id: 202
   file: TCN_low_PV_plus_HW_72h_noTE.yaml
   name: TCN_low_PV_plus_HW_72h_noTE
-- config_id: 218
+- config_id: 203
   file: Transformer_low_PV_plus_HW_72h_noTE.yaml
   name: Transformer_low_PV_plus_HW_72h_noTE
-- config_id: 219
+- config_id: 204
   file: RF_high_PV_plus_HW_72h_noTE.yaml
   name: RF_high_PV_plus_HW_72h_noTE
-- config_id: 220
+- config_id: 205
   file: XGB_high_PV_plus_HW_72h_noTE.yaml
   name: XGB_high_PV_plus_HW_72h_noTE
-- config_id: 221
+- config_id: 206
   file: LGBM_high_PV_plus_HW_72h_noTE.yaml
   name: LGBM_high_PV_plus_HW_72h_noTE
-- config_id: 222
+- config_id: 207
   file: LSTM_high_PV_plus_HW_72h_noTE.yaml
   name: LSTM_high_PV_plus_HW_72h_noTE
-- config_id: 223
+- config_id: 208
   file: GRU_high_PV_plus_HW_72h_noTE.yaml
   name: GRU_high_PV_plus_HW_72h_noTE
-- config_id: 224
+- config_id: 209
   file: TCN_high_PV_plus_HW_72h_noTE.yaml
   name: TCN_high_PV_plus_HW_72h_noTE
-- config_id: 225
+- config_id: 210
   file: Transformer_high_PV_plus_HW_72h_noTE.yaml
   name: Transformer_high_PV_plus_HW_72h_noTE
-- config_id: 226
-  file: LSR_low_PV_plus_HW_72h_TE.yaml
-  name: LSR_low_PV_plus_HW_72h_TE
-- config_id: 227
+- config_id: 211
   file: RF_low_PV_plus_HW_72h_TE.yaml
   name: RF_low_PV_plus_HW_72h_TE
-- config_id: 228
+- config_id: 212
   file: XGB_low_PV_plus_HW_72h_TE.yaml
   name: XGB_low_PV_plus_HW_72h_TE
-- config_id: 229
+- config_id: 213
   file: LGBM_low_PV_plus_HW_72h_TE.yaml
   name: LGBM_low_PV_plus_HW_72h_TE
-- config_id: 230
+- config_id: 214
   file: LSTM_low_PV_plus_HW_72h_TE.yaml
   name: LSTM_low_PV_plus_HW_72h_TE
-- config_id: 231
+- config_id: 215
   file: GRU_low_PV_plus_HW_72h_TE.yaml
   name: GRU_low_PV_plus_HW_72h_TE
-- config_id: 232
+- config_id: 216
   file: TCN_low_PV_plus_HW_72h_TE.yaml
   name: TCN_low_PV_plus_HW_72h_TE
-- config_id: 233
+- config_id: 217
   file: Transformer_low_PV_plus_HW_72h_TE.yaml
   name: Transformer_low_PV_plus_HW_72h_TE
-- config_id: 234
+- config_id: 218
   file: RF_high_PV_plus_HW_72h_TE.yaml
   name: RF_high_PV_plus_HW_72h_TE
-- config_id: 235
+- config_id: 219
   file: XGB_high_PV_plus_HW_72h_TE.yaml
   name: XGB_high_PV_plus_HW_72h_TE
-- config_id: 236
+- config_id: 220
   file: LGBM_high_PV_plus_HW_72h_TE.yaml
   name: LGBM_high_PV_plus_HW_72h_TE
-- config_id: 237
+- config_id: 221
   file: LSTM_high_PV_plus_HW_72h_TE.yaml
   name: LSTM_high_PV_plus_HW_72h_TE
-- config_id: 238
+- config_id: 222
   file: GRU_high_PV_plus_HW_72h_TE.yaml
   name: GRU_high_PV_plus_HW_72h_TE
-- config_id: 239
+- config_id: 223
   file: TCN_high_PV_plus_HW_72h_TE.yaml
   name: TCN_high_PV_plus_HW_72h_TE
-- config_id: 240
+- config_id: 224
   file: Transformer_high_PV_plus_HW_72h_TE.yaml
   name: Transformer_high_PV_plus_HW_72h_TE
-- config_id: 241
+- config_id: 225
   file: LSR_low_NWP_24h_noTE.yaml
   name: LSR_low_NWP_24h_noTE
-- config_id: 242
+- config_id: 226
   file: RF_low_NWP_24h_noTE.yaml
   name: RF_low_NWP_24h_noTE
-- config_id: 243
+- config_id: 227
   file: XGB_low_NWP_24h_noTE.yaml
   name: XGB_low_NWP_24h_noTE
-- config_id: 244
+- config_id: 228
   file: LGBM_low_NWP_24h_noTE.yaml
   name: LGBM_low_NWP_24h_noTE
-- config_id: 245
+- config_id: 229
   file: LSTM_low_NWP_24h_noTE.yaml
   name: LSTM_low_NWP_24h_noTE
-- config_id: 246
+- config_id: 230
   file: GRU_low_NWP_24h_noTE.yaml
   name: GRU_low_NWP_24h_noTE
-- config_id: 247
+- config_id: 231
   file: TCN_low_NWP_24h_noTE.yaml
   name: TCN_low_NWP_24h_noTE
-- config_id: 248
+- config_id: 232
   file: Transformer_low_NWP_24h_noTE.yaml
   name: Transformer_low_NWP_24h_noTE
-- config_id: 249
+- config_id: 233
   file: RF_high_NWP_24h_noTE.yaml
   name: RF_high_NWP_24h_noTE
-- config_id: 250
+- config_id: 234
   file: XGB_high_NWP_24h_noTE.yaml
   name: XGB_high_NWP_24h_noTE
-- config_id: 251
+- config_id: 235
   file: LGBM_high_NWP_24h_noTE.yaml
   name: LGBM_high_NWP_24h_noTE
-- config_id: 252
+- config_id: 236
   file: LSTM_high_NWP_24h_noTE.yaml
   name: LSTM_high_NWP_24h_noTE
-- config_id: 253
+- config_id: 237
   file: GRU_high_NWP_24h_noTE.yaml
   name: GRU_high_NWP_24h_noTE
-- config_id: 254
+- config_id: 238
   file: TCN_high_NWP_24h_noTE.yaml
   name: TCN_high_NWP_24h_noTE
-- config_id: 255
+- config_id: 239
   file: Transformer_high_NWP_24h_noTE.yaml
   name: Transformer_high_NWP_24h_noTE
-- config_id: 256
+- config_id: 240
   file: LSR_low_NWP_24h_TE.yaml
   name: LSR_low_NWP_24h_TE
-- config_id: 257
+- config_id: 241
   file: RF_low_NWP_24h_TE.yaml
   name: RF_low_NWP_24h_TE
-- config_id: 258
+- config_id: 242
   file: XGB_low_NWP_24h_TE.yaml
   name: XGB_low_NWP_24h_TE
-- config_id: 259
+- config_id: 243
   file: LGBM_low_NWP_24h_TE.yaml
   name: LGBM_low_NWP_24h_TE
-- config_id: 260
+- config_id: 244
   file: LSTM_low_NWP_24h_TE.yaml
   name: LSTM_low_NWP_24h_TE
-- config_id: 261
+- config_id: 245
   file: GRU_low_NWP_24h_TE.yaml
   name: GRU_low_NWP_24h_TE
-- config_id: 262
+- config_id: 246
   file: TCN_low_NWP_24h_TE.yaml
   name: TCN_low_NWP_24h_TE
-- config_id: 263
+- config_id: 247
   file: Transformer_low_NWP_24h_TE.yaml
   name: Transformer_low_NWP_24h_TE
-- config_id: 264
+- config_id: 248
   file: RF_high_NWP_24h_TE.yaml
   name: RF_high_NWP_24h_TE
-- config_id: 265
+- config_id: 249
   file: XGB_high_NWP_24h_TE.yaml
   name: XGB_high_NWP_24h_TE
-- config_id: 266
+- config_id: 250
   file: LGBM_high_NWP_24h_TE.yaml
   name: LGBM_high_NWP_24h_TE
-- config_id: 267
+- config_id: 251
   file: LSTM_high_NWP_24h_TE.yaml
   name: LSTM_high_NWP_24h_TE
-- config_id: 268
+- config_id: 252
   file: GRU_high_NWP_24h_TE.yaml
   name: GRU_high_NWP_24h_TE
-- config_id: 269
+- config_id: 253
   file: TCN_high_NWP_24h_TE.yaml
   name: TCN_high_NWP_24h_TE
-- config_id: 270
+- config_id: 254
   file: Transformer_high_NWP_24h_TE.yaml
   name: Transformer_high_NWP_24h_TE
-- config_id: 271
-  file: LSR_low_NWP_72h_noTE.yaml
-  name: LSR_low_NWP_72h_noTE
-- config_id: 272
+- config_id: 255
   file: RF_low_NWP_72h_noTE.yaml
   name: RF_low_NWP_72h_noTE
-- config_id: 273
+- config_id: 256
   file: XGB_low_NWP_72h_noTE.yaml
   name: XGB_low_NWP_72h_noTE
-- config_id: 274
+- config_id: 257
   file: LGBM_low_NWP_72h_noTE.yaml
   name: LGBM_low_NWP_72h_noTE
-- config_id: 275
+- config_id: 258
   file: LSTM_low_NWP_72h_noTE.yaml
   name: LSTM_low_NWP_72h_noTE
-- config_id: 276
+- config_id: 259
   file: GRU_low_NWP_72h_noTE.yaml
   name: GRU_low_NWP_72h_noTE
-- config_id: 277
+- config_id: 260
   file: TCN_low_NWP_72h_noTE.yaml
   name: TCN_low_NWP_72h_noTE
-- config_id: 278
+- config_id: 261
   file: Transformer_low_NWP_72h_noTE.yaml
   name: Transformer_low_NWP_72h_noTE
-- config_id: 279
+- config_id: 262
   file: RF_high_NWP_72h_noTE.yaml
   name: RF_high_NWP_72h_noTE
-- config_id: 280
+- config_id: 263
   file: XGB_high_NWP_72h_noTE.yaml
   name: XGB_high_NWP_72h_noTE
-- config_id: 281
+- config_id: 264
   file: LGBM_high_NWP_72h_noTE.yaml
   name: LGBM_high_NWP_72h_noTE
-- config_id: 282
+- config_id: 265
   file: LSTM_high_NWP_72h_noTE.yaml
   name: LSTM_high_NWP_72h_noTE
-- config_id: 283
+- config_id: 266
   file: GRU_high_NWP_72h_noTE.yaml
   name: GRU_high_NWP_72h_noTE
-- config_id: 284
+- config_id: 267
   file: TCN_high_NWP_72h_noTE.yaml
   name: TCN_high_NWP_72h_noTE
-- config_id: 285
+- config_id: 268
   file: Transformer_high_NWP_72h_noTE.yaml
   name: Transformer_high_NWP_72h_noTE
-- config_id: 286
-  file: LSR_low_NWP_72h_TE.yaml
-  name: LSR_low_NWP_72h_TE
-- config_id: 287
+- config_id: 269
   file: RF_low_NWP_72h_TE.yaml
   name: RF_low_NWP_72h_TE
-- config_id: 288
+- config_id: 270
   file: XGB_low_NWP_72h_TE.yaml
   name: XGB_low_NWP_72h_TE
-- config_id: 289
+- config_id: 271
   file: LGBM_low_NWP_72h_TE.yaml
   name: LGBM_low_NWP_72h_TE
-- config_id: 290
+- config_id: 272
   file: LSTM_low_NWP_72h_TE.yaml
   name: LSTM_low_NWP_72h_TE
-- config_id: 291
+- config_id: 273
   file: GRU_low_NWP_72h_TE.yaml
   name: GRU_low_NWP_72h_TE
-- config_id: 292
+- config_id: 274
   file: TCN_low_NWP_72h_TE.yaml
   name: TCN_low_NWP_72h_TE
-- config_id: 293
+- config_id: 275
   file: Transformer_low_NWP_72h_TE.yaml
   name: Transformer_low_NWP_72h_TE
-- config_id: 294
+- config_id: 276
   file: RF_high_NWP_72h_TE.yaml
   name: RF_high_NWP_72h_TE
-- config_id: 295
+- config_id: 277
   file: XGB_high_NWP_72h_TE.yaml
   name: XGB_high_NWP_72h_TE
-- config_id: 296
+- config_id: 278
   file: LGBM_high_NWP_72h_TE.yaml
   name: LGBM_high_NWP_72h_TE
-- config_id: 297
+- config_id: 279
   file: LSTM_high_NWP_72h_TE.yaml
   name: LSTM_high_NWP_72h_TE
-- config_id: 298
+- config_id: 280
   file: GRU_high_NWP_72h_TE.yaml
   name: GRU_high_NWP_72h_TE
-- config_id: 299
+- config_id: 281
   file: TCN_high_NWP_72h_TE.yaml
   name: TCN_high_NWP_72h_TE
-- config_id: 300
+- config_id: 282
   file: Transformer_high_NWP_72h_TE.yaml
   name: Transformer_high_NWP_72h_TE
-- config_id: 301
+- config_id: 283
   file: LSR_low_NWP_plus_24h_noTE.yaml
   name: LSR_low_NWP_plus_24h_noTE
-- config_id: 302
+- config_id: 284
   file: RF_low_NWP_plus_24h_noTE.yaml
   name: RF_low_NWP_plus_24h_noTE
-- config_id: 303
+- config_id: 285
   file: XGB_low_NWP_plus_24h_noTE.yaml
   name: XGB_low_NWP_plus_24h_noTE
-- config_id: 304
+- config_id: 286
   file: LGBM_low_NWP_plus_24h_noTE.yaml
   name: LGBM_low_NWP_plus_24h_noTE
-- config_id: 305
+- config_id: 287
   file: LSTM_low_NWP_plus_24h_noTE.yaml
   name: LSTM_low_NWP_plus_24h_noTE
-- config_id: 306
+- config_id: 288
   file: GRU_low_NWP_plus_24h_noTE.yaml
   name: GRU_low_NWP_plus_24h_noTE
-- config_id: 307
+- config_id: 289
   file: TCN_low_NWP_plus_24h_noTE.yaml
   name: TCN_low_NWP_plus_24h_noTE
-- config_id: 308
+- config_id: 290
   file: Transformer_low_NWP_plus_24h_noTE.yaml
   name: Transformer_low_NWP_plus_24h_noTE
-- config_id: 309
+- config_id: 291
   file: RF_high_NWP_plus_24h_noTE.yaml
   name: RF_high_NWP_plus_24h_noTE
-- config_id: 310
+- config_id: 292
   file: XGB_high_NWP_plus_24h_noTE.yaml
   name: XGB_high_NWP_plus_24h_noTE
-- config_id: 311
+- config_id: 293
   file: LGBM_high_NWP_plus_24h_noTE.yaml
   name: LGBM_high_NWP_plus_24h_noTE
-- config_id: 312
+- config_id: 294
   file: LSTM_high_NWP_plus_24h_noTE.yaml
   name: LSTM_high_NWP_plus_24h_noTE
-- config_id: 313
+- config_id: 295
   file: GRU_high_NWP_plus_24h_noTE.yaml
   name: GRU_high_NWP_plus_24h_noTE
-- config_id: 314
+- config_id: 296
   file: TCN_high_NWP_plus_24h_noTE.yaml
   name: TCN_high_NWP_plus_24h_noTE
-- config_id: 315
+- config_id: 297
   file: Transformer_high_NWP_plus_24h_noTE.yaml
   name: Transformer_high_NWP_plus_24h_noTE
-- config_id: 316
+- config_id: 298
   file: LSR_low_NWP_plus_24h_TE.yaml
   name: LSR_low_NWP_plus_24h_TE
-- config_id: 317
+- config_id: 299
   file: RF_low_NWP_plus_24h_TE.yaml
   name: RF_low_NWP_plus_24h_TE
-- config_id: 318
+- config_id: 300
   file: XGB_low_NWP_plus_24h_TE.yaml
   name: XGB_low_NWP_plus_24h_TE
-- config_id: 319
+- config_id: 301
   file: LGBM_low_NWP_plus_24h_TE.yaml
   name: LGBM_low_NWP_plus_24h_TE
-- config_id: 320
+- config_id: 302
   file: LSTM_low_NWP_plus_24h_TE.yaml
   name: LSTM_low_NWP_plus_24h_TE
-- config_id: 321
+- config_id: 303
   file: GRU_low_NWP_plus_24h_TE.yaml
   name: GRU_low_NWP_plus_24h_TE
-- config_id: 322
+- config_id: 304
   file: TCN_low_NWP_plus_24h_TE.yaml
   name: TCN_low_NWP_plus_24h_TE
-- config_id: 323
+- config_id: 305
   file: Transformer_low_NWP_plus_24h_TE.yaml
   name: Transformer_low_NWP_plus_24h_TE
-- config_id: 324
+- config_id: 306
   file: RF_high_NWP_plus_24h_TE.yaml
   name: RF_high_NWP_plus_24h_TE
-- config_id: 325
+- config_id: 307
   file: XGB_high_NWP_plus_24h_TE.yaml
   name: XGB_high_NWP_plus_24h_TE
-- config_id: 326
+- config_id: 308
   file: LGBM_high_NWP_plus_24h_TE.yaml
   name: LGBM_high_NWP_plus_24h_TE
-- config_id: 327
+- config_id: 309
   file: LSTM_high_NWP_plus_24h_TE.yaml
   name: LSTM_high_NWP_plus_24h_TE
-- config_id: 328
+- config_id: 310
   file: GRU_high_NWP_plus_24h_TE.yaml
   name: GRU_high_NWP_plus_24h_TE
-- config_id: 329
+- config_id: 311
   file: TCN_high_NWP_plus_24h_TE.yaml
   name: TCN_high_NWP_plus_24h_TE
-- config_id: 330
+- config_id: 312
   file: Transformer_high_NWP_plus_24h_TE.yaml
   name: Transformer_high_NWP_plus_24h_TE
-- config_id: 331
-  file: LSR_low_NWP_plus_72h_noTE.yaml
-  name: LSR_low_NWP_plus_72h_noTE
-- config_id: 332
+- config_id: 313
   file: RF_low_NWP_plus_72h_noTE.yaml
   name: RF_low_NWP_plus_72h_noTE
-- config_id: 333
+- config_id: 314
   file: XGB_low_NWP_plus_72h_noTE.yaml
   name: XGB_low_NWP_plus_72h_noTE
-- config_id: 334
+- config_id: 315
   file: LGBM_low_NWP_plus_72h_noTE.yaml
   name: LGBM_low_NWP_plus_72h_noTE
-- config_id: 335
+- config_id: 316
   file: LSTM_low_NWP_plus_72h_noTE.yaml
   name: LSTM_low_NWP_plus_72h_noTE
-- config_id: 336
+- config_id: 317
   file: GRU_low_NWP_plus_72h_noTE.yaml
   name: GRU_low_NWP_plus_72h_noTE
-- config_id: 337
+- config_id: 318
   file: TCN_low_NWP_plus_72h_noTE.yaml
   name: TCN_low_NWP_plus_72h_noTE
-- config_id: 338
+- config_id: 319
   file: Transformer_low_NWP_plus_72h_noTE.yaml
   name: Transformer_low_NWP_plus_72h_noTE
-- config_id: 339
+- config_id: 320
   file: RF_high_NWP_plus_72h_noTE.yaml
   name: RF_high_NWP_plus_72h_noTE
-- config_id: 340
+- config_id: 321
   file: XGB_high_NWP_plus_72h_noTE.yaml
   name: XGB_high_NWP_plus_72h_noTE
-- config_id: 341
+- config_id: 322
   file: LGBM_high_NWP_plus_72h_noTE.yaml
   name: LGBM_high_NWP_plus_72h_noTE
-- config_id: 342
+- config_id: 323
   file: LSTM_high_NWP_plus_72h_noTE.yaml
   name: LSTM_high_NWP_plus_72h_noTE
-- config_id: 343
+- config_id: 324
   file: GRU_high_NWP_plus_72h_noTE.yaml
   name: GRU_high_NWP_plus_72h_noTE
-- config_id: 344
+- config_id: 325
   file: TCN_high_NWP_plus_72h_noTE.yaml
   name: TCN_high_NWP_plus_72h_noTE
-- config_id: 345
+- config_id: 326
   file: Transformer_high_NWP_plus_72h_noTE.yaml
   name: Transformer_high_NWP_plus_72h_noTE
-- config_id: 346
-  file: LSR_low_NWP_plus_72h_TE.yaml
-  name: LSR_low_NWP_plus_72h_TE
-- config_id: 347
+- config_id: 327
   file: RF_low_NWP_plus_72h_TE.yaml
   name: RF_low_NWP_plus_72h_TE
-- config_id: 348
+- config_id: 328
   file: XGB_low_NWP_plus_72h_TE.yaml
   name: XGB_low_NWP_plus_72h_TE
-- config_id: 349
+- config_id: 329
   file: LGBM_low_NWP_plus_72h_TE.yaml
   name: LGBM_low_NWP_plus_72h_TE
-- config_id: 350
+- config_id: 330
   file: LSTM_low_NWP_plus_72h_TE.yaml
   name: LSTM_low_NWP_plus_72h_TE
-- config_id: 351
+- config_id: 331
   file: GRU_low_NWP_plus_72h_TE.yaml
   name: GRU_low_NWP_plus_72h_TE
-- config_id: 352
+- config_id: 332
   file: TCN_low_NWP_plus_72h_TE.yaml
   name: TCN_low_NWP_plus_72h_TE
-- config_id: 353
+- config_id: 333
   file: Transformer_low_NWP_plus_72h_TE.yaml
   name: Transformer_low_NWP_plus_72h_TE
-- config_id: 354
+- config_id: 334
   file: RF_high_NWP_plus_72h_TE.yaml
   name: RF_high_NWP_plus_72h_TE
-- config_id: 355
+- config_id: 335
   file: XGB_high_NWP_plus_72h_TE.yaml
   name: XGB_high_NWP_plus_72h_TE
-- config_id: 356
+- config_id: 336
   file: LGBM_high_NWP_plus_72h_TE.yaml
   name: LGBM_high_NWP_plus_72h_TE
-- config_id: 357
+- config_id: 337
   file: LSTM_high_NWP_plus_72h_TE.yaml
   name: LSTM_high_NWP_plus_72h_TE
-- config_id: 358
+- config_id: 338
   file: GRU_high_NWP_plus_72h_TE.yaml
   name: GRU_high_NWP_plus_72h_TE
-- config_id: 359
+- config_id: 339
   file: TCN_high_NWP_plus_72h_TE.yaml
   name: TCN_high_NWP_plus_72h_TE
-- config_id: 360
+- config_id: 340
   file: Transformer_high_NWP_plus_72h_TE.yaml
   name: Transformer_high_NWP_plus_72h_TE
-model_params: {}
 project_id: '1140'
-total_configs: 360
-train_params: {}
+total_configs: 340

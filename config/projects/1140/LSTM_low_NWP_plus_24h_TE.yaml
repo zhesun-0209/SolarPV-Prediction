@@ -37,7 +37,8 @@ train_params:
 train_ratio: 0.8
 use_forecast: true
 use_hist_weather: false
+use_ideal_nwp: true
 use_pv: false
 use_time_encoding: true
 val_ratio: 0.1
-weather_category: forecast_ideal
+weather_category: all_weather
