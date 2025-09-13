@@ -126,7 +126,9 @@ def train_ml_model(
         'mae':            mae,
         'nrmse':          all_metrics['nrmse'],
         'r_square':       all_metrics['r_square'],
+        'r2':             all_metrics['r2'],  # 添加r2别名
         'smape':          all_metrics['smape'],
+        'mape':           all_metrics['mape'],  # 添加mape指标
         'best_epoch':     np.nan,  # ML模型没有epoch概念
         'final_lr':       np.nan,  # ML模型没有学习率概念
         'gpu_memory_used': gpu_memory_used,

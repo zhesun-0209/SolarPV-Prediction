@@ -135,6 +135,12 @@ def create_test_config(model, model_type):
                 'dropout': 0.2
             }
         }
+        # 添加train_params
+        config['train_params'] = {
+            'batch_size': 32,
+            'learning_rate': 0.001,
+            'loss_type': 'mse'
+        }
     
     return config
 
