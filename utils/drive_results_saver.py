@@ -51,13 +51,29 @@ class DriveResultsSaver:
         # 优先从Drive加载
         if csv_path.exists():
             try:
+                # 检查文件大小
+                file_size = csv_path.stat().st_size
+                if file_size == 0:
+                    logger.info(f"Drive文件 {project_id} 为空，创建新文件")
+                    return pd.DataFrame()
+                
                 df = pd.read_csv(csv_path)
+                if df.empty:
+                    logger.info(f"Drive文件 {project_id} 为空DataFrame")
+                    return pd.DataFrame()
+                
                 # 同时保存到本地缓存
                 df.to_csv(local_cache_path, index=False)
                 logger.info(f"从Drive加载 {project_id} 结果: {len(df)} 条记录")
                 return df
             except Exception as e:
                 logger.warning(f"Drive文件加载失败: {e}")
+                # 如果Drive文件损坏，尝试删除并重新开始
+                try:
+                    csv_path.unlink()
+                    logger.info(f"已删除损坏的Drive文件: {csv_path}")
+                except:
+                    pass
         
         # 如果Drive没有，尝试从本地缓存加载
         if local_cache_path.exists():

@@ -9,6 +9,10 @@ model_params:
     learning_rate: 0.01
     max_depth: 12
     n_estimators: 200
+  ml_low:
+    learning_rate: 0.1
+    max_depth: 5
+    n_estimators: 50
 past_days: 3
 past_hours: 72
 plot_days: 7
@@ -30,4 +34,4 @@ use_hist_weather: false
 use_pv: true
 use_time_encoding: false
 val_ratio: 0.1
-weather_category: forecast
+weather_category: all_weather

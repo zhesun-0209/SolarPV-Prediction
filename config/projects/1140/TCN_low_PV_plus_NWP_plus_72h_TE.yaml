@@ -5,6 +5,12 @@ future_hours: 24
 model: TCN
 model_complexity: low
 model_params:
+  high:
+    d_model: 256
+    dropout: 0.3
+    hidden_dim: 128
+    num_heads: 16
+    num_layers: 18
   low:
     d_model: 64
     dropout: 0.1

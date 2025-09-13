@@ -1079,5 +1079,7 @@ configs:
 - config_id: 360
   file: Transformer_high_NWP_plus_72h_TE.yaml
   name: Transformer_high_NWP_plus_72h_TE
+model_params: {}
 project_id: '1140'
 total_configs: 360
+train_params: {}

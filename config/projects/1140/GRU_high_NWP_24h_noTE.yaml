@@ -11,6 +11,12 @@ model_params:
     hidden_dim: 128
     num_heads: 16
     num_layers: 18
+  low:
+    d_model: 64
+    dropout: 0.1
+    hidden_dim: 32
+    num_heads: 4
+    num_layers: 6
 past_days: 1
 past_hours: 24
 plot_days: 7
@@ -34,4 +40,4 @@ use_hist_weather: false
 use_pv: false
 use_time_encoding: false
 val_ratio: 0.1
-weather_category: forecast
+weather_category: all_weather

@@ -11,6 +11,12 @@ model_params:
     hidden_dim: 128
     num_heads: 16
     num_layers: 18
+  low:
+    d_model: 64
+    dropout: 0.1
+    hidden_dim: 32
+    num_heads: 4
+    num_layers: 6
 past_days: 3
 past_hours: 72
 plot_days: 7

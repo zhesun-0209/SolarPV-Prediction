@@ -5,6 +5,12 @@ future_hours: 24
 model: Transformer
 model_complexity: low
 model_params:
+  high:
+    d_model: 256
+    dropout: 0.3
+    hidden_dim: 128
+    num_heads: 16
+    num_layers: 18
   low:
     d_model: 64
     dropout: 0.1
@@ -34,4 +40,4 @@ use_hist_weather: false
 use_pv: false
 use_time_encoding: false
 val_ratio: 0.1
-weather_category: forecast
+weather_category: all_weather

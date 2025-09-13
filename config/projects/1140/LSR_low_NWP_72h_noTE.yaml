@@ -5,6 +5,8 @@ future_hours: 24
 model: LSR
 model_complexity: baseline
 model_params:
+  ml_high:
+    learning_rate: 0.001
   ml_low:
     learning_rate: 0.001
 past_days: 3
@@ -25,4 +27,4 @@ use_hist_weather: false
 use_pv: false
 use_time_encoding: false
 val_ratio: 0.1
-weather_category: forecast
+weather_category: all_weather

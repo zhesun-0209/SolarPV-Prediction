@@ -5,6 +5,8 @@ future_hours: 24
 model: LSR
 model_complexity: baseline
 model_params:
+  ml_high:
+    learning_rate: 0.001
   ml_low:
     learning_rate: 0.001
 past_days: 3
