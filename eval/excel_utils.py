@@ -34,7 +34,7 @@ def save_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据 (27列)
+        # 构建行数据 (26列)
         row_data = {
             # 实验配置列 (14列)
             'model': config.get('model', ''),
@@ -57,13 +57,12 @@ def save_plant_excel_results(
             'best_epoch': metrics.get('best_epoch', np.nan),
             'final_lr': metrics.get('final_lr', np.nan),
             
-            # 评估指标列 (7列)
+            # 评估指标列 (6列)
             'mse': round(metrics.get('mse', 0), 4),
             'rmse': round(metrics.get('rmse', 0), 4),
             'mae': round(metrics.get('mae', 0), 4),
             'nrmse': round(metrics.get('nrmse', 0), 4),
             'r_square': round(metrics.get('r_square', 0), 4),
-            'r2': round(metrics.get('r2', 0), 4),  # 添加r2列
             'smape': round(metrics.get('smape', 0), 4),
             'gpu_memory_used': metrics.get('gpu_memory_used', 0)
         }
@@ -110,7 +109,7 @@ def append_plant_excel_results(
     save_dir: str
 ):
     """
-    向单个厂的Excel结果文件追加新的实验结果
+    向单个厂的CSV结果文件追加新的实验结果
     
     Args:
         plant_id: 厂ID
@@ -125,7 +124,7 @@ def append_plant_excel_results(
     config = result.get('config', {})
     metrics = result.get('metrics', {})
     
-    # 构建行数据 (27列)
+    # 构建行数据 (26列，移除r2列)
     row_data = {
         # 实验配置列 (14列)
         'model': config.get('model', ''),
@@ -148,24 +147,23 @@ def append_plant_excel_results(
         'best_epoch': metrics.get('best_epoch', np.nan),
         'final_lr': metrics.get('final_lr', np.nan),
         
-        # 评估指标列 (7列)
+        # 评估指标列 (6列，移除r2列)
         'mse': round(metrics.get('mse', 0), 4),
         'rmse': round(metrics.get('rmse', 0), 4),
         'mae': round(metrics.get('mae', 0), 4),
         'nrmse': round(metrics.get('nrmse', 0), 4),
         'r_square': round(metrics.get('r_square', 0), 4),
-        'r2': round(metrics.get('r2', 0), 4),  # 添加r2列
         'smape': round(metrics.get('smape', 0), 4),
         'gpu_memory_used': metrics.get('gpu_memory_used', 0)
     }
     
-    # 检查文件是否存在
-    excel_path = os.path.join(save_dir, f"{plant_id}_results.xlsx")
+    # 检查CSV文件是否存在
+    csv_path = os.path.join(save_dir, f"{plant_id}_results.csv")
     
-    if os.path.exists(excel_path):
+    if os.path.exists(csv_path):
         # 读取现有数据
         try:
-            existing_df = pd.read_excel(excel_path)
+            existing_df = pd.read_csv(csv_path)
             
             # 检查是否已存在相同的实验（基于关键配置列）
             key_columns = ['model', 'use_pv', 'use_hist_weather', 'use_forecast', 
@@ -183,25 +181,27 @@ def append_plant_excel_results(
             
             if is_duplicate:
                 print(f"⚠️  实验已存在，跳过: {plant_id}")
-                return
+                return csv_path
             
             # 合并数据
             combined_df = pd.concat([existing_df, new_row_df], ignore_index=True)
             
         except Exception as e:
-            print(f"❌ 读取现有Excel文件失败: {e}")
+            print(f"❌ 读取现有CSV文件失败: {e}")
             # 如果读取失败，创建新的DataFrame
             combined_df = pd.DataFrame([row_data])
     else:
         # 文件不存在，创建新的DataFrame
         combined_df = pd.DataFrame([row_data])
     
-    # 保存到Excel文件
-    combined_df.to_excel(excel_path, index=False)
+    # 保存到CSV文件
+    combined_df.to_csv(csv_path, index=False)
     
-    print(f"✅ Excel结果已更新: {excel_path}")
+    print(f"✅ CSV结果已更新: {csv_path}")
     print(f"   总实验数: {len(combined_df)}")
     print(f"   新增实验数: 1")
+    
+    return csv_path
 
 def get_existing_experiments(plant_id: str, save_dir: str) -> set:
     """

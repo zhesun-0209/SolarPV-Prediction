@@ -291,8 +291,9 @@ def main():
 
         # Step 5: Save metrics and plots
         cfg["scaler_target"] = scaler_target
+        cfg["plant_id"] = str(pid)  # 设置plant_id为ProjectID
         save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
-        print(f"[INFO] Project {pid} | {cfg['model']} done, mse={metrics['mse']:.4f}, rmse={metrics['rmse']:.4f}, mae={metrics['mae']:.4f}")
+        print(f"[INFO] Project {pid} | {cfg['model']} done, mse={metrics['mse']:.4f}, rmse={metrics['rmse']:.4f}, mae={metrics['mae']:.4f}, r_square={metrics.get('r_square', 0):.4f}")
 
 if __name__ == "__main__":
     main()

@@ -53,6 +53,12 @@ def save_results(
     test_rmse = np.sqrt(test_mse)
     test_mae = np.mean(np.abs(preds - yts))
     
+    # 计算R² (决定系数)
+    y_mean = np.mean(yts)
+    ss_tot = np.sum((yts - y_mean) ** 2)  # 总平方和
+    ss_res = np.sum((yts - preds) ** 2)   # 残差平方和
+    r_square = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+    
     # 只计算原始尺度指标
 
     # 获取保存选项
@@ -77,6 +83,7 @@ def save_results(
         'mse':             test_mse,   # 整个测试集MSE (Capacity Factor²)
         'rmse':            test_rmse,  # 整个测试集RMSE (Capacity Factor)
         'mae':             test_mae,   # 整个测试集MAE (Capacity Factor)
+        'r_square':        r_square,   # R²决定系数
         
         # 性能指标
         'train_time_sec':  metrics.get('train_time_sec'),
@@ -150,7 +157,7 @@ def save_results(
                 'rmse': summary['rmse'],
                 'mae': summary['mae'],
                 'nrmse': metrics.get('nrmse', np.nan),
-                'r_square': metrics.get('r_square', np.nan),
+                'r_square': summary['r_square'],
                 'smape': metrics.get('smape', np.nan),
                 'best_epoch': metrics.get('best_epoch', np.nan),
                 'final_lr': metrics.get('final_lr', np.nan),
@@ -158,9 +165,9 @@ def save_results(
             }
         }
         
-        # 保存到Excel文件（追加模式）
+        # 保存到CSV文件（追加模式）
         from eval.excel_utils import append_plant_excel_results
-        excel_file = append_plant_excel_results(
+        csv_file = append_plant_excel_results(
             plant_id=config.get('plant_id', 'unknown'),
             result=result_data,
             save_dir=save_dir

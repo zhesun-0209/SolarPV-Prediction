@@ -49,8 +49,8 @@ def test_model_type(model_name, config_pattern):
                         print(f"📊 结果: {line.strip()}")
                         break
             
-            # 检查Excel结果文件是否保存
-            check_excel_results(model_name, config_file)
+            # 检查CSV结果文件是否保存
+            check_csv_results(model_name, config_file)
             
             return True, result.stdout
         else:
@@ -65,9 +65,9 @@ def test_model_type(model_name, config_pattern):
         print(f"💥 {model_name} 训练异常: {str(e)}")
         return False, str(e)
 
-def check_excel_results(model_name, config_file):
-    """检查Excel结果文件是否保存"""
-    print(f"🔍 检查 {model_name} Excel结果文件...")
+def check_csv_results(model_name, config_file):
+    """检查CSV结果文件是否保存"""
+    print(f"🔍 检查 {model_name} CSV结果文件...")
     
     # 从配置文件中获取保存目录
     with open(config_file, 'r') as f:
@@ -79,17 +79,27 @@ def check_excel_results(model_name, config_file):
         files = os.listdir(save_dir)
         print(f"📁 结果目录: {save_dir}")
         
-        # 检查是否有Excel文件
-        excel_files = [f for f in files if f.endswith('.xlsx')]
+        # 检查是否有CSV文件
+        csv_files = [f for f in files if f.endswith('.csv')]
         
-        if excel_files:
-            print(f"✅ 找到Excel结果文件: {excel_files}")
-            for file in excel_files:
+        if csv_files:
+            print(f"✅ 找到CSV结果文件: {csv_files}")
+            for file in csv_files:
                 file_path = os.path.join(save_dir, file)
                 size = os.path.getsize(file_path)
                 print(f"  📊 {file} ({size} bytes)")
+                
+                # 显示CSV文件内容预览
+                try:
+                    import pandas as pd
+                    df = pd.read_csv(file_path)
+                    print(f"    📋 行数: {len(df)}, 列数: {len(df.columns)}")
+                    if len(df) > 0:
+                        print(f"    📋 列名: {list(df.columns)[:10]}...")  # 显示前10列
+                except Exception as e:
+                    print(f"    ❌ 读取CSV文件失败: {e}")
         else:
-            print(f"⚠️ 未找到Excel结果文件")
+            print(f"⚠️ 未找到CSV结果文件")
             
         # 显示目录内容
         print(f"📋 目录内容:")
@@ -127,7 +137,7 @@ def main():
     
     print(f"📊 将测试 {total_tests} 类模型")
     print(f"🎯 目标: 确保每类模型都能正常运行并输出指标")
-    print(f"💾 只保存Excel结果文件")
+    print(f"💾 只保存CSV结果文件")
     
     for i, (model_name, config_pattern) in enumerate(model_tests, 1):
         print(f"\n🔄 进度: {i}/{total_tests}")
