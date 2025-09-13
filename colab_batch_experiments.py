@@ -109,6 +109,16 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
             config['data_path'] = data_file
             config['plant_id'] = project_id
             
+            # 对于ML模型，移除不应该有的参数
+            if config.get('model') in ['LGBM', 'RF', 'XGB', 'Linear']:
+                # ML模型不应该有batch_size、learning_rate等DL参数
+                if 'train_params' in config:
+                    ml_train_params = {}
+                    for key, value in config['train_params'].items():
+                        if key in ['learning_rate', 'max_depth', 'n_estimators', 'random_state']:
+                            ml_train_params[key] = value
+                    config['train_params'] = ml_train_params
+            
             print(f"🔍 调试: 修改后config['train_params'] = {config.get('train_params', 'NOT_FOUND')}")
             print(f"🔍 调试: 修改后config['model'] = {config.get('model', 'NOT_FOUND')}")
             print(f"🔍 调试: 修改后config['model_params'] = {config.get('model_params', 'NOT_FOUND')}")
@@ -196,6 +206,18 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             print(f"🔍 调试：提取samples_count={samples_count}")
                         except Exception as e:
                             print(f"🔍 调试：samples_count提取失败: {e}")
+                    elif "[METRICS]" in line and "smape=" in line:
+                        try:
+                            smape = float(line.split("smape=")[1].split(",")[0])
+                            print(f"🔍 调试：提取smape={smape}")
+                        except Exception as e:
+                            print(f"🔍 调试：smape提取失败: {e}")
+                    elif "[METRICS]" in line and "gpu_memory_used=" in line:
+                        try:
+                            gpu_memory_used = int(float(line.split("gpu_memory_used=")[1].split()[0]))
+                            print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
+                        except Exception as e:
+                            print(f"🔍 调试：gpu_memory_used提取失败: {e}")
                     elif "[METRICS] best_epoch=" in line:
                         try:
                             epoch_str = line.split("best_epoch=")[1].split(",")[0]
@@ -222,18 +244,6 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             print(f"🔍 调试：提取nrmse={nrmse}")
                         except Exception as e:
                             print(f"🔍 调试：nrmse提取失败: {e}")
-                    elif "[METRICS]" in line and "smape=" in line:
-                        try:
-                            smape = float(line.split("smape=")[1].split(",")[0])
-                            print(f"🔍 调试：提取smape={smape}")
-                        except Exception as e:
-                            print(f"🔍 调试：smape提取失败: {e}")
-                    elif "[METRICS]" in line and "gpu_memory_used=" in line:
-                        try:
-                            gpu_memory_used = int(float(line.split("gpu_memory_used=")[1].split()[0]))
-                            print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
-                        except Exception as e:
-                            print(f"🔍 调试：gpu_memory_used提取失败: {e}")
                 
                 if result_line:
                     # 解析结果
