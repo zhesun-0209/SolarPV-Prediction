@@ -1,4 +1,4 @@
-total_configs: 356
+total_configs: 352
 experiment_design:
   input_categories: 6
   lookback_hours: 2
@@ -9,8 +9,9 @@ experiment_design:
 calculation:
   theoretical_total: 6 × 2 × 2 × 2 × 8 = 384
   lsr_skip_pv: 1 × 2 × 2 × 2 × 1 = 8
-  lsr_skip_high: 6 × 2 × 2 × 1 × 1 = 24
-  actual_total: 384 - 8 - 24 = 356
+  lsr_skip_pv_plus_hw: 1 × 2 × 2 × 2 × 1 = 8
+  lsr_skip_high: 4 × 2 × 2 × 1 × 1 = 16
+  actual_total: 384 - 8 - 8 - 16 = 352
 input_categories:
 - PV - 仅历史PV功率
 - PV+NWP - 历史PV + 目标日NWP
