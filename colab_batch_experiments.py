@@ -109,13 +109,14 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
             config['data_path'] = data_file
             config['plant_id'] = project_id
             
-            # 对于ML模型，移除不应该有的参数
+            # 对于ML模型，移除不应该有的DL参数，但保留ML特有的参数
             if config.get('model') in ['LGBM', 'RF', 'XGB', 'Linear']:
-                # ML模型不应该有batch_size、learning_rate等DL参数
+                # ML模型不应该有batch_size等DL参数，但可以有learning_rate（XGB、LGBM）
                 if 'train_params' in config:
                     ml_train_params = {}
                     for key, value in config['train_params'].items():
-                        if key in ['learning_rate', 'max_depth', 'n_estimators', 'random_state']:
+                        # 保留ML模型特有的参数
+                        if key in ['learning_rate', 'max_depth', 'n_estimators', 'random_state', 'verbosity']:
                             ml_train_params[key] = value
                     config['train_params'] = ml_train_params
             
@@ -290,8 +291,9 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                         # 计算past_days（基于lookback_hours）
                         past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
                         
-                        # 判断是否为DL模型
+                        # 判断模型类型
                         is_dl_model = model_name in ['Transformer', 'LSTM', 'GRU', 'TCN']
+                        has_learning_rate = model_name in ['XGB', 'LGBM']  # 只有XGB和LGBM有learning_rate
                         
                         # 创建结果行
                         result_row = {
@@ -305,7 +307,7 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             'model_complexity': complexity,
                             'epochs': config.get('epochs', 50 if complexity == 'high' else 15) if is_dl_model else 0,
                             'batch_size': config.get('train_params', {}).get('batch_size', 32) if is_dl_model else 0,
-                            'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if is_dl_model else 0.0,
+                            'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if has_learning_rate else 0.0,
                             'train_time_sec': round(duration, 4),
                             'inference_time_sec': inference_time,
                             'param_count': param_count,
