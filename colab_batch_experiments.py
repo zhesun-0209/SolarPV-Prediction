@@ -169,49 +169,63 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                 smape = 0.0
                 gpu_memory_used = 0
                 
+                # 调试：显示所有输出行
+                print("🔍 调试：检查实验输出中的METRICS行")
+                for line in result.stdout.split('\n'):
+                    if "[METRICS]" in line:
+                        print(f"   找到METRICS行: {line}")
+                
                 for line in result.stdout.split('\n'):
                     if "mse=" in line and "rmse=" in line and "mae=" in line and "r_square=" in line:
                         result_line = line
                     elif "[METRICS] inference_time=" in line:
                         try:
                             inference_time = float(line.split("inference_time=")[1].split(",")[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取inference_time={inference_time}")
+                        except Exception as e:
+                            print(f"🔍 调试：inference_time提取失败: {e}")
                     elif "[METRICS]" in line and "param_count=" in line:
                         try:
                             param_count = int(line.split("param_count=")[1].split(",")[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取param_count={param_count}")
+                        except Exception as e:
+                            print(f"🔍 调试：param_count提取失败: {e}")
                     elif "[METRICS]" in line and "samples_count=" in line:
                         try:
                             samples_count = int(line.split("samples_count=")[1].split()[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取samples_count={samples_count}")
+                        except Exception as e:
+                            print(f"🔍 调试：samples_count提取失败: {e}")
                     elif "[METRICS] best_epoch=" in line:
                         try:
                             best_epoch = int(line.split("best_epoch=")[1].split(",")[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取best_epoch={best_epoch}")
+                        except Exception as e:
+                            print(f"🔍 调试：best_epoch提取失败: {e}")
                     elif "[METRICS]" in line and "final_lr=" in line:
                         try:
                             final_lr = float(line.split("final_lr=")[1].split()[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取final_lr={final_lr}")
+                        except Exception as e:
+                            print(f"🔍 调试：final_lr提取失败: {e}")
                     elif "[METRICS] nrmse=" in line:
                         try:
                             nrmse = float(line.split("nrmse=")[1].split(",")[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取nrmse={nrmse}")
+                        except Exception as e:
+                            print(f"🔍 调试：nrmse提取失败: {e}")
                     elif "[METRICS]" in line and "smape=" in line:
                         try:
                             smape = float(line.split("smape=")[1].split(",")[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取smape={smape}")
+                        except Exception as e:
+                            print(f"🔍 调试：smape提取失败: {e}")
                     elif "[METRICS]" in line and "gpu_memory_used=" in line:
                         try:
                             gpu_memory_used = int(line.split("gpu_memory_used=")[1].split()[0])
-                        except:
-                            pass
+                            print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
+                        except Exception as e:
+                            print(f"🔍 调试：gpu_memory_used提取失败: {e}")
                 
                 if result_line:
                     # 解析结果
