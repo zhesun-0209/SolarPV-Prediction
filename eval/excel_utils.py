@@ -166,6 +166,7 @@ def append_plant_excel_results(
         # 读取现有数据
         try:
             existing_df = pd.read_csv(csv_path)
+            print(f"🔍 调试: 读取现有CSV文件，当前行数: {len(existing_df)}")
             
             # 检查是否已存在相同的实验（基于关键配置列）
             key_columns = ['model', 'use_pv', 'use_hist_weather', 'use_forecast', 
@@ -187,6 +188,7 @@ def append_plant_excel_results(
             
             # 合并数据
             combined_df = pd.concat([existing_df, new_row_df], ignore_index=True)
+            print(f"🔍 调试: 合并后行数: {len(combined_df)}")
             
         except Exception as e:
             print(f"❌ 读取现有CSV文件失败: {e}")
@@ -194,6 +196,7 @@ def append_plant_excel_results(
             combined_df = pd.DataFrame([row_data])
     else:
         # 文件不存在，创建新的DataFrame
+        print(f"🔍 调试: CSV文件不存在，创建新文件")
         combined_df = pd.DataFrame([row_data])
     
     # 保存到CSV文件

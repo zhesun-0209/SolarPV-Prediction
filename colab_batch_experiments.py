@@ -86,6 +86,24 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
     drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
     os.makedirs(drive_save_dir, exist_ok=True)
     
+    # 为项目创建初始CSV文件
+    csv_file_path = os.path.join(drive_save_dir, f"{project_id}_results.csv")
+    if not os.path.exists(csv_file_path):
+        print(f"📄 创建项目CSV文件: {csv_file_path}")
+        # 创建空的CSV文件，包含列头
+        import pandas as pd
+        empty_df = pd.DataFrame(columns=[
+            'model', 'use_pv', 'use_hist_weather', 'use_forecast', 'weather_category',
+            'use_time_encoding', 'past_days', 'model_complexity', 'epochs', 'batch_size',
+            'learning_rate', 'train_time_sec', 'inference_time_sec', 'param_count',
+            'samples_count', 'best_epoch', 'final_lr', 'mse', 'rmse', 'mae', 'nrmse',
+            'r_square', 'smape', 'gpu_memory_used'
+        ])
+        empty_df.to_csv(csv_file_path, index=False)
+        print(f"✅ 项目CSV文件已创建")
+    else:
+        print(f"📄 项目CSV文件已存在: {csv_file_path}")
+    
     # 统计信息
     stats = {
         'project_id': project_id,
