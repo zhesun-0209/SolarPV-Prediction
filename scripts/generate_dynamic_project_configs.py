@@ -51,12 +51,8 @@ def create_feature_config(input_category, lookback_hours, use_time_encoding):
     config = {}
     
     # 输入特征配置
-    if input_category == 'PV':
-        config['use_pv'] = True
-        config['use_hist_weather'] = False
-        config['use_forecast'] = False
-        config['weather_category'] = 'none'
-    elif input_category == 'PV_plus_NWP':
+    # 删除PV配置，因为线性回归不应该使用Capacity Factor本身作为特征
+    if input_category == 'PV_plus_NWP':
         config['use_pv'] = True
         config['use_hist_weather'] = False
         config['use_forecast'] = True
@@ -209,7 +205,8 @@ def generate_project_configs(project_id):
     configs = []
     
     # 实验参数
-    input_categories = ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW', 'NWP', 'NWP_plus']
+    # 删除PV配置，因为线性回归不应该使用Capacity Factor本身作为特征
+    input_categories = ['PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW', 'NWP', 'NWP_plus']
     lookback_hours = [24, 72]
     time_encodings = [False, True]  # noTE, TE
     complexities = ['low', 'high']
