@@ -149,12 +149,26 @@ def test_single_model(model, config):
     try:
         # 创建测试数据（确保数据量足够）
         future_hours = config.get('future_hours', 24)
-        X_train = np.random.rand(100, 5)
-        Xf_train = np.random.rand(100, 3)
-        y_train = np.random.rand(100, future_hours)  # 匹配future_hours
-        Xh_test = np.random.rand(30, 5)
-        Xf_test = np.random.rand(30, 3)
-        y_test = np.random.rand(30, future_hours)  # 匹配future_hours
+        past_hours = config.get('past_hours', 24)
+        
+        # 根据模型类型创建不同维度的数据
+        if config['model'] in ['Linear', 'RF', 'XGB', 'LGBM']:
+            # ML模型使用2D数据
+            X_train = np.random.rand(100, 5)
+            Xf_train = np.random.rand(100, 3)
+            y_train = np.random.rand(100, future_hours)
+            Xh_test = np.random.rand(30, 5)
+            Xf_test = np.random.rand(30, 3)
+            y_test = np.random.rand(30, future_hours)
+        else:
+            # DL模型使用3D数据 (samples, sequence_length, features)
+            X_train = np.random.rand(100, past_hours, 5)
+            Xf_train = np.random.rand(100, past_hours, 3)
+            y_train = np.random.rand(100, future_hours)  # 输出保持2D
+            Xh_test = np.random.rand(30, past_hours, 5)
+            Xf_test = np.random.rand(30, past_hours, 3)
+            y_test = np.random.rand(30, future_hours)  # 输出保持2D
+            
         dates_test = [f"2024-01-01 {i:02d}:00:00" for i in range(30)]
         
         # 根据模型类型选择训练函数
