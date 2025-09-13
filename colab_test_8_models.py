@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试所有模型类型 - 确保每个模型都能正常运行并保存结果
+Colab测试脚本 - 测试8类模型，确保都能正常运行并输出指标
 """
 
 import os
@@ -49,8 +49,8 @@ def test_model_type(model_name, config_pattern):
                         print(f"📊 结果: {line.strip()}")
                         break
             
-            # 检查结果文件是否保存
-            check_result_files(model_name, config_file)
+            # 检查Excel结果文件是否保存
+            check_excel_results(model_name, config_file)
             
             return True, result.stdout
         else:
@@ -65,9 +65,9 @@ def test_model_type(model_name, config_pattern):
         print(f"💥 {model_name} 训练异常: {str(e)}")
         return False, str(e)
 
-def check_result_files(model_name, config_file):
-    """检查结果文件是否保存"""
-    print(f"🔍 检查 {model_name} 结果文件...")
+def check_excel_results(model_name, config_file):
+    """检查Excel结果文件是否保存"""
+    print(f"🔍 检查 {model_name} Excel结果文件...")
     
     # 从配置文件中获取保存目录
     with open(config_file, 'r') as f:
@@ -78,22 +78,22 @@ def check_result_files(model_name, config_file):
     if os.path.exists(save_dir):
         files = os.listdir(save_dir)
         print(f"📁 结果目录: {save_dir}")
-        print(f"📄 文件数量: {len(files)}")
         
-        # 检查是否有结果文件
-        result_files = []
-        for file in files:
-            if file.endswith(('.csv', '.json', '.pkl', '.pth')):
-                result_files.append(file)
+        # 检查是否有Excel文件
+        excel_files = [f for f in files if f.endswith('.xlsx')]
         
-        if result_files:
-            print(f"✅ 找到结果文件: {result_files}")
+        if excel_files:
+            print(f"✅ 找到Excel结果文件: {excel_files}")
+            for file in excel_files:
+                file_path = os.path.join(save_dir, file)
+                size = os.path.getsize(file_path)
+                print(f"  📊 {file} ({size} bytes)")
         else:
-            print(f"⚠️ 未找到结果文件")
+            print(f"⚠️ 未找到Excel结果文件")
             
         # 显示目录内容
         print(f"📋 目录内容:")
-        for file in sorted(files)[:10]:  # 显示前10个文件
+        for file in sorted(files)[:5]:  # 显示前5个文件
             file_path = os.path.join(save_dir, file)
             if os.path.isdir(file_path):
                 print(f"  📁 {file}/")
@@ -105,10 +105,10 @@ def check_result_files(model_name, config_file):
 
 def main():
     """主函数"""
-    print("🌟 SolarPV项目 - 全模型类型测试")
+    print("🌟 SolarPV项目 - 8类模型测试")
     print("=" * 80)
     
-    # 定义要测试的模型类型
+    # 定义要测试的8类模型
     model_tests = [
         ("LSTM", "LSTM_low_PV_24h_TE"),
         ("GRU", "GRU_low_PV_24h_TE"), 
@@ -125,7 +125,9 @@ def main():
     successful = 0
     failed = 0
     
-    print(f"📊 将测试 {total_tests} 种模型类型")
+    print(f"📊 将测试 {total_tests} 类模型")
+    print(f"🎯 目标: 确保每类模型都能正常运行并输出指标")
+    print(f"💾 只保存Excel结果文件")
     
     for i, (model_name, config_pattern) in enumerate(model_tests, 1):
         print(f"\n🔄 进度: {i}/{total_tests}")
@@ -166,6 +168,17 @@ def main():
             print(f"    ... 还有 {len(all_dirs) - 10} 个目录")
     else:
         print(f"  ❌ 结果目录不存在: {results_dir}")
+    
+    # 提供下一步建议
+    if successful == total_tests:
+        print(f"\n🎊 所有8类模型测试成功！")
+        print(f"💡 建议: 现在可以运行完整的训练脚本 colab_fixed_training.py")
+    elif successful > 0:
+        print(f"\n⚠️ 部分模型测试成功")
+        print(f"💡 建议: 检查失败的模型，可能需要调整配置或环境")
+    else:
+        print(f"\n❌ 所有模型测试失败")
+        print(f"💡 建议: 检查环境配置和依赖安装")
     
     return results
 

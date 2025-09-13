@@ -20,9 +20,9 @@ save_dir: temp_results/1140/XGB_low_PV_plus_NWP_plus_72h_TE
 save_options:
   save_excel_results: true
   save_model: false
-  save_predictions: true
+  save_predictions: false
   save_summary: false
-  save_training_log: true
+  save_training_log: false
 start_date: '2022-01-01'
 train_params: {}
 train_ratio: 0.8
