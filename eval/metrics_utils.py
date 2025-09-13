@@ -34,8 +34,7 @@ def calculate_metrics(y_true, y_pred):
             'nrmse': np.nan,
             'r_square': np.nan,
             'r2': np.nan,  # 添加r2别名
-            'smape': np.nan,
-            'mape': np.nan  # 添加mape指标
+            'smape': np.nan
         }
     
     T = len(y_true_clean)
@@ -56,16 +55,7 @@ def calculate_metrics(y_true, y_pred):
     # R²
     r_square = r2_score(y_true_clean, y_pred_clean)
     
-    # MAPE (平均绝对百分比误差)
-    # 公式: MAPE = (1/n) * Σ[|y_t - ŷ_t| / |y_t|] * 100
-    # 只计算非零值
-    nonzero_mask = y_true_clean != 0
-    if np.any(nonzero_mask):
-        y_true_nonzero = y_true_clean[nonzero_mask]
-        y_pred_nonzero = y_pred_clean[nonzero_mask]
-        mape = np.mean(np.abs((y_true_nonzero - y_pred_nonzero) / y_true_nonzero)) * 100
-    else:
-        mape = np.nan
+    # 删除MAPE计算，因为数值过大且不稳定
     
     # sMAPE (对称平均绝对百分比误差)
     # 公式: sMAPE = (1/n) * Σ[2 * |y_t - ŷ_t| / (|y_t| + |ŷ_t|)]
@@ -98,8 +88,7 @@ def calculate_metrics(y_true, y_pred):
         'nrmse': round(nrmse, 4),
         'r_square': round(r_square, 4),
         'r2': round(r_square, 4),  # 添加r2别名
-        'smape': round(smape, 4),  # 保持小数形式
-        'mape': round(mape, 4)     # 添加mape指标
+        'smape': round(smape, 4)  # 保持小数形式
     }
 
 def calculate_mse(y_true, y_pred):

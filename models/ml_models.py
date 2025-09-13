@@ -2,6 +2,7 @@
 Machine learning regressors with config-driven parameters.
 Uses GPU-accelerated versions for Random Forest and Gradient Boosting.
 """
+import numpy as np
 try:
     from cuml.ensemble import RandomForestRegressor as cuRandomForestRegressor
     GPU_AVAILABLE = True
@@ -63,21 +64,29 @@ def train_rf(X_train, y_train, params: dict):
                 print("⚠️ 检测到NaN或Inf值，进行清理")
                 y_train = np.nan_to_num(y_train, nan=0.0, posinf=1.0, neginf=-1.0)
             
-            base = cuRandomForestRegressor(**params)
+            # cuML Random Forest参数 - 只保留RF相关的参数
+            rf_params = {
+                'n_estimators': params.get('n_estimators', 100),
+                'max_depth': params.get('max_depth', 10),
+                'random_state': 42
+            }
+            base = cuRandomForestRegressor(**rf_params)
             model = MultiOutputRegressor(base)
             model.fit(X_train, y_train)
             return model
         else:
-            # Fallback to CPU version with MultiOutputRegressor
-            base = cuRandomForestRegressor(**params)
+            # Fallback to CPU version with MultiOutputRegressor - 过滤RF不支持的参数
+            rf_params = {k: v for k, v in params.items() if k in ['n_estimators', 'max_depth', 'random_state']}
+            base = cuRandomForestRegressor(**rf_params)
             model = MultiOutputRegressor(base)
             model.fit(X_train, y_train)
             return model
     except Exception as e:
         print(f"❌ Random Forest训练失败: {e}")
-        # 回退到CPU版本
+        # 回退到CPU版本 - 过滤RF不支持的参数
         from sklearn.ensemble import RandomForestRegressor
-        base = RandomForestRegressor(**params)
+        rf_params = {k: v for k, v in params.items() if k in ['n_estimators', 'max_depth', 'random_state']}
+        base = RandomForestRegressor(**rf_params)
         model = MultiOutputRegressor(base)
         model.fit(X_train, y_train)
         return model

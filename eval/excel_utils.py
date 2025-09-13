@@ -65,7 +65,6 @@ def save_plant_excel_results(
             'r_square': round(metrics.get('r_square', 0), 4),
             'r2': round(metrics.get('r2', 0), 4),  # 添加r2列
             'smape': round(metrics.get('smape', 0), 4),
-            'mape': round(metrics.get('mape', 0), 4),  # 添加mape列
             'gpu_memory_used': metrics.get('gpu_memory_used', 0)
         }
         
@@ -157,7 +156,6 @@ def append_plant_excel_results(
         'r_square': round(metrics.get('r_square', 0), 4),
         'r2': round(metrics.get('r2', 0), 4),  # 添加r2列
         'smape': round(metrics.get('smape', 0), 4),
-        'mape': round(metrics.get('mape', 0), 4),  # 添加mape列
         'gpu_memory_used': metrics.get('gpu_memory_used', 0)
     }
     
