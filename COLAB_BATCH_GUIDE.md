@@ -37,13 +37,13 @@ data/
 ### 步骤3: 查看结果
 结果将保存到Google Drive的以下位置：
 ```
-/content/drive/MyDrive/SolarPV_Results/
-├── Project_1140/
-│   └── 1140_results.csv
-├── Project_1141/
-│   └── 1141_results.csv
+/content/drive/MyDrive/Solar PV electricity/ablation results/
+├── 1140_results.csv (340行)
+├── 1141_results.csv (340行)
+├── 1142_results.csv (340行)
 ├── ...
-└── experiment_report.csv
+├── 1199_results.csv (340行)
+└── experiment_report.csv (实验报告)
 ```
 
 ## 📊 实验配置

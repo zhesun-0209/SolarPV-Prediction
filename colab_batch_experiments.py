@@ -237,14 +237,27 @@ def main():
     if drive_mounted:
         print(f"\n📁 Google Drive结果:")
         drive_results = list_drive_results()
-        for result in drive_results[:10]:  # 显示前10个
-            if result['type'] == 'folder':
-                print(f"  📁 {result['project']}: {result['csv_count']} 个CSV文件")
-            else:
-                print(f"  📄 {result['project']}: {result['size']} bytes")
-        
-        if len(drive_results) > 10:
-            print(f"  ... 还有 {len(drive_results) - 10} 个项目")
+        if isinstance(drive_results, dict):
+            print(f"  📊 总CSV文件数: {drive_results['total_csv_files']}")
+            print(f"  📊 总项目数: {drive_results['total_projects']}")
+            
+            # 显示前10个CSV文件
+            print(f"  📄 CSV文件列表:")
+            for csv_file in drive_results['csv_files'][:10]:
+                print(f"    📄 {csv_file['filename']} ({csv_file['size']} bytes)")
+            
+            if drive_results['total_csv_files'] > 10:
+                print(f"    ... 还有 {drive_results['total_csv_files'] - 10} 个CSV文件")
+            
+            # 显示项目统计
+            print(f"  📊 项目统计:")
+            for project_id, stats in list(drive_results['project_stats'].items())[:10]:
+                print(f"    📁 Project {project_id}: {stats['count']} 个CSV文件")
+            
+            if drive_results['total_projects'] > 10:
+                print(f"    ... 还有 {drive_results['total_projects'] - 10} 个项目")
+        else:
+            print(f"  ❌ 无法读取Drive结果")
     
     # 保存实验报告
     report_file = os.path.join(results_dir, "experiment_report.csv")

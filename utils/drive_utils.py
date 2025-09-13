@@ -22,7 +22,7 @@ def mount_drive():
         print(f"❌ Drive挂载失败: {e}")
         return False
 
-def save_to_drive(local_file_path: str, drive_folder: str = "/content/drive/MyDrive/SolarPV_Results") -> Optional[str]:
+def save_to_drive(local_file_path: str, drive_folder: str = "/content/drive/MyDrive/Solar PV electricity/ablation results") -> Optional[str]:
     """
     将本地文件保存到Google Drive
     
@@ -51,7 +51,7 @@ def save_to_drive(local_file_path: str, drive_folder: str = "/content/drive/MyDr
         print(f"❌ 保存到Drive失败: {e}")
         return None
 
-def save_project_results_to_drive(project_id: str, local_results_dir: str, drive_folder: str = "/content/drive/MyDrive/SolarPV_Results") -> bool:
+def save_project_results_to_drive(project_id: str, local_results_dir: str, drive_folder: str = "/content/drive/MyDrive/Solar PV electricity/ablation results") -> bool:
     """
     将项目结果保存到Google Drive
     
@@ -64,9 +64,8 @@ def save_project_results_to_drive(project_id: str, local_results_dir: str, drive
         是否保存成功
     """
     try:
-        # 创建项目专用文件夹
-        project_drive_folder = os.path.join(drive_folder, f"Project_{project_id}")
-        os.makedirs(project_drive_folder, exist_ok=True)
+        # 确保Drive文件夹存在
+        os.makedirs(drive_folder, exist_ok=True)
         
         # 查找CSV结果文件
         csv_files = []
@@ -78,11 +77,11 @@ def save_project_results_to_drive(project_id: str, local_results_dir: str, drive
             print(f"⚠️ 项目 {project_id} 未找到CSV结果文件")
             return False
         
-        # 保存每个CSV文件
+        # 保存每个CSV文件到Drive根目录
         success_count = 0
         for csv_file in csv_files:
             local_file_path = os.path.join(local_results_dir, csv_file)
-            drive_file_path = os.path.join(project_drive_folder, csv_file)
+            drive_file_path = os.path.join(drive_folder, csv_file)
             
             try:
                 shutil.copy2(local_file_path, drive_file_path)
@@ -98,7 +97,7 @@ def save_project_results_to_drive(project_id: str, local_results_dir: str, drive
         print(f"❌ 保存项目 {project_id} 结果失败: {e}")
         return False
 
-def list_drive_results(drive_folder: str = "/content/drive/MyDrive/SolarPV_Results") -> list:
+def list_drive_results(drive_folder: str = "/content/drive/MyDrive/Solar PV electricity/ablation results") -> list:
     """
     列出Drive中的结果文件
     
@@ -114,25 +113,43 @@ def list_drive_results(drive_folder: str = "/content/drive/MyDrive/SolarPV_Resul
             return []
         
         files = []
+        csv_files = []
+        other_files = []
+        
         for item in os.listdir(drive_folder):
             item_path = os.path.join(drive_folder, item)
-            if os.path.isdir(item_path):
-                # 项目文件夹
-                project_files = os.listdir(item_path)
-                csv_files = [f for f in project_files if f.endswith('.csv')]
-                files.append({
-                    'project': item,
-                    'type': 'folder',
-                    'csv_count': len(csv_files),
-                    'files': csv_files
-                })
-            else:
-                # 直接文件
-                files.append({
-                    'project': item,
-                    'type': 'file',
-                    'size': os.path.getsize(item_path)
-                })
+            if os.path.isfile(item_path):
+                if item.endswith('.csv'):
+                    # CSV结果文件
+                    size = os.path.getsize(item_path)
+                    csv_files.append({
+                        'filename': item,
+                        'size': size,
+                        'project_id': item.split('_')[0] if '_' in item else 'unknown'
+                    })
+                else:
+                    # 其他文件
+                    other_files.append({
+                        'filename': item,
+                        'size': os.path.getsize(item_path)
+                    })
+        
+        # 按项目ID分组统计
+        project_stats = {}
+        for csv_file in csv_files:
+            project_id = csv_file['project_id']
+            if project_id not in project_stats:
+                project_stats[project_id] = {'count': 0, 'files': []}
+            project_stats[project_id]['count'] += 1
+            project_stats[project_id]['files'].append(csv_file['filename'])
+        
+        files = {
+            'csv_files': csv_files,
+            'other_files': other_files,
+            'project_stats': project_stats,
+            'total_csv_files': len(csv_files),
+            'total_projects': len(project_stats)
+        }
         
         return files
         
