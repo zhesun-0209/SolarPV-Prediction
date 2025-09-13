@@ -160,10 +160,58 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                 
                 # 从实验输出中提取结果
                 result_line = None
+                inference_time = 0.0
+                param_count = 0
+                samples_count = 0
+                best_epoch = 0
+                final_lr = 0.0
+                nrmse = 0.0
+                smape = 0.0
+                gpu_memory_used = 0
+                
                 for line in result.stdout.split('\n'):
                     if "mse=" in line and "rmse=" in line and "mae=" in line and "r_square=" in line:
                         result_line = line
-                        break
+                    elif "inference_time=" in line:
+                        try:
+                            inference_time = float(line.split("inference_time=")[1].split()[0])
+                        except:
+                            pass
+                    elif "param_count=" in line:
+                        try:
+                            param_count = int(line.split("param_count=")[1].split()[0])
+                        except:
+                            pass
+                    elif "samples_count=" in line:
+                        try:
+                            samples_count = int(line.split("samples_count=")[1].split()[0])
+                        except:
+                            pass
+                    elif "best_epoch=" in line:
+                        try:
+                            best_epoch = int(line.split("best_epoch=")[1].split()[0])
+                        except:
+                            pass
+                    elif "final_lr=" in line:
+                        try:
+                            final_lr = float(line.split("final_lr=")[1].split()[0])
+                        except:
+                            pass
+                    elif "nrmse=" in line:
+                        try:
+                            nrmse = float(line.split("nrmse=")[1].split()[0])
+                        except:
+                            pass
+                    elif "smape=" in line:
+                        try:
+                            smape = float(line.split("smape=")[1].split()[0])
+                        except:
+                            pass
+                    elif "gpu_memory_used=" in line:
+                        try:
+                            gpu_memory_used = int(line.split("gpu_memory_used=")[1].split()[0])
+                        except:
+                            pass
                 
                 if result_line:
                     # 解析结果
@@ -224,18 +272,18 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             'batch_size': config.get('train_params', {}).get('batch_size', 32),
                             'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001),
                             'train_time_sec': round(duration, 4),
-                            'inference_time_sec': 0.0,
-                            'param_count': 0,
-                            'samples_count': 0,
-                            'best_epoch': 0,
-                            'final_lr': 0.0,
+                            'inference_time_sec': inference_time,
+                            'param_count': param_count,
+                            'samples_count': samples_count,
+                            'best_epoch': best_epoch,
+                            'final_lr': final_lr,
                             'mse': float(mse_match.group(1)),
                             'rmse': float(rmse_match.group(1)),
                             'mae': float(mae_match.group(1)),
-                            'nrmse': 0.0,
+                            'nrmse': nrmse,
                             'r_square': float(r_square_match.group(1)),
-                            'smape': 0.0,
-                            'gpu_memory_used': 0
+                            'smape': smape,
+                            'gpu_memory_used': gpu_memory_used
                         }
                         
                         # 读取现有CSV文件
@@ -257,6 +305,10 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                         print(f"   模型: {result_row['model']}, 复杂度: {result_row['model_complexity']}")
                         print(f"   输入类别: {input_category}, 时间编码: {result_row['use_time_encoding']}")
                         print(f"   PV: {result_row['use_pv']}, 历史天气: {result_row['use_hist_weather']}, 预测天气: {result_row['use_forecast']}")
+                        print(f"🔍 提取的额外字段:")
+                        print(f"   推理时间: {inference_time}s, 参数数量: {param_count}, 样本数量: {samples_count}")
+                        print(f"   最佳轮次: {best_epoch}, 最终学习率: {final_lr}")
+                        print(f"   NRMSE: {nrmse}, SMAPE: {smape}, GPU内存: {gpu_memory_used}MB")
                     else:
                         print(f"❌ 无法解析实验结果: {result_line}")
                 else:
