@@ -208,7 +208,7 @@ def generate_project_configs(project_id):
                         base_config = generate_base_config()
                         
                         # 设置数据路径
-                        base_config['data_path'] = f"data/{project_id}.csv"
+                        base_config['data_path'] = f"data/Project{project_id}.csv"
                         base_config['save_dir'] = f"temp_results/{project_id}/{config_name}"
                         
                         # 添加特征配置
