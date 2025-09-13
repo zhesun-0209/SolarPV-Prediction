@@ -95,22 +95,42 @@ def create_model_config(model, complexity):
     """创建模型配置"""
     config = {'model': model}
     
-    # 初始化train_params
+    # 初始化model_params和train_params
+    config['model_params'] = {}
     config['train_params'] = {}
     
     if model == 'LSR':
         config['model_complexity'] = 'baseline'
         config['epochs'] = 1
+        config['model_params'] = {
+            'ml_low': {
+                'learning_rate': 0.001
+            }
+        }
     elif model in ['RF', 'XGB', 'LGBM']:
         config['model_complexity'] = complexity
         config['epochs'] = 15 if complexity == 'low' else 50
         if complexity == 'low':
+            config['model_params'] = {
+                'ml_low': {
+                    'n_estimators': 50,
+                    'max_depth': 5,
+                    'learning_rate': 0.1
+                }
+            }
             config['train_params'].update({
                 'n_estimators': 50,
                 'max_depth': 5,
                 'learning_rate': 0.1
             })
         else:  # high
+            config['model_params'] = {
+                'ml_high': {
+                    'n_estimators': 200,
+                    'max_depth': 12,
+                    'learning_rate': 0.01
+                }
+            }
             config['train_params'].update({
                 'n_estimators': 200,
                 'max_depth': 12,
@@ -120,6 +140,15 @@ def create_model_config(model, complexity):
         config['model_complexity'] = complexity
         config['epochs'] = 15 if complexity == 'low' else 50
         if complexity == 'low':
+            config['model_params'] = {
+                'low': {
+                    'd_model': 64,
+                    'num_heads': 4,
+                    'num_layers': 6,
+                    'hidden_dim': 32,
+                    'dropout': 0.1
+                }
+            }
             config['train_params'].update({
                 'd_model': 64,
                 'num_heads': 4,
@@ -128,6 +157,15 @@ def create_model_config(model, complexity):
                 'dropout': 0.1
             })
         else:  # high
+            config['model_params'] = {
+                'high': {
+                    'd_model': 256,
+                    'num_heads': 16,
+                    'num_layers': 18,
+                    'hidden_dim': 128,
+                    'dropout': 0.3
+                }
+            }
             config['train_params'].update({
                 'd_model': 256,
                 'num_heads': 16,

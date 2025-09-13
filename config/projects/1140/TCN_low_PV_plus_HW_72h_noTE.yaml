@@ -4,6 +4,13 @@ epochs: 15
 future_hours: 24
 model: TCN
 model_complexity: low
+model_params:
+  low:
+    d_model: 64
+    dropout: 0.1
+    hidden_dim: 32
+    num_heads: 4
+    num_layers: 6
 past_days: 3
 past_hours: 72
 plot_days: 7

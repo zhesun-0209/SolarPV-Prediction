@@ -4,6 +4,13 @@ epochs: 50
 future_hours: 24
 model: GRU
 model_complexity: high
+model_params:
+  high:
+    d_model: 256
+    dropout: 0.3
+    hidden_dim: 128
+    num_heads: 16
+    num_layers: 18
 past_days: 3
 past_hours: 72
 plot_days: 7
