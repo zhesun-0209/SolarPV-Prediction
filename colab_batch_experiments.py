@@ -190,19 +190,74 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
                 else:
                     print("⚠️ 未看到CSV保存信息")
                 
-                # 检查CSV文件是否真的被更新
+                # 硬编码保存结果到CSV文件
                 csv_file_path = os.path.join(drive_save_dir, f"{project_id}_results.csv")
-                if os.path.exists(csv_file_path):
-                    import pandas as pd
-                    try:
-                        df = pd.read_csv(csv_file_path)
+                print(f"🔧 硬编码保存结果到: {csv_file_path}")
+                
+                # 从实验输出中提取结果
+                result_line = None
+                for line in result.stdout.split('\n'):
+                    if "mse=" in line and "rmse=" in line and "mae=" in line and "r_square=" in line:
+                        result_line = line
+                        break
+                
+                if result_line:
+                    # 解析结果
+                    import re
+                    mse_match = re.search(r'mse=([0-9.]+)', result_line)
+                    rmse_match = re.search(r'rmse=([0-9.]+)', result_line)
+                    mae_match = re.search(r'mae=([0-9.]+)', result_line)
+                    r_square_match = re.search(r'r_square=([0-9.]+)', result_line)
+                    
+                    if mse_match and rmse_match and mae_match and r_square_match:
+                        # 创建结果行
+                        result_row = {
+                            'model': config.get('model', 'Unknown'),
+                            'use_pv': config.get('use_pv', False),
+                            'use_hist_weather': config.get('use_hist_weather', False),
+                            'use_forecast': config.get('use_forecast', False),
+                            'weather_category': config.get('weather_category', 'unknown'),
+                            'use_time_encoding': config.get('use_time_encoding', False),
+                            'past_days': config.get('past_days', 1),
+                            'model_complexity': config.get('model_complexity', 'low'),
+                            'epochs': config.get('epochs', 15),
+                            'batch_size': config.get('train_params', {}).get('batch_size', 32),
+                            'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001),
+                            'train_time_sec': duration,
+                            'inference_time_sec': 0,
+                            'param_count': 0,
+                            'samples_count': 0,
+                            'best_epoch': 0,
+                            'final_lr': 0,
+                            'mse': float(mse_match.group(1)),
+                            'rmse': float(rmse_match.group(1)),
+                            'mae': float(mae_match.group(1)),
+                            'nrmse': 0,
+                            'r_square': float(r_square_match.group(1)),
+                            'smape': 0,
+                            'gpu_memory_used': 0
+                        }
+                        
+                        # 读取现有CSV文件
+                        import pandas as pd
+                        if os.path.exists(csv_file_path):
+                            df = pd.read_csv(csv_file_path)
+                        else:
+                            df = pd.DataFrame()
+                        
+                        # 添加新行
+                        new_row_df = pd.DataFrame([result_row])
+                        df = pd.concat([df, new_row_df], ignore_index=True)
+                        
+                        # 保存CSV文件
+                        df.to_csv(csv_file_path, index=False)
+                        print(f"✅ 结果已硬编码保存到CSV文件")
                         print(f"📊 CSV文件当前行数: {len(df)}")
-                        if len(df) > 0:
-                            print(f"📊 最新实验: {df.iloc[-1]['model']} - {df.iloc[-1]['mse']:.4f}")
-                    except Exception as e:
-                        print(f"❌ 读取CSV文件失败: {e}")
+                        print(f"📊 最新实验: {result_row['model']} - {result_row['mse']:.4f}")
+                    else:
+                        print(f"❌ 无法解析实验结果: {result_line}")
                 else:
-                    print(f"❌ CSV文件不存在: {csv_file_path}")
+                    print(f"❌ 未找到实验结果行")
             else:
                 stats['failed'] += 1
                 error_msg = f"返回码: {result.returncode}, 错误: {result.stderr[-200:]}"
