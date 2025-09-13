@@ -143,6 +143,13 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
                 sys.executable, "main.py", "--config", temp_config_file
             ], capture_output=True, text=True, timeout=1800)  # 30分钟超时
             
+            # 显示调试信息
+            if "🔍 调试" in result.stdout:
+                print("🔍 实验调试信息:")
+                for line in result.stdout.split('\n'):
+                    if "🔍 调试" in line:
+                        print(f"   {line}")
+            
             duration = time.time() - start_time
             
             if result.returncode == 0:
@@ -156,11 +163,33 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
                         if "mse=" in line and "rmse=" in line and "mae=" in line:
                             print(f"📊 结果: {line.strip()}")
                             break
+                
+                # 检查是否有CSV保存信息
+                if "CSV结果已更新" in result.stdout:
+                    print("✅ CSV结果已保存")
+                else:
+                    print("⚠️ 未看到CSV保存信息")
+                
+                # 检查CSV文件是否真的被更新
+                csv_file_path = os.path.join(drive_save_dir, f"{project_id}_results.csv")
+                if os.path.exists(csv_file_path):
+                    import pandas as pd
+                    try:
+                        df = pd.read_csv(csv_file_path)
+                        print(f"📊 CSV文件当前行数: {len(df)}")
+                        if len(df) > 0:
+                            print(f"📊 最新实验: {df.iloc[-1]['model']} - {df.iloc[-1]['mse']:.4f}")
+                    except Exception as e:
+                        print(f"❌ 读取CSV文件失败: {e}")
+                else:
+                    print(f"❌ CSV文件不存在: {csv_file_path}")
             else:
                 stats['failed'] += 1
                 error_msg = f"返回码: {result.returncode}, 错误: {result.stderr[-200:]}"
                 stats['errors'].append(error_msg)
                 print(f"❌ 实验失败! {error_msg}")
+                print(f"   标准输出: {result.stdout[-500:]}")
+                print(f"   错误输出: {result.stderr[-500:]}")
             
             # 清理临时配置文件
             if os.path.exists(temp_config_file):
