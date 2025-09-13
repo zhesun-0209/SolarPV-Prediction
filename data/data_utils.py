@@ -139,7 +139,7 @@ def preprocess_features(df: pd.DataFrame, config: dict):
         df_clean['Capacity_Factor_hist'] = df_clean[TARGET_COL]
         hist_feats.append('Capacity_Factor_hist')
 
-    # 历史天气特征
+    # 历史天气特征（HW）- 不带_pred后缀
     if config.get('use_hist_weather', False):
         hist_feats += get_weather_features_by_category(weather_category)
 
@@ -147,9 +147,17 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     if use_time_encoding:
         hist_feats += TIME_FEATURES
 
-    # 预测特征
+    # 预测特征（NWP）
     if config.get('use_forecast', False):
-        fcst_feats += get_weather_features_by_category(weather_category)
+        if config.get('use_ideal_nwp', False):
+            # 理想NWP：使用目标日的HW特征（不带_pred后缀）
+            base_weather_features = get_weather_features_by_category(weather_category)
+            fcst_feats += base_weather_features
+        else:
+            # 普通NWP：使用带_pred后缀的预测特征
+            base_weather_features = get_weather_features_by_category(weather_category)
+            forecast_features = [f + '_pred' for f in base_weather_features]
+            fcst_feats += forecast_features
 
     # 确保所有特征都存在
     available_hist_feats = [f for f in hist_feats if f in df_clean.columns]

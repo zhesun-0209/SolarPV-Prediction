@@ -38,14 +38,14 @@ def generate_base_config():
 
 def create_feature_config(input_category, lookback_hours, use_time_encoding):
     """创建特征配置"""
-    # 11个天气特征 (与_pred后缀对应的历史天气特征)
+    # 11个天气特征 - 历史天气特征（HW）
     weather_features = [
         'global_tilted_irradiance', 'vapour_pressure_deficit', 'relative_humidity_2m',
         'temperature_2m', 'wind_gusts_10m', 'cloud_cover_low', 'wind_speed_100m',
         'snow_depth', 'dew_point_2m', 'precipitation', 'surface_pressure'
     ]
     
-    # 预测天气特征（_pred后缀）
+    # 预测天气特征（NWP）- 带_pred后缀
     forecast_features = [f + '_pred' for f in weather_features]
     
     config = {}
@@ -62,24 +62,30 @@ def create_feature_config(input_category, lookback_hours, use_time_encoding):
         config['use_forecast'] = True
         config['weather_category'] = 'all_weather'
     elif input_category == 'PV_plus_NWP_plus':
+        # 理想NWP：历史PV + 目标日HW作为理想NWP
         config['use_pv'] = True
         config['use_hist_weather'] = False
         config['use_forecast'] = True
+        config['use_ideal_nwp'] = True  # 使用理想NWP
         config['weather_category'] = 'all_weather'
     elif input_category == 'PV_plus_HW':
+        # 历史HW：历史PV + 历史HW特征
         config['use_pv'] = True
         config['use_hist_weather'] = True
         config['use_forecast'] = False
         config['weather_category'] = 'all_weather'
     elif input_category == 'NWP':
+        # 目标日NWP：使用带_pred后缀的预测特征
         config['use_pv'] = False
         config['use_hist_weather'] = False
         config['use_forecast'] = True
         config['weather_category'] = 'all_weather'
     elif input_category == 'NWP_plus':
+        # 理想NWP：使用目标日的HW作为理想NWP
         config['use_pv'] = False
         config['use_hist_weather'] = False
         config['use_forecast'] = True
+        config['use_ideal_nwp'] = True  # 使用理想NWP
         config['weather_category'] = 'all_weather'
     
     # 回看窗口配置
