@@ -28,20 +28,30 @@ def get_available_projects(data_dir: str = "data") -> list:
     
     return sorted(projects)
 
-def get_config_files(config_dir: str = "config/projects/1140") -> list:
+def get_config_files(config_dir: str = "config/projects") -> list:
     """获取所有配置文件"""
-    yaml_files = glob.glob(os.path.join(config_dir, "*.yaml"))
-    config_files = [f for f in yaml_files if not f.endswith("config_index.yaml")]
-    return sorted(config_files)
+    # 扫描所有项目目录下的配置文件
+    all_config_files = []
+    
+    # 获取所有项目目录
+    project_dirs = glob.glob(os.path.join(config_dir, "*"))
+    project_dirs = [d for d in project_dirs if os.path.isdir(d)]
+    
+    for project_dir in project_dirs:
+        yaml_files = glob.glob(os.path.join(project_dir, "*.yaml"))
+        config_files = [f for f in yaml_files if not f.endswith("config_index.yaml")]
+        all_config_files.extend(config_files)
+    
+    return sorted(all_config_files)
 
-def run_project_experiments(project_id: str, config_files: list, data_dir: str = "data", 
+def run_project_experiments(project_id: str, all_config_files: list, data_dir: str = "data", 
                           results_dir: str = "temp_results", save_to_drive: bool = True) -> dict:
     """
     运行单个项目的所有实验
     
     Args:
         project_id: 项目ID
-        config_files: 配置文件列表
+        all_config_files: 所有配置文件列表
         data_dir: 数据目录
         results_dir: 结果目录
         save_to_drive: 是否保存到Drive
@@ -59,6 +69,19 @@ def run_project_experiments(project_id: str, config_files: list, data_dir: str =
         print(f"❌ 数据文件不存在: {data_file}")
         return {'success': False, 'error': 'Data file not found'}
     
+    # 筛选出当前项目的配置文件
+    project_config_files = []
+    for config_file in all_config_files:
+        if f"/{project_id}/" in config_file or f"\\{project_id}\\" in config_file:
+            project_config_files.append(config_file)
+    
+    # 如果没有找到项目专用配置，使用通用配置（如1140的配置）
+    if not project_config_files:
+        print(f"⚠️ 项目 {project_id} 没有专用配置文件，使用通用配置")
+        # 使用1140的配置作为模板
+        template_configs = [f for f in all_config_files if "/1140/" in f or "\\1140\\" in f]
+        project_config_files = template_configs
+    
     # 创建项目结果目录
     project_results_dir = os.path.join(results_dir, project_id)
     os.makedirs(project_results_dir, exist_ok=True)
@@ -66,19 +89,19 @@ def run_project_experiments(project_id: str, config_files: list, data_dir: str =
     # 统计信息
     stats = {
         'project_id': project_id,
-        'total_experiments': len(config_files),
+        'total_experiments': len(project_config_files),
         'successful': 0,
         'failed': 0,
         'start_time': time.time(),
         'errors': []
     }
     
-    print(f"📊 项目 {project_id}: 将运行 {len(config_files)} 个实验")
+    print(f"📊 项目 {project_id}: 将运行 {len(project_config_files)} 个实验")
     print(f"📁 结果保存到: {project_results_dir}")
     
     # 运行每个实验
-    for i, config_file in enumerate(config_files, 1):
-        print(f"\n🔄 进度: {i}/{len(config_files)} - {os.path.basename(config_file)}")
+    for i, config_file in enumerate(project_config_files, 1):
+        print(f"\n🔄 进度: {i}/{len(project_config_files)} - {os.path.basename(config_file)}")
         
         try:
             # 修改配置文件中的数据路径
@@ -174,14 +197,41 @@ def main():
     projects = get_available_projects()
     print(f"📊 找到 {len(projects)} 个项目: {projects[:10]}{'...' if len(projects) > 10 else ''}")
     
-    # 获取配置文件
-    print("📁 扫描配置文件...")
+    # 检查是否需要生成配置文件
+    print("📁 检查配置文件...")
     config_files = get_config_files()
     print(f"📊 找到 {len(config_files)} 个配置文件")
     
     if not projects:
         print("❌ 未找到任何项目数据文件")
         return
+    
+    # 检查配置文件是否足够
+    if len(config_files) < len(projects) * 10:  # 假设每个项目至少需要10个配置
+        print("⚠️ 配置文件数量不足，需要生成配置文件")
+        print("🔧 正在生成配置文件...")
+        
+        try:
+            # 运行配置文件生成脚本
+            result = subprocess.run([
+                sys.executable, "scripts/generate_dynamic_project_configs.py"
+            ], capture_output=True, text=True, timeout=300)  # 5分钟超时
+            
+            if result.returncode == 0:
+                print("✅ 配置文件生成成功")
+                # 重新扫描配置文件
+                config_files = get_config_files()
+                print(f"📊 重新扫描到 {len(config_files)} 个配置文件")
+            else:
+                print(f"❌ 配置文件生成失败: {result.stderr}")
+                return
+                
+        except subprocess.TimeoutExpired:
+            print("⏰ 配置文件生成超时")
+            return
+        except Exception as e:
+            print(f"💥 配置文件生成异常: {str(e)}")
+            return
     
     if not config_files:
         print("❌ 未找到任何配置文件")
