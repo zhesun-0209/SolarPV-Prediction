@@ -150,6 +150,16 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
                     if "🔍 调试" in line:
                         print(f"   {line}")
             
+            # 显示完整的标准输出（用于调试）
+            if "CSV结果已更新" not in result.stdout and "🔍 调试" not in result.stdout:
+                print("🔍 完整标准输出:")
+                print(result.stdout[-1000:])  # 显示最后1000个字符
+            
+            # 显示错误输出（如果有）
+            if result.stderr:
+                print("🔍 错误输出:")
+                print(result.stderr[-500:])  # 显示最后500个字符
+            
             duration = time.time() - start_time
             
             if result.returncode == 0:
