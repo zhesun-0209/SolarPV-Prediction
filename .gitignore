@@ -21,18 +21,9 @@ wheels/
 *.egg
 MANIFEST
 
-# PyTorch
-*.pth
-*.pt
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Environment
-.env
-.venv
-env/
+# Virtual environments
 venv/
+env/
 ENV/
 env.bak/
 venv.bak/
@@ -44,33 +35,32 @@ venv.bak/
 *.swo
 *~
 
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# Project specific
-# 实验结果文件
-*.xlsx
-*.csv
+# Results and outputs
 results/
 outputs/
 logs/
+*.log
 
-# 数据文件（如果很大）
-# data/*.csv
+# Data files (except the main dataset)
+data/*.csv
+data/*.xlsx
+data/*.json
+!data/Project1140.csv
 
-# 临时文件
+# Model files
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
 *.tmp
 *.temp
-*.log
-*.bak
-
-# 模型文件
-models/*.pth
-models/*.pkl
-models/*.joblib

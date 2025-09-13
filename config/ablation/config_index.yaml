@@ -1,0 +1,42 @@
+total_configs: 360
+experiment_design:
+  input_categories: 6
+  lookback_hours: 2
+  time_encoding: 2
+  model_complexity: 2
+  ml_models: 7
+  baseline_model: 1
+calculation:
+  main_models: 6 × 2 × 2 × 2 × 7 = 336
+  baseline_model: 6 × 2 × 2 × 1 = 24
+  total: 336 + 24 = 360
+input_categories:
+- PV - 仅历史PV功率
+- PV+NWP - 历史PV + 目标日NWP
+- PV+NWP+ - 历史PV + 理想NWP
+- PV+HW - 历史PV + 历史HW
+- NWP - 仅目标日NWP
+- NWP+ - 仅理想NWP
+models:
+  ml_models:
+  - RF
+  - XGB
+  - LGBM
+  - LSTM
+  - GRU
+  - TCN
+  - Transformer
+  baseline:
+  - LSR
+weather_features:
+- global_tilted_irradiance
+- vapour_pressure_deficit
+- relative_humidity_2m
+- temperature_2m
+- wind_gusts_10m
+- cloud_cover_low
+- wind_speed_100m
+- snow_depth
+- dew_point_2m
+- precipitation
+- surface_pressure

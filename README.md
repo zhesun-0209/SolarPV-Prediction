@@ -1,82 +1,108 @@
-# SolarPV-Prediction
+# Project1140 光伏发电预测消融实验
 
-基于机器学习和深度学习的太阳能发电预测系统，支持多种模型架构和特征组合的消融实验。
+## 🎯 项目概述
+
+本项目实现了对Project1140光伏发电站的Capacity Factor预测，采用严格的消融实验设计，系统地评估不同输入特征、模型架构和超参数对预测性能的影响。
+
+## 📊 实验设计
+
+### 数据信息
+- **数据范围**: 2022-01-01 到 2024-09-28
+- **记录数量**: 24,028条
+- **目标变量**: Capacity Factor
+- **天气特征**: 11个高相关性特征
+
+### 消融实验矩阵
+- **输入特征类别**: 6种
+  - PV: 仅历史PV功率
+  - PV+NWP: 历史PV + 目标日NWP
+  - PV+NWP+: 历史PV + 理想NWP
+  - PV+HW: 历史PV + 历史HW
+  - NWP: 仅目标日NWP
+  - NWP+: 仅理想NWP
+
+- **实验参数**: 
+  - 回看窗口: 24小时, 72小时
+  - 时间编码: 无TE, 有TE
+  - 模型复杂度: Low, High
+  - 模型类型: 8种 (RF, XGB, LGBM, LSTM, GRU, TCN, Transformer, LSR)
+
+- **总配置数**: 360个实验配置
 
 ## 🚀 快速开始
 
-### 安装依赖
+### 1. 环境准备
 ```bash
 pip install -r requirements.txt
 ```
 
-### 运行预测
+### 2. 验证配置
 ```bash
-python main.py --config config/default.yaml
+python scripts/test_ablation_configs.py
 ```
 
-### 消融实验
+### 3. 运行实验
+
+#### 运行单个实验
 ```bash
-# 模型对比
-python main.py --config config/default.yaml --model Transformer --use_hist_weather true --use_forecast true
-
-# 特征消融
-python main.py --config config/default.yaml --model Transformer --use_hist_weather false --use_forecast true
-
-# 时间窗口测试
-python main.py --config config/default.yaml --model Transformer --past_days 7
-
-# 复杂度测试
-python main.py --config config/default.yaml --model Transformer --model_complexity high
+python main.py --config config/ablation/LSR_baseline_PV_24h_noTE.yaml
 ```
 
-## 📊 支持的模型
+#### 运行所有消融实验
+```bash
+python scripts/run_ablation_experiments.py
+```
 
-### 深度学习模型
-- **Transformer**: 编码器-解码器结构，支持交叉注意力
-- **LSTM**: 长短期记忆网络
-- **GRU**: 门控循环单元
-- **TCN**: 时序卷积网络
+#### 运行特定模型
+```bash
+python scripts/run_ablation_experiments.py --model-filter LSR,Transformer
+```
 
-### 机器学习模型
-- **Random Forest**: 随机森林
-- **Gradient Boosting**: 梯度提升
-- **XGBoost**: 极端梯度提升
-- **LightGBM**: 轻量级梯度提升
+#### 测试运行
+```bash
+python scripts/run_ablation_experiments.py --max-configs 5 --dry-run
+```
 
-## ⚙️ 配置选项
+## 📁 项目结构
 
-### 特征配置
-- `use_hist_weather`: 历史天气特征 (true/false)
-- `use_forecast`: 预测天气特征 (true/false)
-- **时间编码特征始终包含**
+详见 [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
 
-### 时间窗口
-- `past_days`: 历史天数 (1, 3, 7)
-- `future_hours`: 预测小时数 (默认24)
+## 📚 文档
 
-### 模型复杂度
-- `model_complexity`: 复杂度级别 (low, medium, high)
+- [消融实验设计](docs/ABLATION_STUDY_DESIGN.md) - 详细的实验设计说明
+- [实验总结](docs/PROJECT1140_ABLATION_EXPERIMENT_SUMMARY.md) - 实验结果总结
 
-## 📈 评估指标
+## 🔬 研究问题
 
-- **MSE**: 均方误差 (kWh²)
-- **RMSE**: 均方根误差 (kWh)
-- **MAE**: 平均绝对误差 (kWh)
-- **训练时间**: 模型训练耗时
-- **推理时间**: 模型推理耗时
+本消融实验旨在回答以下6个关键研究问题：
 
-## 💾 结果保存
+1. **PV-only sufficiency**: 历史PV单独预测是否足够准确？
+2. **Marginal value of NWP**: NWP在多大程度上提升准确性？
+3. **Upper bound of NWP**: 理想NWP的最大收益是多少？
+4. **Incremental value of HW**: HW在PV基础上是否增加准确性？
+5. **NWP-only sufficiency**: NWP单独预测是否足够准确？
+6. **Ideal NWP-only sufficiency**: 理想NWP单独预测是否足够准确？
 
-结果保存在 `outputs/` 目录下，包含：
-- `summary.csv`: 评估指标总结
-- `predictions.csv`: 预测结果详情
-- `training_log.csv`: 训练日志 (仅DL模型)
-- `training_curve.png`: 训练曲线 (仅DL模型)
+## 📈 预期输出
 
-## 📚 详细文档
+- 360个实验配置的完整性能评估
+- 各输入特征的边际贡献分析
+- 模型复杂度对性能的影响评估
+- 时间编码的效用分析
+- 不同回看窗口的效果比较
 
-更多详细信息请参考 [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md)
+## 🛠️ 技术栈
 
-## 📄 许可证
+- **Python 3.8+**
+- **深度学习框架**: PyTorch
+- **机器学习库**: scikit-learn, XGBoost, LightGBM
+- **数据处理**: pandas, numpy
+- **可视化**: matplotlib, seaborn
 
-MIT License
+## 📝 许可证
+
+本项目仅供学术研究使用。
+
+## 🤝 贡献
+
+如有问题或建议，请提交Issue或Pull Request。

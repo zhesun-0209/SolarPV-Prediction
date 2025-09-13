@@ -1,0 +1,67 @@
+data_path: ./Project1140.csv
+save_dir: ./results/ablation
+future_hours: 24
+train_ratio: 0.8
+val_ratio: 0.1
+plot_days: 7
+start_date: '2022-01-01'
+end_date: '2024-09-28'
+train_params:
+  batch_size: 32
+  learning_rate: 0.0005
+  loss_type: mse
+  future_hours: 24
+save_options:
+  save_model: false
+  save_summary: true
+  save_predictions: true
+  save_training_log: false
+  save_excel_results: true
+past_hours: 24
+use_time_encoding: false
+weather_category: ablation_11_features
+use_pv: true
+use_hist_weather: false
+use_forecast: true
+input_category: PV_plus_NWP
+model: Transformer
+model_complexity: low
+epoch_params:
+  low:
+    epochs: 15
+    tree_params:
+      n_estimators: 50
+      max_depth: 5
+      learning_rate: 0.1
+    dl_params: &id001
+      d_model: 64
+      num_heads: 4
+      num_layers: 6
+      hidden_dim: 32
+      dropout: 0.1
+      tcn_channels:
+      - 64
+      - 64
+      - 32
+      kernel_size: 3
+  high:
+    epochs: 50
+    tree_params:
+      n_estimators: 200
+      max_depth: 12
+      learning_rate: 0.01
+    dl_params: &id002
+      d_model: 256
+      num_heads: 16
+      num_layers: 18
+      hidden_dim: 128
+      dropout: 0.3
+      tcn_channels:
+      - 128
+      - 128
+      - 64
+      - 32
+      kernel_size: 3
+model_params:
+  low: *id001
+  high: *id002
