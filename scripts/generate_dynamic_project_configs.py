@@ -101,7 +101,7 @@ def create_model_config(model, complexity):
     
     if model == 'LSR':
         config['model'] = 'Linear'  # LSR对应Linear模型
-        config['model_complexity'] = 'baseline'
+        config['model_complexity'] = 'low'  # 修复：应该是low而不是baseline
         config['epochs'] = 1
         config['model_params'] = {
             'ml_low': {
@@ -154,53 +154,95 @@ def create_model_config(model, complexity):
         config['model_complexity'] = complexity
         config['epochs'] = 15 if complexity == 'low' else 50
         if complexity == 'low':
-            config['model_params'] = {
-                'low': {
+            if model == 'TCN':
+                config['model_params'] = {
+                    'low': {
+                        'tcn_channels': [32, 64],
+                        'kernel_size': 3,
+                        'dropout': 0.1
+                    },
+                    'high': {
+                        'tcn_channels': [64, 128, 256],
+                        'kernel_size': 5,
+                        'dropout': 0.3
+                    }
+                }
+            else:
+                config['model_params'] = {
+                    'low': {
+                        'd_model': 64,
+                        'num_heads': 4,
+                        'num_layers': 6,
+                        'hidden_dim': 32,
+                        'dropout': 0.1
+                    },
+                    'high': {
+                        'd_model': 256,
+                        'num_heads': 16,
+                        'num_layers': 18,
+                        'hidden_dim': 128,
+                        'dropout': 0.3
+                    }
+                }
+            if model == 'TCN':
+                config['train_params'].update({
+                    'tcn_channels': [32, 64],
+                    'kernel_size': 3,
+                    'dropout': 0.1
+                })
+            else:
+                config['train_params'].update({
                     'd_model': 64,
                     'num_heads': 4,
                     'num_layers': 6,
                     'hidden_dim': 32,
                     'dropout': 0.1
-                },
-                'high': {
-                    'd_model': 256,
-                    'num_heads': 16,
-                    'num_layers': 18,
-                    'hidden_dim': 128,
-                    'dropout': 0.3
-                }
-            }
-            config['train_params'].update({
-                'd_model': 64,
-                'num_heads': 4,
-                'num_layers': 6,
-                'hidden_dim': 32,
-                'dropout': 0.1
-            })
+                })
         else:  # high
-            config['model_params'] = {
-                'low': {
-                    'd_model': 64,
-                    'num_heads': 4,
-                    'num_layers': 6,
-                    'hidden_dim': 32,
-                    'dropout': 0.1
-                },
-                'high': {
+            if model == 'TCN':
+                config['model_params'] = {
+                    'low': {
+                        'tcn_channels': [32, 64],
+                        'kernel_size': 3,
+                        'dropout': 0.1
+                    },
+                    'high': {
+                        'tcn_channels': [64, 128, 256],
+                        'kernel_size': 5,
+                        'dropout': 0.3
+                    }
+                }
+            else:
+                config['model_params'] = {
+                    'low': {
+                        'd_model': 64,
+                        'num_heads': 4,
+                        'num_layers': 6,
+                        'hidden_dim': 32,
+                        'dropout': 0.1
+                    },
+                    'high': {
+                        'd_model': 256,
+                        'num_heads': 16,
+                        'num_layers': 18,
+                        'hidden_dim': 128,
+                        'dropout': 0.3
+                    }
+                }
+            if model == 'TCN':
+                config['train_params'].update({
+                    'tcn_channels': [64, 128, 256],
+                    'kernel_size': 5,
+                    'dropout': 0.3
+                })
+            else:
+                config['train_params'].update({
                     'd_model': 256,
                     'num_heads': 16,
                     'num_layers': 18,
                     'hidden_dim': 128,
                     'dropout': 0.3
-                }
-            }
-            config['train_params'].update({
-                'd_model': 256,
-                'num_heads': 16,
-                'num_layers': 18,
-                'hidden_dim': 128,
-                'dropout': 0.3
-            })
+                })
     
     return config
 

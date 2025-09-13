@@ -78,9 +78,9 @@ try:
     print(f"📊 数据列数: {len(df.columns)}")
     print(f"📊 目标变量范围: {df['Capacity Factor'].min():.2f} - {df['Capacity Factor'].max():.2f}")
     
-    # 测试不同的配置
+    # 测试不同的配置（注意：LSR不使用PV配置）
     test_configs = [
-        ('PV_noTE', 'LSR_low_PV_24h_noTE'),
+        ('PV_noTE', 'RF_low_PV_24h_noTE'),  # 使用RF测试PV配置
         ('NWP_noTE', 'LSR_low_NWP_24h_noTE'),
         ('HW_noTE', 'LSR_low_PV_plus_HW_24h_noTE'),
         ('NWP_TE', 'LSR_low_NWP_24h_TE')
@@ -163,6 +163,11 @@ try:
         print(f"   - 历史特征: {hist_feats}")
         print(f"   - 预测特征: {fcst_feats}")
         
+        # 确保有特征才创建滑动窗口
+        if not hist_feats and not fcst_feats:
+            print("❌ 错误：没有可用的特征，无法创建滑动窗口")
+            continue
+        
         X_hist, X_fcst, y, hours, dates = create_sliding_windows(
             df_clean, past_hours, future_hours, hist_feats, fcst_feats
         )
@@ -217,9 +222,8 @@ for model_name in ml_models:
         model_config = None
         for cfg_info in project_configs:
             cfg = cfg_info.get('config', {})
-            # Linear模型使用'baseline'复杂度，其他使用'low'
-            expected_complexity = 'baseline' if model_name == 'Linear' else 'low'
-            if cfg.get('model') == model_name and cfg.get('model_complexity') == expected_complexity:
+            # 所有模型都使用'low'复杂度
+            if cfg.get('model') == model_name and cfg.get('model_complexity') == 'low':
                 model_config = cfg
                 break
         
@@ -230,19 +234,47 @@ for model_name in ml_models:
         print(f"📊 使用配置: {model_config.get('model_complexity', 'N/A')}")
         print(f"📊 输入特征: use_pv={model_config.get('use_pv')}, use_hist_weather={model_config.get('use_hist_weather')}, use_forecast={model_config.get('use_forecast')}")
         
+        # 使用当前配置重新预处理数据
+        df_clean_model, hist_feats_model, fcst_feats_model, _, _, _ = preprocess_features(df, model_config)
+        
+        # 重新创建滑动窗口
+        past_hours = model_config.get('past_hours', 24)
+        future_hours = model_config.get('future_hours', 24)
+        
+        X_hist_model, X_fcst_model, y_model, hours_model, dates_model = create_sliding_windows(
+            df_clean_model, past_hours, future_hours, hist_feats_model, fcst_feats_model
+        )
+        
+        # 重新分割数据
+        (Xh_tr_model, Xf_tr_model, y_tr_model, hrs_tr_model, dates_tr_model,
+         Xh_va_model, Xf_va_model, y_va_model, hrs_va_model, dates_va_model,
+         Xh_te_model, Xf_te_model, y_te_model, hrs_te_model, dates_te_model) = split_data(
+            X_hist_model, X_fcst_model, y_model, hours_model, dates_model)
+        
         # 准备2D数据
-        X_train_2d = Xh_tr.reshape(Xh_tr.shape[0], -1)
-        X_test_2d = Xh_te.reshape(Xh_te.shape[0], -1)
+        X_train_2d = Xh_tr_model.reshape(Xh_tr_model.shape[0], -1)
+        X_test_2d = Xh_te_model.reshape(Xh_te_model.shape[0], -1)
+        
+        # 如果有预测特征，合并
+        if Xf_tr_model is not None and Xf_tr_model.shape[2] > 0:
+            X_train_2d = np.hstack([X_train_2d, Xf_tr_model.reshape(Xf_tr_model.shape[0], -1)])
+            X_test_2d = np.hstack([X_test_2d, Xf_te_model.reshape(Xf_te_model.shape[0], -1)])
         
         print(f"📊 训练数据形状: {X_train_2d.shape}")
         print(f"📊 测试数据形状: {X_test_2d.shape}")
-        print(f"📊 目标数据形状: {y_tr.shape}")
+        print(f"📊 目标数据形状: {y_tr_model.shape}")
+        
+        # 检查特征数量
+        if X_train_2d.shape[1] == 0:
+            print(f"❌ {model_name} 模型测试失败: 输入特征数量为0，无法训练。")
+            continue
         
         # 检查数据质量
         print(f"📊 训练数据质量:")
         print(f"   - NaN数量: {np.isnan(X_train_2d).sum()}")
         print(f"   - Inf数量: {np.isinf(X_train_2d).sum()}")
-        print(f"   - 范围: {np.min(X_train_2d):.4f} - {np.max(X_train_2d):.4f}")
+        if X_train_2d.shape[1] > 0:
+            print(f"   - 范围: {np.min(X_train_2d):.4f} - {np.max(X_train_2d):.4f}")
         
         # 训练模型
         start_time = time.time()
@@ -254,15 +286,15 @@ for model_name in ml_models:
         elif model_name == 'RF':
             from models.ml_models import train_rf
             model_params = model_config.get('model_params', {}).get('ml_low', {})
-            model = train_rf(X_train_2d, y_tr, model_params)
+            model = train_rf(X_train_2d, y_tr_model, model_params)
         elif model_name == 'XGB':
             from models.ml_models import train_xgb
             model_params = model_config.get('model_params', {}).get('ml_low', {})
-            model = train_xgb(X_train_2d, y_tr, model_params)
+            model = train_xgb(X_train_2d, y_tr_model, model_params)
         elif model_name == 'LGBM':
             from models.ml_models import train_lgbm
             model_params = model_config.get('model_params', {}).get('ml_low', {})
-            model = train_lgbm(X_train_2d, y_tr, model_params)
+            model = train_lgbm(X_train_2d, y_tr_model, model_params)
         
         train_time = time.time() - start_time
         
@@ -275,11 +307,11 @@ for model_name in ml_models:
         print(f"📊 预测结果范围: {np.min(y_pred):.4f} - {np.max(y_pred):.4f}")
         
         # 计算指标
-        mae = np.mean(np.abs(y_te - y_pred))
-        rmse = np.sqrt(np.mean((y_te - y_pred) ** 2))
+        mae = np.mean(np.abs(y_te_model - y_pred))
+        rmse = np.sqrt(np.mean((y_te_model - y_pred) ** 2))
         
         # 计算R²
-        y_true_flat = y_te.flatten()
+        y_true_flat = y_te_model.flatten()
         y_pred_flat = y_pred.flatten()
         ss_res = np.sum((y_true_flat - y_pred_flat) ** 2)
         ss_tot = np.sum((y_true_flat - np.mean(y_true_flat)) ** 2)
@@ -332,6 +364,23 @@ for model_name in dl_models:
         print(f"📊 使用配置: {model_config.get('model_complexity', 'N/A')}")
         print(f"📊 输入特征: use_pv={model_config.get('use_pv')}, use_hist_weather={model_config.get('use_hist_weather')}, use_forecast={model_config.get('use_forecast')}")
         
+        # 使用当前配置重新预处理数据
+        df_clean_model, hist_feats_model, fcst_feats_model, scaler_hist, scaler_fcst, scaler_target = preprocess_features(df, model_config)
+        
+        # 重新创建滑动窗口
+        past_hours = model_config.get('past_hours', 24)
+        future_hours = model_config.get('future_hours', 24)
+        
+        X_hist_model, X_fcst_model, y_model, hours_model, dates_model = create_sliding_windows(
+            df_clean_model, past_hours, future_hours, hist_feats_model, fcst_feats_model
+        )
+        
+        # 重新分割数据
+        (Xh_tr_model, Xf_tr_model, y_tr_model, hrs_tr_model, dates_tr_model,
+         Xh_va_model, Xf_va_model, y_va_model, hrs_va_model, dates_va_model,
+         Xh_te_model, Xf_te_model, y_te_model, hrs_te_model, dates_te_model) = split_data(
+            X_hist_model, X_fcst_model, y_model, hours_model, dates_model)
+        
         # 准备训练参数
         model_params = model_config.get('model_params', {}).get('low', {})
         train_params = model_config.get('train_params', {})
@@ -348,10 +397,10 @@ for model_name in dl_models:
         print(f"📊 训练参数: {train_params}")
         
         # 准备训练数据元组
-        train_data = (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr)
-        val_data = (Xh_va, Xf_va, y_va, hrs_va, dates_va)
-        test_data = (Xh_te, Xf_te, y_te, hrs_te, dates_te)
-        scalers = (None, None, None)
+        train_data = (Xh_tr_model, Xf_tr_model, y_tr_model, hrs_tr_model, dates_tr_model)
+        val_data = (Xh_va_model, Xf_va_model, y_va_model, hrs_va_model, dates_va_model)
+        test_data = (Xh_te_model, Xf_te_model, y_te_model, hrs_te_model, dates_te_model)
+        scalers = (scaler_hist, scaler_fcst, scaler_target)
         
         # 构建完整的配置
         full_config = model_config.copy()
