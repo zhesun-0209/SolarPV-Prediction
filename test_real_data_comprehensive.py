@@ -166,7 +166,7 @@ try:
         # 确保有特征才创建滑动窗口
         if not hist_feats and not fcst_feats:
             print("❌ 错误：没有可用的特征，无法创建滑动窗口")
-            continue
+            sys.exit(1)
         
         X_hist, X_fcst, y, hours, dates = create_sliding_windows(
             df_clean, past_hours, future_hours, hist_feats, fcst_feats
@@ -283,6 +283,8 @@ for model_name in ml_models:
             from sklearn.linear_model import LinearRegression
             from sklearn.multioutput import MultiOutputRegressor
             model = MultiOutputRegressor(LinearRegression())
+            # 训练Linear模型
+            model.fit(X_train_2d, y_tr_model)
         elif model_name == 'RF':
             from models.ml_models import train_rf
             model_params = model_config.get('model_params', {}).get('ml_low', {})
