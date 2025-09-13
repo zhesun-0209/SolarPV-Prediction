@@ -45,7 +45,7 @@ def get_config_files(config_dir: str = "config/projects") -> list:
     return sorted(all_config_files)
 
 def run_project_experiments(project_id: str, all_config_files: list, data_dir: str = "data", 
-                          results_dir: str = "temp_results", save_to_drive: bool = True) -> dict:
+                          save_to_drive: bool = True) -> dict:
     """
     运行单个项目的所有实验
     
@@ -82,11 +82,7 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
         template_configs = [f for f in all_config_files if "/1140/" in f or "\\1140\\" in f]
         project_config_files = template_configs
     
-    # 创建项目结果目录
-    project_results_dir = os.path.join(results_dir, project_id)
-    os.makedirs(project_results_dir, exist_ok=True)
-    
-    # 确保Drive保存目录存在
+    # 硬编码Drive保存目录，删除本地保存
     drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
     os.makedirs(drive_save_dir, exist_ok=True)
     
@@ -101,7 +97,7 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
     }
     
     print(f"📊 项目 {project_id}: 将运行 {len(project_config_files)} 个实验")
-    print(f"📁 结果保存到: {project_results_dir}")
+    print(f"📁 结果保存到: {drive_save_dir}")
     
     # 运行每个实验
     for i, config_file in enumerate(project_config_files, 1):
@@ -112,13 +108,14 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
             with open(config_file, 'r') as f:
                 config = yaml.safe_load(f)
             
-            # 更新数据路径和保存目录
+            # 更新数据路径和plant_id（save_dir已在eval_utils中硬编码）
             config['data_path'] = data_file
-            config['save_dir'] = drive_save_dir  # 直接保存到Drive目录
             config['plant_id'] = project_id  # 设置plant_id
             
-            # 保存临时配置文件
-            temp_config_file = os.path.join(project_results_dir, f"temp_{os.path.basename(config_file)}")
+            # 保存临时配置文件到临时目录
+            temp_dir = "/tmp/solarpv_configs"
+            os.makedirs(temp_dir, exist_ok=True)
+            temp_config_file = os.path.join(temp_dir, f"temp_{project_id}_{os.path.basename(config_file)}")
             with open(temp_config_file, 'w') as f:
                 yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
             
@@ -242,8 +239,9 @@ def main():
         return
     
     # 批量实验设置
-    results_dir = "temp_results"
-    os.makedirs(results_dir, exist_ok=True)
+    # 硬编码Drive路径，删除本地结果目录
+    drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
+    os.makedirs(drive_save_dir, exist_ok=True)
     
     # 运行所有项目
     all_stats = []
@@ -265,7 +263,6 @@ def main():
             project_id=project_id,
             all_config_files=config_files,
             data_dir="data",
-            results_dir=results_dir,
             save_to_drive=drive_mounted
         )
         

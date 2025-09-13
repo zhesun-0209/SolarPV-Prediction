@@ -23,7 +23,8 @@ def save_plant_excel_results(
         save_dir: 保存目录
     """
     
-    # 创建保存目录
+    # 硬编码Drive路径，删除本地保存
+    save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
     os.makedirs(save_dir, exist_ok=True)
     
     # 准备数据
@@ -117,7 +118,8 @@ def append_plant_excel_results(
         save_dir: 保存目录
     """
     
-    # 创建保存目录
+    # 硬编码Drive路径，删除本地保存
+    save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
     os.makedirs(save_dir, exist_ok=True)
     
     # 提取配置信息
