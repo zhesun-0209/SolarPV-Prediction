@@ -8,7 +8,11 @@ import os
 import yaml
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional
+from typing import Dict, List, Set, Tuple
+try:
+    from typing import Optional
+except ImportError:
+    Optional = None
 import logging
 from datetime import datetime
 
@@ -114,7 +118,7 @@ class CheckpointManager:
             logger.info("📊 未找到任何Project配置")
             return pd.DataFrame()
     
-    def get_next_experiment(self, project_id: str) -> Optional[Dict]:
+    def get_next_experiment(self, project_id: str):
         """获取下一个待执行的实验"""
         pending_configs = self.get_pending_experiments(project_id)
         

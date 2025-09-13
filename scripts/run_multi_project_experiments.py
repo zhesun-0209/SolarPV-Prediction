@@ -18,6 +18,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import logging
 import signal
 import threading
+from typing import Dict, List, Any
 
 # 添加项目根目录到Python路径
 sys.path.append(str(Path(__file__).parent.parent))

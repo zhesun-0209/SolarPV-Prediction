@@ -8,7 +8,11 @@ import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
+try:
+    from typing import Optional
+except ImportError:
+    Optional = None
 import logging
 from datetime import datetime
 
