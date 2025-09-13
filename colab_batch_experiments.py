@@ -172,42 +172,42 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                 for line in result.stdout.split('\n'):
                     if "mse=" in line and "rmse=" in line and "mae=" in line and "r_square=" in line:
                         result_line = line
-                    elif "inference_time=" in line:
+                    elif "[METRICS] inference_time=" in line:
                         try:
-                            inference_time = float(line.split("inference_time=")[1].split()[0])
+                            inference_time = float(line.split("inference_time=")[1].split(",")[0])
                         except:
                             pass
-                    elif "param_count=" in line:
+                    elif "[METRICS]" in line and "param_count=" in line:
                         try:
-                            param_count = int(line.split("param_count=")[1].split()[0])
+                            param_count = int(line.split("param_count=")[1].split(",")[0])
                         except:
                             pass
-                    elif "samples_count=" in line:
+                    elif "[METRICS]" in line and "samples_count=" in line:
                         try:
                             samples_count = int(line.split("samples_count=")[1].split()[0])
                         except:
                             pass
-                    elif "best_epoch=" in line:
+                    elif "[METRICS] best_epoch=" in line:
                         try:
-                            best_epoch = int(line.split("best_epoch=")[1].split()[0])
+                            best_epoch = int(line.split("best_epoch=")[1].split(",")[0])
                         except:
                             pass
-                    elif "final_lr=" in line:
+                    elif "[METRICS]" in line and "final_lr=" in line:
                         try:
                             final_lr = float(line.split("final_lr=")[1].split()[0])
                         except:
                             pass
-                    elif "nrmse=" in line:
+                    elif "[METRICS] nrmse=" in line:
                         try:
-                            nrmse = float(line.split("nrmse=")[1].split()[0])
+                            nrmse = float(line.split("nrmse=")[1].split(",")[0])
                         except:
                             pass
-                    elif "smape=" in line:
+                    elif "[METRICS]" in line and "smape=" in line:
                         try:
-                            smape = float(line.split("smape=")[1].split()[0])
+                            smape = float(line.split("smape=")[1].split(",")[0])
                         except:
                             pass
-                    elif "gpu_memory_used=" in line:
+                    elif "[METRICS]" in line and "gpu_memory_used=" in line:
                         try:
                             gpu_memory_used = int(line.split("gpu_memory_used=")[1].split()[0])
                         except:

@@ -314,6 +314,9 @@ def main():
         save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
         print(f"🔍 调试: save_results调用完成")
         print(f"[INFO] Project {pid} | {cfg['model']} done, mse={metrics['mse']:.4f}, rmse={metrics['rmse']:.4f}, mae={metrics['mae']:.4f}, r_square={metrics.get('r_square', 0):.4f}")
+        print(f"[METRICS] inference_time={metrics.get('inference_time_sec', 0):.4f}, param_count={metrics.get('param_count', 0)}, samples_count={metrics.get('samples_count', 0)}")
+        print(f"[METRICS] best_epoch={metrics.get('best_epoch', 0)}, final_lr={metrics.get('final_lr', 0):.6f}")
+        print(f"[METRICS] nrmse={metrics.get('nrmse', 0):.4f}, smape={metrics.get('smape', 0):.4f}, gpu_memory_used={metrics.get('gpu_memory_used', 0)}")
 
 if __name__ == "__main__":
     main()
