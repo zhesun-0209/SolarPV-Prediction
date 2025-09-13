@@ -119,6 +119,12 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     # 获取天气特征类别
     weather_category = config.get('weather_category', 'irradiance')
 
+    # PV特征（历史发电量）
+    if config.get('use_pv', False):
+        # 创建历史Capacity Factor特征（重命名避免与目标变量冲突）
+        df_clean['Capacity_Factor_hist'] = df_clean[TARGET_COL]
+        hist_feats.append('Capacity_Factor_hist')
+
     # 历史天气特征
     if config.get('use_hist_weather', False):
         hist_feats += get_weather_features_by_category(weather_category)
