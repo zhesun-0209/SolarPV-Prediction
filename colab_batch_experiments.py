@@ -280,6 +280,9 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                         # 计算past_days（基于lookback_hours）
                         past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
                         
+                        # 判断是否为DL模型
+                        is_dl_model = model_name in ['Transformer', 'LSTM', 'GRU', 'TCN']
+                        
                         # 创建结果行
                         result_row = {
                             'model': model_name,
@@ -290,15 +293,15 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             'use_time_encoding': time_encoding,
                             'past_days': past_days,
                             'model_complexity': complexity,
-                            'epochs': config.get('epochs', 50 if complexity == 'high' else 15),
-                            'batch_size': config.get('train_params', {}).get('batch_size', 32),
-                            'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001),
+                            'epochs': config.get('epochs', 50 if complexity == 'high' else 15) if is_dl_model else 0,
+                            'batch_size': config.get('train_params', {}).get('batch_size', 32) if is_dl_model else 0,
+                            'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if is_dl_model else 0.0,
                             'train_time_sec': round(duration, 4),
                             'inference_time_sec': inference_time,
                             'param_count': param_count,
                             'samples_count': samples_count,
-                            'best_epoch': best_epoch,
-                            'final_lr': final_lr,
+                            'best_epoch': best_epoch if is_dl_model else 0,
+                            'final_lr': final_lr if is_dl_model else 0.0,
                             'mse': float(mse_match.group(1)),
                             'rmse': float(rmse_match.group(1)),
                             'mae': float(mae_match.group(1)),
@@ -331,6 +334,11 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                         print(f"   推理时间: {inference_time}s, 参数数量: {param_count}, 样本数量: {samples_count}")
                         print(f"   最佳轮次: {best_epoch}, 最终学习率: {final_lr}")
                         print(f"   NRMSE: {nrmse}, SMAPE: {smape}, GPU内存: {gpu_memory_used}MB")
+                        print(f"🔍 最终结果行字段:")
+                        print(f"   param_count: {result_row['param_count']}, samples_count: {result_row['samples_count']}")
+                        print(f"   best_epoch: {result_row['best_epoch']}, final_lr: {result_row['final_lr']}")
+                        print(f"   smape: {result_row['smape']}, gpu_memory_used: {result_row['gpu_memory_used']}")
+                        print(f"   是否为DL模型: {is_dl_model}")
                     else:
                         print(f"❌ 无法解析实验结果: {result_line}")
                 else:
