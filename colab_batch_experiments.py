@@ -121,7 +121,7 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
             # 运行实验
             start_exp_time = time.time()
             result = subprocess.run(
-                ['python', 'main.py', temp_config_file],
+                ['python', 'main.py', '--config', temp_config_file],
                 capture_output=True,
                 text=True,
                 timeout=1800  # 30分钟超时
