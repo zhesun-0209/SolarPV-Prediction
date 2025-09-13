@@ -11,6 +11,7 @@ import subprocess
 import yaml
 import pandas as pd
 from pathlib import Path
+import re
 
 def check_drive_mount():
     """检查Google Drive是否已挂载"""
@@ -229,7 +230,6 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                 
                 if result_line:
                     # 解析结果
-                    import re
                     mse_match = re.search(r'mse=([0-9.]+)', result_line)
                     rmse_match = re.search(r'rmse=([0-9.]+)', result_line)
                     mae_match = re.search(r'mae=([0-9.]+)', result_line)
