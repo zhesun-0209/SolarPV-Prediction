@@ -168,11 +168,13 @@ def save_results(
         
         # 保存到CSV文件（追加模式）
         from eval.excel_utils import append_plant_excel_results
+        print(f"🔍 调试: plant_id={config.get('plant_id', 'unknown')}, save_dir={save_dir}")
         csv_file = append_plant_excel_results(
             plant_id=config.get('plant_id', 'unknown'),
             result=result_data,
             save_dir=save_dir
         )
+        print(f"🔍 调试: CSV文件已保存到 {csv_file}")
     
 
 

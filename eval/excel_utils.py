@@ -202,6 +202,7 @@ def append_plant_excel_results(
     print(f"✅ CSV结果已更新: {csv_path}")
     print(f"   总实验数: {len(combined_df)}")
     print(f"   新增实验数: 1")
+    print(f"   文件大小: {os.path.getsize(csv_path)} bytes")
     
     return csv_path
 
