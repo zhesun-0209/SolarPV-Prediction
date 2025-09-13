@@ -1,0 +1,6 @@
+projects:
+- config_count: 360
+  config_dir: config/projects/Project100
+  project_id: Project100
+total_configs: 36000
+total_projects: 100

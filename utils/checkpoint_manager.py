@@ -8,7 +8,7 @@ import os
 import yaml
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Optional
 import logging
 from datetime import datetime
 

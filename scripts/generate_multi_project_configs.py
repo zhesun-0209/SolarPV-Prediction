@@ -111,6 +111,9 @@ def create_model_config(model, complexity):
     """创建模型配置"""
     config = {'model': model}
     
+    # 初始化train_params
+    config['train_params'] = {}
+    
     if model == 'LSR':
         config['model_complexity'] = 'baseline'
         config['epochs'] = 1

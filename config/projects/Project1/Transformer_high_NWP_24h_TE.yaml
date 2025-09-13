@@ -1,0 +1,42 @@
+data_path: ./data/Project1.csv
+end_date: '2024-09-28'
+epochs: 50
+forecast_features:
+- global_tilted_irradiance_pred
+- vapour_pressure_deficit_pred
+- relative_humidity_2m_pred
+- temperature_2m_pred
+- wind_gusts_10m_pred
+- cloud_cover_low_pred
+- wind_speed_100m_pred
+- snow_depth_pred
+- dew_point_2m_pred
+- precipitation_pred
+- surface_pressure_pred
+future_hours: 24
+model: Transformer
+model_complexity: high
+past_days: 1
+past_hours: 24
+plot_days: 7
+save_dir: ./temp_results/Project1
+save_options:
+  save_excel_results: false
+  save_model: false
+  save_predictions: false
+  save_summary: false
+  save_training_log: false
+start_date: '2022-01-01'
+train_params:
+  d_model: 256
+  dropout: 0.3
+  hidden_dim: 128
+  num_heads: 16
+  num_layers: 18
+train_ratio: 0.8
+use_forecast: true
+use_hist_weather: false
+use_pv: false
+use_time_encoding: true
+val_ratio: 0.1
+weather_features: []
