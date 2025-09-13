@@ -12,6 +12,8 @@ import yaml
 import pandas as pd
 from pathlib import Path
 import re
+from utils.checkpoint_manager import CheckpointManager
+from utils.drive_results_saver import DriveResultsSaver
 
 def check_drive_mount():
     """检查Google Drive是否已挂载"""
@@ -373,23 +375,304 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
     
     return stats
 
+def run_project_experiments_with_checkpoint(project_id, data_file, all_config_files, drive_save_dir, checkpoint_manager, drive_saver):
+    """运行单个项目的所有实验（支持断点续训）"""
+    print(f"\n{'='*80}")
+    print(f"🚀 开始项目 {project_id} 的实验 (断点续训模式)")
+    print(f"{'='*80}")
+    
+    # 获取项目进度
+    project_progress = checkpoint_manager.get_project_progress(project_id)
+    print(f"📊 项目 {project_id} 当前进度: {project_progress['completed_experiments']}/{project_progress['total_experiments']} ({project_progress['completion_rate']:.1f}%)")
+    
+    # 获取待执行的实验
+    pending_configs = checkpoint_manager.get_pending_experiments(project_id)
+    if not pending_configs:
+        print(f"✅ 项目 {project_id} 所有实验已完成!")
+        return {'success': 0, 'failed': 0, 'errors': []}
+    
+    print(f"📋 待执行实验: {len(pending_configs)} 个")
+    print(f"📁 结果保存到: {drive_save_dir}")
+    
+    stats = {
+        'success': 0,
+        'failed': 0,
+        'errors': []
+    }
+    
+    start_time = time.time()
+    
+    # 运行每个待执行的实验
+    for i, config_info in enumerate(pending_configs, 1):
+        config_name = config_info['name']
+        config = config_info['config']
+        config_file = config_info['file_path']
+        
+        print(f"\n🔄 进度: {i}/{len(pending_configs)} - {config_name}")
+        
+        try:
+            # 修改配置文件中的数据路径
+            config['data_path'] = data_file
+            config['plant_id'] = project_id
+            
+            # 对于ML模型，移除不应该有的DL参数，但保留ML特有的参数
+            if config.get('model') in ['LGBM', 'RF', 'XGB', 'Linear']:
+                # ML模型不应该有batch_size等DL参数，但可以有learning_rate（XGB、LGBM）
+                if 'train_params' in config:
+                    ml_train_params = {}
+                    for key, value in config['train_params'].items():
+                        # 保留ML模型特有的参数
+                        if key in ['learning_rate', 'max_depth', 'n_estimators', 'random_state', 'verbosity']:
+                            ml_train_params[key] = value
+                    config['train_params'] = ml_train_params
+            
+            # 创建临时配置文件
+            temp_config_file = f"temp_config_{project_id}_{i}.yaml"
+            with open(temp_config_file, 'w') as f:
+                yaml.dump(config, f)
+            
+            # 运行实验
+            start_exp_time = time.time()
+            result = subprocess.run(
+                ['python', 'main.py', '--config', temp_config_file],
+                capture_output=True,
+                text=True,
+                timeout=1800  # 30分钟超时
+            )
+            duration = time.time() - start_exp_time
+            
+            # 检查结果
+            has_error = "[ERROR]" in result.stdout or result.returncode != 0
+            if not has_error and result.returncode == 0:
+                stats['success'] += 1
+                print(f"✅ 实验成功! 用时: {duration:.1f}秒")
+                
+                # 解析结果并保存到断点续训系统
+                result_data = parse_and_save_experiment_result(
+                    project_id, config_name, config, result, duration, drive_saver
+                )
+                
+                # 标记实验为已完成
+                checkpoint_manager.mark_experiment_completed(project_id, config_name, result_data)
+                
+            else:
+                stats['failed'] += 1
+                error_msg = f"实验失败: 返回码 {result.returncode}"
+                stats['errors'].append(error_msg)
+                print(f"❌ 实验失败! 返回码: {result.returncode}")
+                
+                # 保存失败结果
+                result_data = {
+                    'config_name': config_name,
+                    'status': 'failed',
+                    'duration': duration,
+                    'error_message': result.stderr
+                }
+                checkpoint_manager.mark_experiment_completed(project_id, config_name, result_data)
+                
+        except subprocess.TimeoutExpired:
+            stats['failed'] += 1
+            error_msg = "实验超时 (30分钟)"
+            stats['errors'].append(error_msg)
+            print(f"⏰ 实验超时: {error_msg}")
+            
+            # 保存超时结果
+            result_data = {
+                'config_name': config_name,
+                'status': 'timeout',
+                'duration': 1800,
+                'error_message': 'Experiment timeout (30 minutes)'
+            }
+            checkpoint_manager.mark_experiment_completed(project_id, config_name, result_data)
+            
+        except Exception as e:
+            stats['failed'] += 1
+            error_msg = f"实验异常: {str(e)}"
+            stats['errors'].append(error_msg)
+            print(f"💥 实验异常: {error_msg}")
+            
+            # 保存异常结果
+            result_data = {
+                'config_name': config_name,
+                'status': 'error',
+                'duration': 0,
+                'error_message': str(e)
+            }
+            checkpoint_manager.mark_experiment_completed(project_id, config_name, result_data)
+            
+        finally:
+            # 清理临时配置文件
+            if os.path.exists(temp_config_file):
+                os.remove(temp_config_file)
+    
+    # 计算总用时
+    total_time = time.time() - start_time
+    print(f"\n📊 项目 {project_id} 完成!")
+    print(f"✅ 成功: {stats['success']}")
+    print(f"❌ 失败: {stats['failed']}")
+    print(f"⏱️ 总用时: {total_time:.1f}秒")
+    
+    return stats
+
+def parse_and_save_experiment_result(project_id, config_name, config, result, duration, drive_saver):
+    """解析实验结果并保存到断点续训系统"""
+    # 从实验输出中提取结果
+    result_line = None
+    inference_time = 0.0
+    param_count = 0
+    samples_count = 0
+    best_epoch = 0
+    final_lr = 0.0
+    nrmse = 0.0
+    smape = 0.0
+    gpu_memory_used = 0
+    
+    # 解析METRICS行
+    for line in result.stdout.split('\n'):
+        if "mse=" in line and "rmse=" in line and "mae=" in line and "r_square=" in line:
+            result_line = line
+        elif "[METRICS]" in line:
+            # 使用正则表达式提取所有键值对
+            metrics_in_line = re.findall(r'(\w+)=([0-9.-]+)', line)
+            for key, value_str in metrics_in_line:
+                try:
+                    if key == 'inference_time':
+                        inference_time = float(value_str)
+                    elif key == 'param_count':
+                        param_count = int(float(value_str))
+                    elif key == 'samples_count':
+                        samples_count = int(float(value_str))
+                    elif key == 'best_epoch':
+                        if value_str.lower() == 'nan':
+                            best_epoch = 0
+                        else:
+                            best_epoch = int(float(value_str))
+                    elif key == 'final_lr':
+                        if value_str.lower() == 'nan':
+                            final_lr = 0.0
+                        else:
+                            final_lr = float(value_str)
+                    elif key == 'nrmse':
+                        nrmse = float(value_str)
+                    elif key == 'smape':
+                        smape = float(value_str)
+                    elif key == 'gpu_memory_used':
+                        gpu_memory_used = int(float(value_str))
+                except Exception as e:
+                    print(f"🔍 调试：{key}提取失败: {e}")
+    
+    # 解析基本指标
+    mse = rmse = mae = r_square = 0.0
+    if result_line:
+        mse_match = re.search(r'mse=([0-9.]+)', result_line)
+        rmse_match = re.search(r'rmse=([0-9.]+)', result_line)
+        mae_match = re.search(r'mae=([0-9.]+)', result_line)
+        r_square_match = re.search(r'r_square=([0-9.]+)', result_line)
+        
+        if mse_match and rmse_match and mae_match and r_square_match:
+            mse = float(mse_match.group(1))
+            rmse = float(rmse_match.group(1))
+            mae = float(mae_match.group(1))
+            r_square = float(r_square_match.group(1))
+    
+    # 构建结果数据
+    result_data = {
+        'config_name': config_name,
+        'status': 'completed',
+        'duration': duration,
+        'mae': mae,
+        'rmse': rmse,
+        'r2': r_square,
+        'mape': smape,
+        'train_time_sec': duration,
+        'inference_time_sec': inference_time,
+        'param_count': param_count,
+        'samples_count': samples_count,
+        'model': config.get('model', ''),
+        'model_complexity': config.get('model_complexity', ''),
+        'input_category': extract_input_category_from_config_name(config_name),
+        'lookback_hours': config.get('past_hours', 24),
+        'use_time_encoding': config.get('use_time_encoding', False)
+    }
+    
+    return result_data
+
+def extract_input_category_from_config_name(config_name):
+    """从配置名称中提取输入特征类别"""
+    if 'PV_plus_NWP_plus' in config_name:
+        return 'PV_plus_NWP_plus'
+    elif 'PV_plus_NWP' in config_name:
+        return 'PV_plus_NWP'
+    elif 'PV_plus_HW' in config_name:
+        return 'PV_plus_HW'
+    elif 'NWP_plus' in config_name and 'PV' not in config_name:
+        return 'NWP_plus'
+    elif 'NWP' in config_name and 'PV' not in config_name:
+        return 'NWP'
+    elif 'PV' in config_name and 'plus' not in config_name:
+        return 'PV'
+    else:
+        return 'Unknown'
+
 def main():
-    """主函数"""
-    print("🌟 SolarPV项目 - 批量实验脚本")
-    print("=" * 50)
+    """主函数 - 支持断点续训"""
+    print("🌟 SolarPV项目 - 批量实验脚本 (支持断点续训)")
+    print("=" * 60)
     
     # 检查Drive挂载
     if not check_drive_mount():
         return
     
+    # 硬编码Drive保存路径
+    drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
+    os.makedirs(drive_save_dir, exist_ok=True)
+    
+    # 初始化断点续训管理器
+    print("🔍 初始化断点续训管理器...")
+    checkpoint_manager = CheckpointManager(drive_save_dir)
+    drive_saver = DriveResultsSaver(drive_save_dir)
+    
+    # 检查断点续训状态
+    print("📊 检查断点续训状态...")
+    progress_df = checkpoint_manager.get_all_projects_progress()
+    
+    if not progress_df.empty:
+        completed_projects = len(progress_df[progress_df['is_complete'] == True])
+        total_projects = len(progress_df)
+        total_experiments = progress_df['total_experiments'].sum()
+        completed_experiments = progress_df['completed_experiments'].sum()
+        
+        print(f"📊 当前进度:")
+        print(f"   已完成项目: {completed_projects}/{total_projects}")
+        print(f"   已完成实验: {completed_experiments}/{total_experiments}")
+        print(f"   总体完成率: {completed_experiments/total_experiments*100:.1f}%")
+        
+        if completed_experiments > 0:
+            print("🔄 将进行断点续训")
+        else:
+            print("🆕 首次运行，将开始全新实验")
+    else:
+        print("🆕 首次运行，将开始全新实验")
+    
+    # 获取未完成的项目
+    incomplete_projects = checkpoint_manager.get_incomplete_projects()
+    if not incomplete_projects:
+        print("🎉 所有项目实验已完成!")
+        return
+    
+    print(f"📋 待完成项目: {len(incomplete_projects)} 个")
+    print(f"   项目列表: {incomplete_projects[:10]}{'...' if len(incomplete_projects) > 10 else ''}")
+    
     # 扫描数据文件
-    print("📁 扫描数据文件...")
+    print("\n📁 扫描数据文件...")
     data_files = get_data_files()
     if not data_files:
         print("❌ 未找到任何数据文件")
         return
     
-    print(f"📊 找到 {len(data_files)} 个项目: {[pid for pid, _ in data_files[:10]]}...")
+    # 过滤出未完成的项目
+    incomplete_data_files = [(pid, data_file) for pid, data_file in data_files if pid in incomplete_projects]
+    print(f"📊 找到 {len(incomplete_data_files)} 个待完成项目的数据文件")
     
     # 检查配置文件
     print("📁 检查配置文件...")
@@ -414,22 +697,22 @@ def main():
             print(f"❌ 配置文件生成异常: {e}")
             return
     
-    # 硬编码Drive保存路径
-    drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
-    os.makedirs(drive_save_dir, exist_ok=True)
-    
-    print(f"\n🚀 开始批量实验!")
-    print(f"📊 总项目数: {len(data_files)}")
+    print(f"\n🚀 开始批量实验 (断点续训模式)!")
+    print(f"📊 待完成项目数: {len(incomplete_data_files)}")
     print(f"📊 每项目实验数: 340")
-    print(f"📊 总实验数: {len(data_files) * 340}")
+    print(f"📊 预计剩余实验数: {len(incomplete_data_files) * 340}")
     
-    # 运行所有项目
+    # 运行未完成的项目
     total_stats = {'success': 0, 'failed': 0, 'errors': []}
     
-    for i, (project_id, data_file) in enumerate(data_files, 1):
-        print(f"\n🔄 项目进度: {i}/{len(data_files)}")
+    for i, (project_id, data_file) in enumerate(incomplete_data_files, 1):
+        print(f"\n🔄 项目进度: {i}/{len(incomplete_data_files)}")
         
-        project_stats = run_project_experiments(project_id, data_file, all_config_files, drive_save_dir)
+        # 检查项目进度
+        project_progress = checkpoint_manager.get_project_progress(project_id)
+        print(f"📊 项目 {project_id} 进度: {project_progress['completed_experiments']}/{project_progress['total_experiments']} ({project_progress['completion_rate']:.1f}%)")
+        
+        project_stats = run_project_experiments_with_checkpoint(project_id, data_file, all_config_files, drive_save_dir, checkpoint_manager, drive_saver)
         
         # 累计统计
         total_stats['success'] += project_stats['success']
@@ -441,6 +724,11 @@ def main():
     print(f"✅ 总成功: {total_stats['success']}")
     print(f"❌ 总失败: {total_stats['failed']}")
     print(f"📁 结果保存在: {drive_save_dir}")
+    
+    # 生成最终进度报告
+    print("\n📊 生成最终进度报告...")
+    report_path = checkpoint_manager.save_progress_report()
+    print(f"📋 进度报告已保存: {report_path}")
     
     # 显示Drive结果
     if os.path.exists(drive_save_dir):
