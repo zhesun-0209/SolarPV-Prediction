@@ -274,8 +274,8 @@ def generate_project_configs(project_id):
                         if model == 'LSR' and complexity != 'low':
                             continue
                         
-                        # 线性回归不使用PV和HW配置（因为不应该用Capacity Factor本身作为特征）
-                        if model == 'LSR' and (input_cat == 'PV' or 'HW' in input_cat):
+                        # 线性回归只使用预测天气配置（NWP, NWP_plus）
+                        if model == 'LSR' and input_cat not in ['NWP', 'NWP_plus']:
                             continue
                         
                         # 线性回归不使用回望窗口（只能处理单点预测）
