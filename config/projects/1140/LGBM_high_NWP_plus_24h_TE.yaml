@@ -18,16 +18,13 @@ past_hours: 24
 plot_days: 7
 save_dir: temp_results/1140/LGBM_high_NWP_plus_24h_TE
 save_options:
-  save_excel_results: false
+  save_excel_results: true
   save_model: false
-  save_predictions: false
+  save_predictions: true
   save_summary: false
-  save_training_log: false
+  save_training_log: true
 start_date: '2022-01-01'
-train_params:
-  learning_rate: 0.01
-  max_depth: 12
-  n_estimators: 200
+train_params: {}
 train_ratio: 0.8
 use_forecast: true
 use_hist_weather: false

@@ -36,11 +36,14 @@
 2. 运行以下命令：
 
 ```bash
-# 快速测试（推荐先运行）
+# 模型类型测试（推荐先运行）
+python colab_test_models.py
+
+# 快速测试（可选）
 python colab_quick_test.py
 
 # 完整训练
-python colab_train_all_models.py
+python colab_fixed_training.py
 ```
 
 ## 📊 模型配置

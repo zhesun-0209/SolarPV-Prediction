@@ -23,19 +23,15 @@ past_hours: 24
 plot_days: 7
 save_dir: temp_results/1140/TCN_high_PV_plus_HW_24h_noTE
 save_options:
-  save_excel_results: false
+  save_excel_results: true
   save_model: false
-  save_predictions: false
+  save_predictions: true
   save_summary: false
-  save_training_log: false
+  save_training_log: true
 start_date: '2022-01-01'
 train_params:
-  dropout: 0.3
-  kernel_size: 5
-  tcn_channels:
-  - 64
-  - 128
-  - 256
+  batch_size: 32
+  learning_rate: 0.001
 train_ratio: 0.8
 use_forecast: false
 use_hist_weather: true
