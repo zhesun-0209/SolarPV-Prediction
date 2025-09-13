@@ -318,18 +318,57 @@ class GPUOnlyExperimentRunner:
         
         # 尝试从结果文件中读取指标
         try:
-            results_files = list(exp_results_dir.glob("*.csv"))
-            if results_files:
-                df = pd.read_csv(results_files[0])
+            # 优先查找Excel文件
+            excel_files = list(exp_results_dir.glob("*.xlsx"))
+            if excel_files:
+                df = pd.read_excel(excel_files[0])
                 
-                if 'MAE' in df.columns:
-                    result_data['mae'] = df['MAE'].iloc[0] if len(df) > 0 else np.nan
-                if 'RMSE' in df.columns:
-                    result_data['rmse'] = df['RMSE'].iloc[0] if len(df) > 0 else np.nan
-                if 'R²' in df.columns:
-                    result_data['r2'] = df['R²'].iloc[0] if len(df) > 0 else np.nan
-                if 'MAPE' in df.columns:
-                    result_data['mape'] = df['MAPE'].iloc[0] if len(df) > 0 else np.nan
+                # 使用小写列名（Excel文件中使用的）
+                if 'mae' in df.columns:
+                    result_data['mae'] = df['mae'].iloc[0] if len(df) > 0 else np.nan
+                if 'rmse' in df.columns:
+                    result_data['rmse'] = df['rmse'].iloc[0] if len(df) > 0 else np.nan
+                if 'r_square' in df.columns:
+                    result_data['r2'] = df['r_square'].iloc[0] if len(df) > 0 else np.nan
+                if 'smape' in df.columns:
+                    result_data['mape'] = df['smape'].iloc[0] if len(df) > 0 else np.nan
+                if 'train_time_sec' in df.columns:
+                    result_data['train_time_sec'] = df['train_time_sec'].iloc[0] if len(df) > 0 else np.nan
+                if 'inference_time_sec' in df.columns:
+                    result_data['inference_time_sec'] = df['inference_time_sec'].iloc[0] if len(df) > 0 else np.nan
+                if 'param_count' in df.columns:
+                    result_data['param_count'] = df['param_count'].iloc[0] if len(df) > 0 else np.nan
+                if 'samples_count' in df.columns:
+                    result_data['samples_count'] = df['samples_count'].iloc[0] if len(df) > 0 else np.nan
+                    
+            else:
+                # 回退到CSV文件
+                csv_files = list(exp_results_dir.glob("*.csv"))
+                if csv_files:
+                    df = pd.read_csv(csv_files[0])
+                    
+                    # 尝试多种可能的列名
+                    if 'mae' in df.columns:
+                        result_data['mae'] = df['mae'].iloc[0] if len(df) > 0 else np.nan
+                    elif 'MAE' in df.columns:
+                        result_data['mae'] = df['MAE'].iloc[0] if len(df) > 0 else np.nan
+                        
+                    if 'rmse' in df.columns:
+                        result_data['rmse'] = df['rmse'].iloc[0] if len(df) > 0 else np.nan
+                    elif 'RMSE' in df.columns:
+                        result_data['rmse'] = df['RMSE'].iloc[0] if len(df) > 0 else np.nan
+                        
+                    if 'r_square' in df.columns:
+                        result_data['r2'] = df['r_square'].iloc[0] if len(df) > 0 else np.nan
+                    elif 'R²' in df.columns:
+                        result_data['r2'] = df['R²'].iloc[0] if len(df) > 0 else np.nan
+                    elif 'r2' in df.columns:
+                        result_data['r2'] = df['r2'].iloc[0] if len(df) > 0 else np.nan
+                        
+                    if 'smape' in df.columns:
+                        result_data['mape'] = df['smape'].iloc[0] if len(df) > 0 else np.nan
+                    elif 'MAPE' in df.columns:
+                        result_data['mape'] = df['MAPE'].iloc[0] if len(df) > 0 else np.nan
                 
         except Exception as e:
             logger.warning(f"无法读取结果文件: {e}")
@@ -409,11 +448,7 @@ class GPUOnlyExperimentRunner:
                         else:
                             self.stats['failed_experiments'] += 1
                         
-                        # 实时保存结果
-                        if result['status'] == 'completed':
-                            self.drive_saver.save_experiment_result(
-                                exp['project_id'], result['result_data']
-                            )
+                        # 结果已在_run_single_experiment中保存，无需重复保存
                         
                     except Exception as e:
                         logger.error(f"💥 GPU实验异常: {exp['project_id']} - {exp['config_name']}: {e}")
