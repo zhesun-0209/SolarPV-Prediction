@@ -192,17 +192,13 @@ def create_model_config(model, complexity):
                 }
             if model == 'TCN':
                 config['train_params'].update({
-                    'tcn_channels': [32, 64],
-                    'kernel_size': 3,
-                    'dropout': 0.1
+                    'batch_size': 32,
+                    'learning_rate': 0.001
                 })
             else:
                 config['train_params'].update({
-                    'd_model': 64,
-                    'num_heads': 4,
-                    'num_layers': 6,
-                    'hidden_dim': 32,
-                    'dropout': 0.1
+                    'batch_size': 32,
+                    'learning_rate': 0.001
                 })
         else:  # high
             if model == 'TCN':
@@ -237,17 +233,13 @@ def create_model_config(model, complexity):
                 }
             if model == 'TCN':
                 config['train_params'].update({
-                    'tcn_channels': [64, 128, 256],
-                    'kernel_size': 5,
-                    'dropout': 0.3
+                    'batch_size': 32,
+                    'learning_rate': 0.001
                 })
             else:
                 config['train_params'].update({
-                    'd_model': 256,
-                    'num_heads': 16,
-                    'num_layers': 18,
-                    'hidden_dim': 128,
-                    'dropout': 0.3
+                    'batch_size': 32,
+                    'learning_rate': 0.001
                 })
     
     return config

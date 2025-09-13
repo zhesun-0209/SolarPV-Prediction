@@ -162,7 +162,10 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
             
             duration = time.time() - start_time
             
-            if result.returncode == 0:
+            # 检查是否有错误信息（即使返回码为0）
+            has_error = "[ERROR]" in result.stdout or result.returncode != 0
+            
+            if not has_error and result.returncode == 0:
                 stats['successful'] += 1
                 print(f"✅ 实验成功! 用时: {duration:.1f}秒")
                 
@@ -196,6 +199,11 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
             else:
                 stats['failed'] += 1
                 error_msg = f"返回码: {result.returncode}, 错误: {result.stderr[-200:]}"
+                if "[ERROR]" in result.stdout:
+                    # 提取错误信息
+                    error_lines = [line for line in result.stdout.split('\n') if "[ERROR]" in line]
+                    if error_lines:
+                        error_msg = f"实验错误: {error_lines[-1]}"
                 stats['errors'].append(error_msg)
                 print(f"❌ 实验失败! {error_msg}")
                 print(f"   标准输出: {result.stdout[-500:]}")
