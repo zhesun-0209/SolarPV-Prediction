@@ -207,7 +207,7 @@ def main():
         return
     
     # 检查配置文件是否足够
-    if len(config_files) < len(projects) * 10:  # 假设每个项目至少需要10个配置
+    if len(config_files) < len(projects) * 100:  # 每个项目至少需要100个配置
         print("⚠️ 配置文件数量不足，需要生成配置文件")
         print("🔧 正在生成配置文件...")
         
@@ -248,15 +248,18 @@ def main():
     
     print(f"\n🚀 开始批量实验!")
     print(f"📊 总项目数: {total_projects}")
-    print(f"📊 每项目实验数: {len(config_files)}")
-    print(f"📊 总实验数: {total_projects * len(config_files)}")
+    # 计算总实验数（每个项目使用340个配置）
+    experiments_per_project = 340
+    total_experiments = total_projects * experiments_per_project
+    print(f"📊 每项目实验数: {experiments_per_project}")
+    print(f"📊 总实验数: {total_experiments}")
     
     for i, project_id in enumerate(projects, 1):
         print(f"\n🔄 项目进度: {i}/{total_projects}")
         
         stats = run_project_experiments(
             project_id=project_id,
-            config_files=config_files,
+            all_config_files=config_files,
             data_dir="data",
             results_dir=results_dir,
             save_to_drive=drive_mounted
