@@ -161,9 +161,13 @@ def main():
     print("🌟 SolarPV项目 - 批量实验脚本")
     print("=" * 80)
     
-    # 挂载Google Drive
-    print("🔗 挂载Google Drive...")
-    drive_mounted = mount_drive()
+    # 检查Google Drive是否已挂载
+    print("🔗 检查Google Drive...")
+    drive_mounted = os.path.exists("/content/drive/MyDrive")
+    if drive_mounted:
+        print("✅ Google Drive已挂载")
+    else:
+        print("⚠️ Google Drive未挂载，将跳过Drive保存")
     
     # 获取可用项目
     print("📁 扫描数据文件...")

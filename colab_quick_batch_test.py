@@ -24,9 +24,13 @@ def quick_batch_test(max_projects: int = 3, max_experiments_per_project: int = 5
     print("🧪 SolarPV项目 - 快速批量测试")
     print("=" * 60)
     
-    # 挂载Google Drive
-    print("🔗 挂载Google Drive...")
-    drive_mounted = mount_drive()
+    # 检查Google Drive是否已挂载
+    print("🔗 检查Google Drive...")
+    drive_mounted = os.path.exists("/content/drive/MyDrive")
+    if drive_mounted:
+        print("✅ Google Drive已挂载")
+    else:
+        print("⚠️ Google Drive未挂载，将跳过Drive保存")
     
     # 获取可用项目（限制数量）
     print("📁 扫描数据文件...")
