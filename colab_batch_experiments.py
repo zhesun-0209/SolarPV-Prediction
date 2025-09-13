@@ -198,13 +198,21 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             print(f"🔍 调试：samples_count提取失败: {e}")
                     elif "[METRICS] best_epoch=" in line:
                         try:
-                            best_epoch = int(line.split("best_epoch=")[1].split(",")[0])
+                            epoch_str = line.split("best_epoch=")[1].split(",")[0]
+                            if epoch_str.lower() == 'nan':
+                                best_epoch = 0  # ML模型没有epoch概念
+                            else:
+                                best_epoch = int(epoch_str)
                             print(f"🔍 调试：提取best_epoch={best_epoch}")
                         except Exception as e:
                             print(f"🔍 调试：best_epoch提取失败: {e}")
                     elif "[METRICS]" in line and "final_lr=" in line:
                         try:
-                            final_lr = float(line.split("final_lr=")[1].split()[0])
+                            lr_str = line.split("final_lr=")[1].split()[0]
+                            if lr_str.lower() == 'nan':
+                                final_lr = 0.0  # ML模型没有学习率概念
+                            else:
+                                final_lr = float(lr_str)
                             print(f"🔍 调试：提取final_lr={final_lr}")
                         except Exception as e:
                             print(f"🔍 调试：final_lr提取失败: {e}")
@@ -222,7 +230,7 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             print(f"🔍 调试：smape提取失败: {e}")
                     elif "[METRICS]" in line and "gpu_memory_used=" in line:
                         try:
-                            gpu_memory_used = int(line.split("gpu_memory_used=")[1].split()[0])
+                            gpu_memory_used = int(float(line.split("gpu_memory_used=")[1].split()[0]))
                             print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
                         except Exception as e:
                             print(f"🔍 调试：gpu_memory_used提取失败: {e}")
