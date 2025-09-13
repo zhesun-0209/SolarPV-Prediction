@@ -1,97 +1,68 @@
 #!/usr/bin/env python3
 """
-Colab批量实验脚本 - 支持100个项目的全量实验
-每个项目运行340个实验，结果保存到Google Drive
+SolarPV项目 - 批量实验脚本
+在Colab上运行100个项目的完整实验，保存结果到Google Drive
 """
 
 import os
 import sys
-import subprocess
 import time
+import subprocess
 import yaml
-import glob
 import pandas as pd
-from datetime import datetime
-from utils.drive_utils import mount_drive, save_project_results_to_drive, list_drive_results
+from pathlib import Path
 
-def get_available_projects(data_dir: str = "data") -> list:
-    """获取可用的项目列表"""
-    csv_files = glob.glob(os.path.join(data_dir, "Project*.csv"))
-    projects = []
-    
-    for csv_file in csv_files:
-        filename = os.path.basename(csv_file)
-        # 提取项目ID，例如 Project1140.csv -> 1140
-        if filename.startswith("Project") and filename.endswith(".csv"):
-            project_id = filename[7:-4]  # 去掉"Project"和".csv"
-            projects.append(project_id)
-    
-    return sorted(projects)
+def check_drive_mount():
+    """检查Google Drive是否已挂载"""
+    drive_path = "/content/drive/MyDrive"
+    if os.path.exists(drive_path):
+        print("✅ Google Drive已挂载")
+        return True
+    else:
+        print("❌ Google Drive未挂载，请先挂载Drive")
+        return False
 
-def get_config_files(config_dir: str = "config/projects") -> list:
+def get_data_files():
+    """扫描data目录，获取所有项目CSV文件"""
+    data_dir = "data"
+    if not os.path.exists(data_dir):
+        print(f"❌ 数据目录不存在: {data_dir}")
+        return []
+    
+    csv_files = []
+    for file in os.listdir(data_dir):
+        if file.startswith("Project") and file.endswith(".csv"):
+            project_id = file.replace("Project", "").replace(".csv", "")
+            csv_files.append((project_id, os.path.join(data_dir, file)))
+    
+    csv_files.sort(key=lambda x: int(x[0]))
+    return csv_files
+
+def get_config_files():
     """获取所有配置文件"""
-    # 扫描所有项目目录下的配置文件
+    config_dir = "config/projects"
     all_config_files = []
     
-    # 获取所有项目目录
-    project_dirs = glob.glob(os.path.join(config_dir, "*"))
-    project_dirs = [d for d in project_dirs if os.path.isdir(d)]
+    if os.path.exists(config_dir):
+        for project_dir in os.listdir(config_dir):
+            project_path = os.path.join(config_dir, project_dir)
+            if os.path.isdir(project_path):
+                for file in os.listdir(project_path):
+                    if file.endswith('.yaml') and file != 'config_index.yaml':
+                        all_config_files.append(os.path.join(project_path, file))
     
-    for project_dir in project_dirs:
-        yaml_files = glob.glob(os.path.join(project_dir, "*.yaml"))
-        config_files = [f for f in yaml_files if not f.endswith("config_index.yaml")]
-        all_config_files.extend(config_files)
-    
-    return sorted(all_config_files)
+    return all_config_files
 
-def run_project_experiments(project_id: str, all_config_files: list, data_dir: str = "data", 
-                          save_to_drive: bool = True) -> dict:
-    """
-    运行单个项目的所有实验
-    
-    Args:
-        project_id: 项目ID
-        all_config_files: 所有配置文件列表
-        data_dir: 数据目录
-        results_dir: 结果目录
-        save_to_drive: 是否保存到Drive
-        
-    Returns:
-        实验结果统计
-    """
+def run_project_experiments(project_id, data_file, all_config_files, drive_save_dir):
+    """运行单个项目的所有实验"""
     print(f"\n{'='*80}")
     print(f"🚀 开始项目 {project_id} 的实验")
     print(f"{'='*80}")
     
-    # 检查数据文件是否存在
-    data_file = os.path.join(data_dir, f"Project{project_id}.csv")
-    if not os.path.exists(data_file):
-        print(f"❌ 数据文件不存在: {data_file}")
-        return {'success': False, 'error': 'Data file not found'}
-    
-    # 筛选出当前项目的配置文件
-    project_config_files = []
-    for config_file in all_config_files:
-        if f"/{project_id}/" in config_file or f"\\{project_id}\\" in config_file:
-            project_config_files.append(config_file)
-    
-    # 如果没有找到项目专用配置，使用通用配置（如1140的配置）
-    if not project_config_files:
-        print(f"⚠️ 项目 {project_id} 没有专用配置文件，使用通用配置")
-        # 使用1140的配置作为模板
-        template_configs = [f for f in all_config_files if "/1140/" in f or "\\1140\\" in f]
-        project_config_files = template_configs
-    
-    # 硬编码Drive保存目录，删除本地保存
-    drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
-    os.makedirs(drive_save_dir, exist_ok=True)
-    
-    # 为项目创建初始CSV文件
+    # 创建项目CSV文件
     csv_file_path = os.path.join(drive_save_dir, f"{project_id}_results.csv")
     if not os.path.exists(csv_file_path):
         print(f"📄 创建项目CSV文件: {csv_file_path}")
-        # 创建空的CSV文件，包含列头
-        import pandas as pd
         empty_df = pd.DataFrame(columns=[
             'model', 'use_pv', 'use_hist_weather', 'use_forecast', 'weather_category',
             'use_time_encoding', 'past_days', 'model_complexity', 'epochs', 'batch_size',
@@ -104,18 +75,23 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
     else:
         print(f"📄 项目CSV文件已存在: {csv_file_path}")
     
-    # 统计信息
-    stats = {
-        'project_id': project_id,
-        'total_experiments': len(project_config_files),
-        'successful': 0,
-        'failed': 0,
-        'start_time': time.time(),
-        'errors': []
-    }
+    # 过滤出当前项目的配置文件
+    project_config_files = [f for f in all_config_files if f"Project{project_id}" in f or f"1140" in f]
+    
+    if not project_config_files:
+        print(f"⚠️ 未找到项目 {project_id} 的配置文件，使用Project1140的配置作为模板")
+        project_config_files = [f for f in all_config_files if "1140" in f]
     
     print(f"📊 项目 {project_id}: 将运行 {len(project_config_files)} 个实验")
     print(f"📁 结果保存到: {drive_save_dir}")
+    
+    stats = {
+        'success': 0,
+        'failed': 0,
+        'errors': []
+    }
+    
+    start_time = time.time()
     
     # 运行每个实验
     for i, config_file in enumerate(project_config_files, 1):
@@ -129,69 +105,57 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
             print(f"🔍 调试: 原始配置文件加载完成")
             print(f"🔍 调试: 原始config['train_params'] = {config.get('train_params', 'NOT_FOUND')}")
             
-            # 更新数据路径和plant_id（save_dir已在eval_utils中硬编码）
+            # 更新数据路径和plant_id
             config['data_path'] = data_file
-            config['plant_id'] = project_id  # 设置plant_id
+            config['plant_id'] = project_id
             
             print(f"🔍 调试: 修改后config['train_params'] = {config.get('train_params', 'NOT_FOUND')}")
             print(f"🔍 调试: 修改后config['model'] = {config.get('model', 'NOT_FOUND')}")
             print(f"🔍 调试: 修改后config['model_params'] = {config.get('model_params', 'NOT_FOUND')}")
             
-            # 保存临时配置文件到临时目录
-            temp_dir = "/tmp/solarpv_configs"
-            os.makedirs(temp_dir, exist_ok=True)
-            temp_config_file = os.path.join(temp_dir, f"temp_{project_id}_{os.path.basename(config_file)}")
+            # 创建临时配置文件
+            temp_config_file = f"temp_config_{project_id}_{i}.yaml"
             with open(temp_config_file, 'w') as f:
-                yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+                yaml.dump(config, f)
             
             # 运行实验
-            start_time = time.time()
-            result = subprocess.run([
-                sys.executable, "main.py", "--config", temp_config_file
-            ], capture_output=True, text=True, timeout=1800)  # 30分钟超时
+            start_exp_time = time.time()
+            result = subprocess.run(
+                ['python', 'main.py', temp_config_file],
+                capture_output=True,
+                text=True,
+                timeout=1800  # 30分钟超时
+            )
+            duration = time.time() - start_exp_time
             
-            # 显示调试信息
-            if "🔍 调试" in result.stdout:
-                print("🔍 实验调试信息:")
-                for line in result.stdout.split('\n'):
-                    if "🔍 调试" in line:
-                        print(f"   {line}")
-            
-            # 显示完整的标准输出（用于调试）
-            if "CSV结果已更新" not in result.stdout and "🔍 调试" not in result.stdout:
-                print("🔍 完整标准输出:")
-                print(result.stdout[-1000:])  # 显示最后1000个字符
-            
-            # 显示错误输出（如果有）
-            if result.stderr:
-                print("🔍 错误输出:")
-                print(result.stderr[-500:])  # 显示最后500个字符
-            
-            duration = time.time() - start_time
-            
-            # 检查是否有错误信息（即使返回码为0）
+            # 检查结果
             has_error = "[ERROR]" in result.stdout or result.returncode != 0
-            
             if not has_error and result.returncode == 0:
-                stats['successful'] += 1
+                stats['success'] += 1
                 print(f"✅ 实验成功! 用时: {duration:.1f}秒")
                 
-                # 提取结果指标
-                if "mse=" in result.stdout:
-                    lines = result.stdout.split('\n')
-                    for line in lines:
-                        if "mse=" in line and "rmse=" in line and "mae=" in line:
-                            print(f"📊 结果: {line.strip()}")
-                            break
+                # 显示结果
+                if "🔍 调试" in result.stdout:
+                    print("🔍 实验调试信息:")
+                    for line in result.stdout.split('\n'):
+                        if "🔍 调试" in line:
+                            print(f"   {line}")
                 
-                # 检查是否有CSV保存信息
+                # 显示实验结果
+                if "CSV结果已更新" not in result.stdout and "🔍 调试" not in result.stdout:
+                    print("🔍 完整标准输出:")
+                    print(result.stdout[-1000:])
+                
+                if result.stderr:
+                    print("🔍 错误输出:")
+                    print(result.stderr[-500:])
+                
                 if "CSV结果已更新" in result.stdout:
                     print("✅ CSV结果已保存")
                 else:
                     print("⚠️ 未看到CSV保存信息")
                 
-                # 硬编码保存结果到CSV文件
-                csv_file_path = os.path.join(drive_save_dir, f"{project_id}_results.csv")
+                # 硬编码保存结果到CSV文件（独立于save_excel_results设置）
                 print(f"🔧 硬编码保存结果到: {csv_file_path}")
                 
                 # 从实验输出中提取结果
@@ -255,7 +219,6 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
                         }
                         
                         # 读取现有CSV文件
-                        import pandas as pd
                         if os.path.exists(csv_file_path):
                             df = pd.read_csv(csv_file_path)
                         else:
@@ -307,183 +270,92 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
             print(f"💥 实验异常: {error_msg}")
     
     # 计算总用时
-    stats['total_time'] = time.time() - stats['start_time']
-    stats['success'] = stats['successful'] > 0
-    
-    # 显示项目统计
+    total_time = time.time() - start_time
     print(f"\n📊 项目 {project_id} 完成!")
-    print(f"   总实验: {stats['total_experiments']}")
-    print(f"   成功: {stats['successful']} ({stats['successful']/stats['total_experiments']*100:.1f}%)")
-    print(f"   失败: {stats['failed']} ({stats['failed']/stats['total_experiments']*100:.1f}%)")
-    print(f"   总用时: {stats['total_time']/60:.1f} 分钟")
-    
-    # 检查Drive中的结果文件
-    if save_to_drive and stats['success']:
-        drive_csv_file = os.path.join(drive_save_dir, f"{project_id}_results.csv")
-        if os.path.exists(drive_csv_file):
-            print(f"✅ 项目 {project_id} 结果已保存到Drive: {drive_csv_file}")
-        else:
-            print(f"⚠️ 项目 {project_id} 结果文件未找到: {drive_csv_file}")
+    print(f"✅ 成功: {stats['success']}")
+    print(f"❌ 失败: {stats['failed']}")
+    print(f"⏱️ 总用时: {total_time:.1f}秒")
     
     return stats
 
 def main():
     """主函数"""
     print("🌟 SolarPV项目 - 批量实验脚本")
-    print("=" * 80)
+    print("=" * 50)
     
-    # 检查Google Drive是否已挂载
-    print("🔗 检查Google Drive...")
-    drive_mounted = os.path.exists("/content/drive/MyDrive")
-    if drive_mounted:
-        print("✅ Google Drive已挂载")
-    else:
-        print("⚠️ Google Drive未挂载，将跳过Drive保存")
-    
-    # 获取可用项目
-    print("📁 扫描数据文件...")
-    projects = get_available_projects()
-    print(f"📊 找到 {len(projects)} 个项目: {projects[:10]}{'...' if len(projects) > 10 else ''}")
-    
-    # 检查是否需要生成配置文件
-    print("📁 检查配置文件...")
-    config_files = get_config_files()
-    print(f"📊 找到 {len(config_files)} 个配置文件")
-    
-    if not projects:
-        print("❌ 未找到任何项目数据文件")
+    # 检查Drive挂载
+    if not check_drive_mount():
         return
     
-    # 检查配置文件是否足够
-    if len(config_files) < len(projects) * 100:  # 每个项目至少需要100个配置
-        print("⚠️ 配置文件数量不足，需要生成配置文件")
-        print("🔧 正在生成配置文件...")
-        
+    # 扫描数据文件
+    print("📁 扫描数据文件...")
+    data_files = get_data_files()
+    if not data_files:
+        print("❌ 未找到任何数据文件")
+        return
+    
+    print(f"📊 找到 {len(data_files)} 个项目: {[pid for pid, _ in data_files[:10]]}...")
+    
+    # 检查配置文件
+    print("📁 检查配置文件...")
+    all_config_files = get_config_files()
+    print(f"📊 找到 {len(all_config_files)} 个配置文件")
+    
+    # 检查是否需要生成配置文件
+    if len(all_config_files) < len(data_files) * 100:
+        print("🔧 配置文件不足，正在生成...")
         try:
-            # 运行配置文件生成脚本
             result = subprocess.run([
-                sys.executable, "scripts/generate_dynamic_project_configs.py"
-            ], capture_output=True, text=True, timeout=300)  # 5分钟超时
-            
+                'python', 'scripts/generate_dynamic_project_configs.py'
+            ], capture_output=True, text=True, timeout=300)
             if result.returncode == 0:
-                print("✅ 配置文件生成成功")
-                # 重新扫描配置文件
-                config_files = get_config_files()
-                print(f"📊 重新扫描到 {len(config_files)} 个配置文件")
+                print("✅ 配置文件生成完成")
+                all_config_files = get_config_files()
+                print(f"📊 现在有 {len(all_config_files)} 个配置文件")
             else:
                 print(f"❌ 配置文件生成失败: {result.stderr}")
                 return
-                
-        except subprocess.TimeoutExpired:
-            print("⏰ 配置文件生成超时")
-            return
         except Exception as e:
-            print(f"💥 配置文件生成异常: {str(e)}")
+            print(f"❌ 配置文件生成异常: {e}")
             return
     
-    if not config_files:
-        print("❌ 未找到任何配置文件")
-        return
-    
-    # 批量实验设置
-    # 硬编码Drive路径，删除本地结果目录
+    # 硬编码Drive保存路径
     drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
     os.makedirs(drive_save_dir, exist_ok=True)
     
-    # 运行所有项目
-    all_stats = []
-    total_projects = len(projects)
-    successful_projects = 0
-    
     print(f"\n🚀 开始批量实验!")
-    print(f"📊 总项目数: {total_projects}")
-    # 计算总实验数（每个项目使用340个配置）
-    experiments_per_project = 340
-    total_experiments = total_projects * experiments_per_project
-    print(f"📊 每项目实验数: {experiments_per_project}")
-    print(f"📊 总实验数: {total_experiments}")
+    print(f"📊 总项目数: {len(data_files)}")
+    print(f"📊 每项目实验数: 340")
+    print(f"📊 总实验数: {len(data_files) * 340}")
     
-    for i, project_id in enumerate(projects, 1):
-        print(f"\n🔄 项目进度: {i}/{total_projects}")
+    # 运行所有项目
+    total_stats = {'success': 0, 'failed': 0, 'errors': []}
+    
+    for i, (project_id, data_file) in enumerate(data_files, 1):
+        print(f"\n🔄 项目进度: {i}/{len(data_files)}")
         
-        stats = run_project_experiments(
-            project_id=project_id,
-            all_config_files=config_files,
-            data_dir="data",
-            save_to_drive=drive_mounted
-        )
+        project_stats = run_project_experiments(project_id, data_file, all_config_files, drive_save_dir)
         
-        all_stats.append(stats)
-        if stats['success']:
-            successful_projects += 1
-        
-        # 显示当前统计
-        print(f"📈 当前统计: 成功项目 {successful_projects}/{i}")
+        # 累计统计
+        total_stats['success'] += project_stats['success']
+        total_stats['failed'] += project_stats['failed']
+        total_stats['errors'].extend(project_stats['errors'])
     
     # 最终统计
-    print(f"\n🎉 批量实验完成!")
-    print("=" * 80)
-    print(f"📊 最终统计:")
-    print(f"  总项目数: {total_projects}")
-    print(f"  成功项目: {successful_projects} ({successful_projects/total_projects*100:.1f}%)")
-    print(f"  失败项目: {total_projects - successful_projects}")
-    
-    # 计算总实验统计
-    total_experiments = sum(s['total_experiments'] for s in all_stats)
-    total_successful = sum(s['successful'] for s in all_stats)
-    total_failed = sum(s['failed'] for s in all_stats)
-    
-    print(f"\n📊 实验统计:")
-    print(f"  总实验数: {total_experiments}")
-    print(f"  成功实验: {total_successful} ({total_successful/total_experiments*100:.1f}%)")
-    print(f"  失败实验: {total_failed} ({total_failed/total_experiments*100:.1f}%)")
+    print(f"\n🎉 所有实验完成!")
+    print(f"✅ 总成功: {total_stats['success']}")
+    print(f"❌ 总失败: {total_stats['failed']}")
+    print(f"📁 结果保存在: {drive_save_dir}")
     
     # 显示Drive结果
-    if drive_mounted:
-        print(f"\n📁 Google Drive结果:")
-        drive_results = list_drive_results()
-        if isinstance(drive_results, dict):
-            print(f"  📊 总CSV文件数: {drive_results['total_csv_files']}")
-            print(f"  📊 总项目数: {drive_results['total_projects']}")
-            
-            # 显示前10个CSV文件
-            print(f"  📄 CSV文件列表:")
-            for csv_file in drive_results['csv_files'][:10]:
-                print(f"    📄 {csv_file['filename']} ({csv_file['size']} bytes)")
-            
-            if drive_results['total_csv_files'] > 10:
-                print(f"    ... 还有 {drive_results['total_csv_files'] - 10} 个CSV文件")
-            
-            # 显示项目统计
-            print(f"  📊 项目统计:")
-            for project_id, stats in list(drive_results['project_stats'].items())[:10]:
-                print(f"    📁 Project {project_id}: {stats['count']} 个CSV文件")
-            
-            if drive_results['total_projects'] > 10:
-                print(f"    ... 还有 {drive_results['total_projects'] - 10} 个项目")
-        else:
-            print(f"  ❌ 无法读取Drive结果")
-    
-    # 保存实验报告
-    report_file = os.path.join(results_dir, "experiment_report.csv")
-    report_data = []
-    for stats in all_stats:
-        report_data.append({
-            'project_id': stats['project_id'],
-            'total_experiments': stats['total_experiments'],
-            'successful': stats['successful'],
-            'failed': stats['failed'],
-            'success_rate': stats['successful'] / stats['total_experiments'] * 100,
-            'total_time_minutes': stats['total_time'] / 60,
-            'success': stats['success']
-        })
-    
-    pd.DataFrame(report_data).to_csv(report_file, index=False)
-    print(f"\n📊 实验报告已保存: {report_file}")
-    
-    if drive_mounted:
-        save_to_drive(report_file)
-        print(f"📊 实验报告已保存到Drive")
+    if os.path.exists(drive_save_dir):
+        csv_files = [f for f in os.listdir(drive_save_dir) if f.endswith('_results.csv')]
+        print(f"📊 生成了 {len(csv_files)} 个结果文件")
+        for csv_file in csv_files[:5]:  # 显示前5个文件
+            file_path = os.path.join(drive_save_dir, csv_file)
+            if os.path.exists(file_path):
+                df = pd.read_csv(file_path)
+                print(f"   {csv_file}: {len(df)} 行结果")
 
 if __name__ == "__main__":
     main()
