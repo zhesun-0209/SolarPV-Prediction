@@ -169,13 +169,19 @@ def main():
     if args.loss_type: tp["loss_type"] = args.loss_type
 
     # === Override save options ===
-    save_opts = config.setdefault("save_options", {})
+    save_opts = config.get("save_options", {})
     if args.save_model: save_opts["save_model"] = str2bool(args.save_model)
     # save_summary 已移除，不再保存summary.csv
     if args.save_predictions: save_opts["save_predictions"] = str2bool(args.save_predictions)
     if args.save_training_log: save_opts["save_training_log"] = str2bool(args.save_training_log)
     # 绘图功能已移除
     if args.save_excel_results: save_opts["save_excel_results"] = str2bool(args.save_excel_results)
+    
+    # 确保save_excel_results默认为True（如果配置文件中没有设置）
+    if "save_excel_results" not in save_opts:
+        save_opts["save_excel_results"] = True
+    
+    config["save_options"] = save_opts
 
     # === Calculate past_hours from past_days ===
     if "past_days" in config:
