@@ -125,14 +125,18 @@ def create_test_config(model, model_type):
                 'num_heads': 2,
                 'num_layers': 2,
                 'hidden_dim': 16,
-                'dropout': 0.1
+                'dropout': 0.1,
+                'tcn_channels': [16, 32],
+                'kernel_size': 3
             },
             'high': {
                 'd_model': 64,
                 'num_heads': 4,
                 'num_layers': 4,
                 'hidden_dim': 32,
-                'dropout': 0.2
+                'dropout': 0.2,
+                'tcn_channels': [32, 64],
+                'kernel_size': 5
             }
         }
         # 添加train_params

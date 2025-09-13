@@ -60,7 +60,14 @@ def train_dl_model(
     test_loader  = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
 
     # Model setup
-    mp = config['model_params'].copy()
+    # 根据模型复杂度获取正确的模型参数
+    complexity = config.get('model_complexity', 'low')
+    if complexity in config['model_params']:
+        mp = config['model_params'][complexity].copy()
+    else:
+        # 如果没有复杂度级别的参数，使用默认参数
+        mp = config.get('model_params', {}).copy()
+    
     mp['use_forecast'] = config.get('use_forecast', False)
     mp['past_hours'] = config['past_hours']
     mp['future_hours'] = config['future_hours']
