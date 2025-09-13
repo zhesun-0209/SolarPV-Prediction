@@ -104,7 +104,7 @@ class CheckpointManager:
         
         # 扫描所有Project配置目录
         for project_dir in self.config_base_dir.iterdir():
-            if project_dir.is_dir() and project_dir.name.startswith('Project'):
+            if project_dir.is_dir() and not project_dir.name.startswith('.'):
                 project_id = project_dir.name
                 progress = self.get_project_progress(project_id)
                 progress_list.append(progress)
