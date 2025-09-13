@@ -48,16 +48,7 @@ class DriveResultsSaver:
         csv_path = self.get_project_csv_path(project_id)
         local_cache_path = self.get_local_cache_path(project_id)
         
-        # 优先从本地缓存加载
-        if local_cache_path.exists():
-            try:
-                df = pd.read_csv(local_cache_path)
-                logger.info(f"从本地缓存加载 {project_id} 结果: {len(df)} 条记录")
-                return df
-            except Exception as e:
-                logger.warning(f"本地缓存加载失败: {e}")
-        
-        # 从Drive加载
+        # 优先从Drive加载
         if csv_path.exists():
             try:
                 df = pd.read_csv(csv_path)
@@ -67,6 +58,15 @@ class DriveResultsSaver:
                 return df
             except Exception as e:
                 logger.warning(f"Drive文件加载失败: {e}")
+        
+        # 如果Drive没有，尝试从本地缓存加载
+        if local_cache_path.exists():
+            try:
+                df = pd.read_csv(local_cache_path)
+                logger.info(f"从本地缓存加载 {project_id} 结果: {len(df)} 条记录")
+                return df
+            except Exception as e:
+                logger.warning(f"本地缓存加载失败: {e}")
         
         # 返回空的DataFrame
         logger.info(f"未找到 {project_id} 的已有结果，创建新文件")

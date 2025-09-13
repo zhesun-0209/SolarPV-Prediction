@@ -240,15 +240,22 @@ def main():
             preprocess_features(df_proj, config)
 
         # Step 2: Create sliding windows and split data
-        Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
-        Xh_va, Xf_va, y_va, hrs_va, dates_va, \
-        Xh_te, Xf_te, y_te, hrs_te, dates_te = create_sliding_windows(
+        X_hist, X_fcst, y, hours, dates = create_sliding_windows(
             df_clean,
             past_hours=config["past_hours"],
             future_hours=config["future_hours"],
             hist_feats=hist_feats,
             fcst_feats=fcst_feats,
             no_hist_power=not config.get("use_pv", True)
+        )
+        
+        # Step 2.5: Split data into train/validation/test sets
+        Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
+        Xh_va, Xf_va, y_va, hrs_va, dates_va, \
+        Xh_te, Xf_te, y_te, hrs_te, dates_te = split_data(
+            X_hist, X_fcst, y, hours, dates,
+            train_ratio=config["train_ratio"],
+            val_ratio=config["val_ratio"]
         )
 
         # Step 3: Use plant-level save directory (no subfolders)
