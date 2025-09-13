@@ -80,10 +80,10 @@ try:
     
     # 测试不同的配置
     test_configs = [
-        ('NWP_noTE', 'NWP_plus_NWP_24h_noTE'),
-        ('NWP_TE', 'NWP_plus_NWP_24h_TE'),
-        ('HW_noTE', 'PV_plus_HW_24h_noTE'),
-        ('HW_TE', 'PV_plus_HW_24h_TE')
+        ('PV_noTE', 'LSR_low_PV_24h_noTE'),
+        ('NWP_noTE', 'LSR_low_NWP_24h_noTE'),
+        ('HW_noTE', 'LSR_low_PV_plus_HW_24h_noTE'),
+        ('NWP_TE', 'LSR_low_NWP_24h_TE')
     ]
     
     preprocessing_results = {}
