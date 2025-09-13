@@ -293,6 +293,7 @@ def main():
         cfg["scaler_target"] = scaler_target
         cfg["plant_id"] = str(pid)  # 设置plant_id为ProjectID
         print(f"🔍 调试: 准备调用save_results，plant_id={cfg['plant_id']}")
+        print(f"🔍 调试: cfg['train_params'] = {cfg.get('train_params', 'NOT_FOUND')}")
         save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
         print(f"🔍 调试: save_results调用完成")
         print(f"[INFO] Project {pid} | {cfg['model']} done, mse={metrics['mse']:.4f}, rmse={metrics['rmse']:.4f}, mae={metrics['mae']:.4f}, r_square={metrics.get('r_square', 0):.4f}")

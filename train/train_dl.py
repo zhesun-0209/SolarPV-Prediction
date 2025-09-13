@@ -90,7 +90,9 @@ def train_dl_model(
     model.to(device)
 
     # Training utils
+    print(f"🔍 调试: config['train_params'] = {config['train_params']}")
     train_params = config['train_params']
+    print(f"🔍 调试: train_params = {train_params}")
     opt = get_optimizer(
         model,
         lr=float(train_params['learning_rate'])
