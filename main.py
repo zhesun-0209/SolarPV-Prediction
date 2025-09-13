@@ -99,6 +99,11 @@ def main():
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
     
+    print(f"🔍 调试: 初始配置加载完成")
+    print(f"🔍 调试: config['model'] = {config.get('model', 'NOT_FOUND')}")
+    print(f"🔍 调试: config['train_params'] = {config.get('train_params', 'NOT_FOUND')}")
+    print(f"🔍 调试: config['model_params'] = {config.get('model_params', 'NOT_FOUND')}")
+    
     # Validate required config keys
     required_keys = ['data_path', 'save_dir', 'model', 'past_hours', 'future_hours']
     for key in required_keys:
@@ -266,9 +271,15 @@ def main():
         cfg["save_dir"] = plant_save_dir
 
         # Step 4: Train model
+        print(f"🔍 调试: 准备开始训练，模型类型: {'DL' if is_dl else 'ML'}")
+        print(f"🔍 调试: cfg['model'] = {cfg.get('model', 'NOT_FOUND')}")
+        print(f"🔍 调试: cfg['train_params'] = {cfg.get('train_params', 'NOT_FOUND')}")
+        print(f"🔍 调试: cfg['model_params'] = {cfg.get('model_params', 'NOT_FOUND')}")
+        
         start = time.time()
         try:
             if is_dl:
+                print(f"🔍 调试: 调用train_dl_model")
                 model, metrics = train_dl_model(
                     cfg,
                     (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr),

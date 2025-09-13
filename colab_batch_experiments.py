@@ -126,9 +126,16 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
             with open(config_file, 'r') as f:
                 config = yaml.safe_load(f)
             
+            print(f"🔍 调试: 原始配置文件加载完成")
+            print(f"🔍 调试: 原始config['train_params'] = {config.get('train_params', 'NOT_FOUND')}")
+            
             # 更新数据路径和plant_id（save_dir已在eval_utils中硬编码）
             config['data_path'] = data_file
             config['plant_id'] = project_id  # 设置plant_id
+            
+            print(f"🔍 调试: 修改后config['train_params'] = {config.get('train_params', 'NOT_FOUND')}")
+            print(f"🔍 调试: 修改后config['model'] = {config.get('model', 'NOT_FOUND')}")
+            print(f"🔍 调试: 修改后config['model_params'] = {config.get('model_params', 'NOT_FOUND')}")
             
             # 保存临时配置文件到临时目录
             temp_dir = "/tmp/solarpv_configs"

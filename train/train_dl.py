@@ -37,6 +37,10 @@ def train_dl_model(
         model:   trained PyTorch model
         metrics: dict with inverse-transformed predictions, loss, etc.
     """
+    print(f"🔍 调试: train_dl_model开始执行")
+    print(f"🔍 调试: config['model'] = {config.get('model', 'NOT_FOUND')}")
+    print(f"🔍 调试: config['train_params'] = {config.get('train_params', 'NOT_FOUND')}")
+    print(f"🔍 调试: config['model_params'] = {config.get('model_params', 'NOT_FOUND')}")
     # Unpack data
     Xh_tr, Xf_tr, y_tr, hrs_tr, _ = train_data
     Xh_va, Xf_va, y_va, hrs_va, _ = val_data
