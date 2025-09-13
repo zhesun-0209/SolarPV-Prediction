@@ -171,7 +171,7 @@ class GPUOnlyExperimentRunner:
             config['save_options']['save_summary'] = False
             config['save_options']['save_predictions'] = False
             config['save_options']['save_training_log'] = False
-            config['save_options']['save_excel_results'] = False
+            config['save_options']['save_excel_results'] = True  # 必须保存Excel结果以获取指标
             
             # GPU优化配置
             config = self._optimize_config_for_gpu(config)
@@ -321,16 +321,25 @@ class GPUOnlyExperimentRunner:
             # 优先查找Excel文件
             excel_files = list(exp_results_dir.glob("*.xlsx"))
             if excel_files:
+                logger.info(f"📊 找到Excel文件: {excel_files[0]}")
                 df = pd.read_excel(excel_files[0])
+                logger.info(f"📊 Excel文件列名: {list(df.columns)}")
+                logger.info(f"📊 Excel文件形状: {df.shape}")
                 
                 # 使用小写列名（Excel文件中使用的）
                 if 'mae' in df.columns:
                     result_data['mae'] = df['mae'].iloc[0] if len(df) > 0 else np.nan
                 if 'rmse' in df.columns:
                     result_data['rmse'] = df['rmse'].iloc[0] if len(df) > 0 else np.nan
-                if 'r_square' in df.columns:
+                # 优先读取r2列，如果没有则读取r_square列
+                if 'r2' in df.columns:
+                    result_data['r2'] = df['r2'].iloc[0] if len(df) > 0 else np.nan
+                elif 'r_square' in df.columns:
                     result_data['r2'] = df['r_square'].iloc[0] if len(df) > 0 else np.nan
-                if 'smape' in df.columns:
+                # 优先读取mape列，如果没有则读取smape列
+                if 'mape' in df.columns:
+                    result_data['mape'] = df['mape'].iloc[0] if len(df) > 0 else np.nan
+                elif 'smape' in df.columns:
                     result_data['mape'] = df['smape'].iloc[0] if len(df) > 0 else np.nan
                 if 'train_time_sec' in df.columns:
                     result_data['train_time_sec'] = df['train_time_sec'].iloc[0] if len(df) > 0 else np.nan
@@ -340,6 +349,9 @@ class GPUOnlyExperimentRunner:
                     result_data['param_count'] = df['param_count'].iloc[0] if len(df) > 0 else np.nan
                 if 'samples_count' in df.columns:
                     result_data['samples_count'] = df['samples_count'].iloc[0] if len(df) > 0 else np.nan
+                
+                # 记录读取到的指标
+                logger.info(f"📊 读取到的指标: MAE={result_data['mae']:.4f}, RMSE={result_data['rmse']:.4f}, R2={result_data['r2']:.4f}, MAPE={result_data['mape']:.4f}")
                     
             else:
                 # 回退到CSV文件
