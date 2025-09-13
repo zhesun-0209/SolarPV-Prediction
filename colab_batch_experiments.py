@@ -86,6 +86,10 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
     project_results_dir = os.path.join(results_dir, project_id)
     os.makedirs(project_results_dir, exist_ok=True)
     
+    # 确保Drive保存目录存在
+    drive_save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
+    os.makedirs(drive_save_dir, exist_ok=True)
+    
     # 统计信息
     stats = {
         'project_id': project_id,
@@ -110,7 +114,8 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
             
             # 更新数据路径和保存目录
             config['data_path'] = data_file
-            config['save_dir'] = project_results_dir
+            config['save_dir'] = drive_save_dir  # 直接保存到Drive目录
+            config['plant_id'] = project_id  # 设置plant_id
             
             # 保存临时配置文件
             temp_config_file = os.path.join(project_results_dir, f"temp_{os.path.basename(config_file)}")
@@ -168,14 +173,13 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
     print(f"   失败: {stats['failed']} ({stats['failed']/stats['total_experiments']*100:.1f}%)")
     print(f"   总用时: {stats['total_time']/60:.1f} 分钟")
     
-    # 保存到Google Drive
+    # 检查Drive中的结果文件
     if save_to_drive and stats['success']:
-        print(f"💾 保存项目 {project_id} 结果到Google Drive...")
-        drive_success = save_project_results_to_drive(project_id, project_results_dir)
-        if drive_success:
-            print(f"✅ 项目 {project_id} 结果已保存到Drive")
+        drive_csv_file = os.path.join(drive_save_dir, f"{project_id}_results.csv")
+        if os.path.exists(drive_csv_file):
+            print(f"✅ 项目 {project_id} 结果已保存到Drive: {drive_csv_file}")
         else:
-            print(f"❌ 项目 {project_id} 结果保存到Drive失败")
+            print(f"⚠️ 项目 {project_id} 结果文件未找到: {drive_csv_file}")
     
     return stats
 
