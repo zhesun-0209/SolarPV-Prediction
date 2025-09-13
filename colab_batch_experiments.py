@@ -189,62 +189,43 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                 for line in result.stdout.split('\n'):
                     if "mse=" in line and "rmse=" in line and "mae=" in line and "r_square=" in line:
                         result_line = line
-                    elif "[METRICS] inference_time=" in line:
-                        try:
-                            inference_time = float(line.split("inference_time=")[1].split(",")[0])
-                            print(f"🔍 调试：提取inference_time={inference_time}")
-                        except Exception as e:
-                            print(f"🔍 调试：inference_time提取失败: {e}")
-                    elif "[METRICS]" in line and "param_count=" in line:
-                        try:
-                            param_count = int(line.split("param_count=")[1].split(",")[0])
-                            print(f"🔍 调试：提取param_count={param_count}")
-                        except Exception as e:
-                            print(f"🔍 调试：param_count提取失败: {e}")
-                    elif "[METRICS]" in line and "samples_count=" in line:
-                        try:
-                            samples_count = int(line.split("samples_count=")[1].split()[0])
-                            print(f"🔍 调试：提取samples_count={samples_count}")
-                        except Exception as e:
-                            print(f"🔍 调试：samples_count提取失败: {e}")
-                    elif "[METRICS]" in line and "smape=" in line:
-                        try:
-                            smape = float(line.split("smape=")[1].split(",")[0])
-                            print(f"🔍 调试：提取smape={smape}")
-                        except Exception as e:
-                            print(f"🔍 调试：smape提取失败: {e}")
-                    elif "[METRICS]" in line and "gpu_memory_used=" in line:
-                        try:
-                            gpu_memory_used = int(float(line.split("gpu_memory_used=")[1].split()[0]))
-                            print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
-                        except Exception as e:
-                            print(f"🔍 调试：gpu_memory_used提取失败: {e}")
-                    elif "[METRICS] best_epoch=" in line:
-                        try:
-                            epoch_str = line.split("best_epoch=")[1].split(",")[0]
-                            if epoch_str.lower() == 'nan':
-                                best_epoch = 0  # ML模型没有epoch概念
-                            else:
-                                best_epoch = int(epoch_str)
-                            print(f"🔍 调试：提取best_epoch={best_epoch}")
-                        except Exception as e:
-                            print(f"🔍 调试：best_epoch提取失败: {e}")
-                    elif "[METRICS]" in line and "final_lr=" in line:
-                        try:
-                            lr_str = line.split("final_lr=")[1].split()[0]
-                            if lr_str.lower() == 'nan':
-                                final_lr = 0.0  # ML模型没有学习率概念
-                            else:
-                                final_lr = float(lr_str)
-                            print(f"🔍 调试：提取final_lr={final_lr}")
-                        except Exception as e:
-                            print(f"🔍 调试：final_lr提取失败: {e}")
-                    elif "[METRICS] nrmse=" in line:
-                        try:
-                            nrmse = float(line.split("nrmse=")[1].split(",")[0])
-                            print(f"🔍 调试：提取nrmse={nrmse}")
-                        except Exception as e:
-                            print(f"🔍 调试：nrmse提取失败: {e}")
+                    elif "[METRICS]" in line:
+                        # 使用正则表达式提取所有键值对
+                        metrics_in_line = re.findall(r'(\w+)=([0-9.-]+)', line)
+                        for key, value_str in metrics_in_line:
+                            try:
+                                if key == 'inference_time':
+                                    inference_time = float(value_str)
+                                    print(f"🔍 调试：提取inference_time={inference_time}")
+                                elif key == 'param_count':
+                                    param_count = int(float(value_str))
+                                    print(f"🔍 调试：提取param_count={param_count}")
+                                elif key == 'samples_count':
+                                    samples_count = int(float(value_str))
+                                    print(f"🔍 调试：提取samples_count={samples_count}")
+                                elif key == 'best_epoch':
+                                    if value_str.lower() == 'nan':
+                                        best_epoch = 0
+                                    else:
+                                        best_epoch = int(float(value_str))
+                                    print(f"🔍 调试：提取best_epoch={best_epoch}")
+                                elif key == 'final_lr':
+                                    if value_str.lower() == 'nan':
+                                        final_lr = 0.0
+                                    else:
+                                        final_lr = float(value_str)
+                                    print(f"🔍 调试：提取final_lr={final_lr}")
+                                elif key == 'nrmse':
+                                    nrmse = float(value_str)
+                                    print(f"🔍 调试：提取nrmse={nrmse}")
+                                elif key == 'smape':
+                                    smape = float(value_str)
+                                    print(f"🔍 调试：提取smape={smape}")
+                                elif key == 'gpu_memory_used':
+                                    gpu_memory_used = int(float(value_str))
+                                    print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
+                            except Exception as e:
+                                print(f"🔍 调试：{key}提取失败: {e}")
                 
                 if result_line:
                     # 解析结果
