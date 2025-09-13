@@ -127,7 +127,7 @@ def main():
         ("RF", "RF_low_PV_24h_TE"),
         ("XGB", "XGB_low_PV_24h_TE"),
         ("LGBM", "LGBM_low_PV_24h_TE"),
-        ("LSR", "LSR_low_PV_24h_TE")
+        ("LSR", "LSR_low_NWP_24h_TE")  # LSR使用NWP模式
     ]
     
     results = {}
