@@ -1,4 +1,4 @@
-total_configs: 360
+total_configs: 356
 experiment_design:
   input_categories: 6
   lookback_hours: 2
@@ -7,9 +7,10 @@ experiment_design:
   ml_models: 7
   baseline_model: 1
 calculation:
-  main_models: 6 × 2 × 2 × 2 × 7 = 336
-  baseline_model: 6 × 2 × 2 × 1 = 24
-  total: 336 + 24 = 360
+  theoretical_total: 6 × 2 × 2 × 2 × 8 = 384
+  lsr_skip_pv: 1 × 2 × 2 × 2 × 1 = 8
+  lsr_skip_high: 6 × 2 × 2 × 1 × 1 = 24
+  actual_total: 384 - 8 - 24 = 356
 input_categories:
 - PV - 仅历史PV功率
 - PV+NWP - 历史PV + 目标日NWP
