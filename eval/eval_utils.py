@@ -64,6 +64,8 @@ def save_results(
 
     # 获取保存选项
     save_options = config.get('save_options', {})
+    print(f"🔍 调试: save_options = {save_options}")
+    print(f"🔍 调试: save_excel_results = {save_options.get('save_excel_results', True)}")
     
     # ===== 1. summary.csv 已完全禁用 =====
     # 不再保存summary.csv文件，只保存Excel文件
@@ -133,7 +135,9 @@ def save_results(
     # 如需保存图片，请设置相应的save_options为True
     
     # 保存Excel结果文件（如果启用）
+    print(f"🔍 调试: 准备保存Excel结果，条件判断: {save_options.get('save_excel_results', True)}")
     if save_options.get('save_excel_results', True):
+        print(f"🔍 调试: 进入Excel保存逻辑")
         # 构建实验结果数据
         result_data = {
             'config': {
@@ -175,7 +179,7 @@ def save_results(
             save_dir=save_dir
         )
         print(f"🔍 调试: CSV文件已保存到 {csv_file}")
-    
-
+    else:
+        print(f"🔍 调试: 跳过Excel保存，save_excel_results = False")
 
     print(f"[INFO] Results saved in {save_dir}")
