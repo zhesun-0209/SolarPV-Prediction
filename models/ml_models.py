@@ -45,22 +45,39 @@ from lightgbm import LGBMRegressor
 
 def train_rf(X_train, y_train, params: dict):
     """Train GPU-accelerated Random Forest regressor with multi-output support."""
-    if GPU_AVAILABLE:
-        # cuML Random Forest不支持多输出，需要使用MultiOutputRegressor
-        # 需要确保数据是NumPy数组格式
-        import cupy as cp
-        if hasattr(X_train, 'get'):  # 如果是CuPy数组
-            X_train = X_train.get()
-        if hasattr(y_train, 'get'):  # 如果是CuPy数组
-            y_train = y_train.get()
-        
-        base = cuRandomForestRegressor(**params)
-        model = MultiOutputRegressor(base)
-        model.fit(X_train, y_train)
-        return model
-    else:
-        # Fallback to CPU version with MultiOutputRegressor
-        base = cuRandomForestRegressor(**params)
+    try:
+        if GPU_AVAILABLE:
+            # cuML Random Forest不支持多输出，需要使用MultiOutputRegressor
+            # 需要确保数据是NumPy数组格式
+            import cupy as cp
+            if hasattr(X_train, 'get'):  # 如果是CuPy数组
+                X_train = X_train.get()
+            if hasattr(y_train, 'get'):  # 如果是CuPy数组
+                y_train = y_train.get()
+            
+            # 检查数据有效性
+            if np.any(np.isnan(X_train)) or np.any(np.isinf(X_train)):
+                print("⚠️ 检测到NaN或Inf值，进行清理")
+                X_train = np.nan_to_num(X_train, nan=0.0, posinf=1.0, neginf=-1.0)
+            if np.any(np.isnan(y_train)) or np.any(np.isinf(y_train)):
+                print("⚠️ 检测到NaN或Inf值，进行清理")
+                y_train = np.nan_to_num(y_train, nan=0.0, posinf=1.0, neginf=-1.0)
+            
+            base = cuRandomForestRegressor(**params)
+            model = MultiOutputRegressor(base)
+            model.fit(X_train, y_train)
+            return model
+        else:
+            # Fallback to CPU version with MultiOutputRegressor
+            base = cuRandomForestRegressor(**params)
+            model = MultiOutputRegressor(base)
+            model.fit(X_train, y_train)
+            return model
+    except Exception as e:
+        print(f"❌ Random Forest训练失败: {e}")
+        # 回退到CPU版本
+        from sklearn.ensemble import RandomForestRegressor
+        base = RandomForestRegressor(**params)
         model = MultiOutputRegressor(base)
         model.fit(X_train, y_train)
         return model
@@ -69,37 +86,69 @@ def train_rf(X_train, y_train, params: dict):
 
 def train_xgb(X_train, y_train, params: dict):
     """Train XGBoost regressor with multi-output support."""
-    if XGB_GPU_AVAILABLE:
-        # 使用XGBoost GPU版本
-        gpu_params = params.copy()
-        gpu_params.update({
-            'tree_method': 'hist',
-            'device': 'cuda'
-        })
-        base = XGBRegressor(**gpu_params)
-    else:
-        # 使用XGBoost CPU版本
+    try:
+        # 检查数据有效性
+        if np.any(np.isnan(X_train)) or np.any(np.isinf(X_train)):
+            print("⚠️ 检测到NaN或Inf值，进行清理")
+            X_train = np.nan_to_num(X_train, nan=0.0, posinf=1.0, neginf=-1.0)
+        if np.any(np.isnan(y_train)) or np.any(np.isinf(y_train)):
+            print("⚠️ 检测到NaN或Inf值，进行清理")
+            y_train = np.nan_to_num(y_train, nan=0.0, posinf=1.0, neginf=-1.0)
+        
+        if XGB_GPU_AVAILABLE:
+            # 使用XGBoost GPU版本
+            gpu_params = params.copy()
+            gpu_params.update({
+                'tree_method': 'hist',
+                'device': 'cuda'
+            })
+            base = XGBRegressor(**gpu_params)
+        else:
+            # 使用XGBoost CPU版本
+            base = XGBRegressor(**params)
+        
+        model = MultiOutputRegressor(base)
+        model.fit(X_train, y_train)
+        return model
+    except Exception as e:
+        print(f"❌ XGBoost训练失败: {e}")
+        # 回退到CPU版本
         base = XGBRegressor(**params)
-    
-    model = MultiOutputRegressor(base)
-    model.fit(X_train, y_train)
-    return model
+        model = MultiOutputRegressor(base)
+        model.fit(X_train, y_train)
+        return model
 
 def train_lgbm(X_train, y_train, params: dict):
     """Train LightGBM regressor with multi-output support."""
-    if LGB_GPU_AVAILABLE:
-        # 使用LightGBM GPU版本
-        gpu_params = params.copy()
-        gpu_params.update({
-            'device': 'gpu',
-            'gpu_platform_id': 0,
-            'gpu_device_id': 0
-        })
-        base = LGBMRegressor(**gpu_params)
-    else:
-        # 使用LightGBM CPU版本
+    try:
+        # 检查数据有效性
+        if np.any(np.isnan(X_train)) or np.any(np.isinf(X_train)):
+            print("⚠️ 检测到NaN或Inf值，进行清理")
+            X_train = np.nan_to_num(X_train, nan=0.0, posinf=1.0, neginf=-1.0)
+        if np.any(np.isnan(y_train)) or np.any(np.isinf(y_train)):
+            print("⚠️ 检测到NaN或Inf值，进行清理")
+            y_train = np.nan_to_num(y_train, nan=0.0, posinf=1.0, neginf=-1.0)
+        
+        if LGB_GPU_AVAILABLE:
+            # 使用LightGBM GPU版本
+            gpu_params = params.copy()
+            gpu_params.update({
+                'device': 'gpu',
+                'gpu_platform_id': 0,
+                'gpu_device_id': 0
+            })
+            base = LGBMRegressor(**gpu_params)
+        else:
+            # 使用LightGBM CPU版本
+            base = LGBMRegressor(**params)
+        
+        model = MultiOutputRegressor(base)
+        model.fit(X_train, y_train)
+        return model
+    except Exception as e:
+        print(f"❌ LightGBM训练失败: {e}")
+        # 回退到CPU版本
         base = LGBMRegressor(**params)
-    
-    model = MultiOutputRegressor(base)
-    model.fit(X_train, y_train)
-    return model
+        model = MultiOutputRegressor(base)
+        model.fit(X_train, y_train)
+        return model

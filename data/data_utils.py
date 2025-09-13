@@ -142,10 +142,20 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     # 标准化特征
     scaler_hist = MinMaxScaler()
     if available_hist_feats:
+        # 检查特征是否有足够的变异性
+        for feat in available_hist_feats:
+            if df_clean[feat].std() == 0:
+                print(f"⚠️ 特征 {feat} 标准差为0，添加微小噪声避免除零错误")
+                df_clean[feat] += np.random.normal(0, 1e-8, len(df_clean))
         df_clean[available_hist_feats] = scaler_hist.fit_transform(df_clean[available_hist_feats])
 
     scaler_fcst = MinMaxScaler()
     if available_fcst_feats:
+        # 检查特征是否有足够的变异性
+        for feat in available_fcst_feats:
+            if df_clean[feat].std() == 0:
+                print(f"⚠️ 特征 {feat} 标准差为0，添加微小噪声避免除零错误")
+                df_clean[feat] += np.random.normal(0, 1e-8, len(df_clean))
         df_clean[available_fcst_feats] = scaler_fcst.fit_transform(df_clean[available_fcst_feats])
 
     # Capacity Factor不需要标准化（范围0-100）
