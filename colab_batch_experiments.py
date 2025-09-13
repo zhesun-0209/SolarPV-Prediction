@@ -632,36 +632,47 @@ def main():
     checkpoint_manager = CheckpointManager(drive_save_dir)
     drive_saver = DriveResultsSaver(drive_save_dir)
     
-    # 检查断点续训状态
-    print("📊 检查断点续训状态...")
-    progress_df = checkpoint_manager.get_all_projects_progress()
+    # 检查缺失实验状态
+    print("📊 检查缺失实验状态...")
+    missing_df = checkpoint_manager.get_all_missing_experiments()
     
-    if not progress_df.empty:
-        completed_projects = len(progress_df[progress_df['is_complete'] == True])
-        total_projects = len(progress_df)
-        total_experiments = progress_df['total_experiments'].sum()
-        completed_experiments = progress_df['completed_experiments'].sum()
+    if not missing_df.empty:
+        total_projects = len(missing_df)
+        completed_projects = len(missing_df[missing_df['is_complete'] == True])
+        total_expected = missing_df['expected_experiments'].sum()
+        total_completed = missing_df['completed_experiments'].sum()
+        total_missing = missing_df['missing_experiments'].sum()
         
-        print(f"📊 当前进度:")
-        print(f"   已完成项目: {completed_projects}/{total_projects}")
-        print(f"   已完成实验: {completed_experiments}/{total_experiments}")
-        print(f"   总体完成率: {completed_experiments/total_experiments*100:.1f}%")
+        print(f"📊 当前状态:")
+        print(f"   总项目数: {total_projects}")
+        print(f"   已完成项目: {completed_projects}")
+        print(f"   总实验数: {total_expected}")
+        print(f"   已完成实验: {total_completed}")
+        print(f"   缺失实验: {total_missing}")
+        print(f"   总体完成率: {total_completed/total_expected*100:.1f}%")
         
-        if completed_experiments > 0:
-            print("🔄 将进行断点续训")
+        if total_missing > 0:
+            print("🔄 将补全缺失的实验")
         else:
-            print("🆕 首次运行，将开始全新实验")
+            print("🎉 所有实验已完成!")
+            return
     else:
         print("🆕 首次运行，将开始全新实验")
     
-    # 获取未完成的项目
-    incomplete_projects = checkpoint_manager.get_incomplete_projects()
-    if not incomplete_projects:
+    # 获取有缺失实验的项目
+    projects_with_missing = checkpoint_manager.get_projects_with_missing_experiments()
+    if not projects_with_missing:
         print("🎉 所有项目实验已完成!")
         return
     
-    print(f"📋 待完成项目: {len(incomplete_projects)} 个")
-    print(f"   项目列表: {incomplete_projects[:10]}{'...' if len(incomplete_projects) > 10 else ''}")
+    print(f"📋 有缺失实验的项目: {len(projects_with_missing)} 个")
+    print(f"   项目列表: {projects_with_missing[:10]}{'...' if len(projects_with_missing) > 10 else ''}")
+    
+    # 显示详细的缺失实验信息
+    print("\n📊 详细缺失实验信息:")
+    for _, row in missing_df.iterrows():
+        if row['missing_experiments'] > 0:
+            print(f"   {row['project_id']}: {row['completed_experiments']}/{row['expected_experiments']} ({row['completion_rate']:.1f}%) - 缺失 {row['missing_experiments']} 个")
     
     # 扫描数据文件
     print("\n📁 扫描数据文件...")
@@ -670,9 +681,9 @@ def main():
         print("❌ 未找到任何数据文件")
         return
     
-    # 过滤出未完成的项目
-    incomplete_data_files = [(pid, data_file) for pid, data_file in data_files if pid in incomplete_projects]
-    print(f"📊 找到 {len(incomplete_data_files)} 个待完成项目的数据文件")
+    # 过滤出有缺失实验的项目
+    missing_data_files = [(pid, data_file) for pid, data_file in data_files if pid in projects_with_missing]
+    print(f"📊 找到 {len(missing_data_files)} 个有缺失实验项目的数据文件")
     
     # 检查配置文件
     print("📁 检查配置文件...")
@@ -697,20 +708,20 @@ def main():
             print(f"❌ 配置文件生成异常: {e}")
             return
     
-    print(f"\n🚀 开始批量实验 (断点续训模式)!")
-    print(f"📊 待完成项目数: {len(incomplete_data_files)}")
-    print(f"📊 每项目实验数: 340")
-    print(f"📊 预计剩余实验数: {len(incomplete_data_files) * 340}")
+    print(f"\n🚀 开始补全缺失实验!")
+    print(f"📊 有缺失实验的项目数: {len(missing_data_files)}")
+    print(f"📊 每项目应有实验数: 340")
+    print(f"📊 预计需要补全的实验数: {total_missing}")
     
-    # 运行未完成的项目
+    # 运行有缺失实验的项目
     total_stats = {'success': 0, 'failed': 0, 'errors': []}
     
-    for i, (project_id, data_file) in enumerate(incomplete_data_files, 1):
-        print(f"\n🔄 项目进度: {i}/{len(incomplete_data_files)}")
+    for i, (project_id, data_file) in enumerate(missing_data_files, 1):
+        print(f"\n🔄 项目进度: {i}/{len(missing_data_files)}")
         
-        # 检查项目进度
-        project_progress = checkpoint_manager.get_project_progress(project_id)
-        print(f"📊 项目 {project_id} 进度: {project_progress['completed_experiments']}/{project_progress['total_experiments']} ({project_progress['completion_rate']:.1f}%)")
+        # 检查项目缺失实验状态
+        missing_info = checkpoint_manager.check_missing_experiments(project_id)
+        print(f"📊 项目 {project_id} 状态: {missing_info['completed_experiments']}/{missing_info['expected_experiments']} ({missing_info['completion_rate']:.1f}%) - 缺失 {missing_info['missing_experiments']} 个")
         
         project_stats = run_project_experiments_with_checkpoint(project_id, data_file, all_config_files, drive_save_dir, checkpoint_manager, drive_saver)
         

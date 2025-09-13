@@ -80,6 +80,33 @@ class CheckpointManager:
         logger.info(f"{project_id} 待执行实验: {len(pending_configs)}/{len(all_configs)}")
         return pending_configs
     
+    def check_missing_experiments(self, project_id: str) -> Dict:
+        """检查缺失的实验组合"""
+        # 每个项目应该有340个实验
+        expected_experiments = 340
+        
+        # 获取当前已完成的实验数量
+        completed_configs = self.get_completed_experiments(project_id)
+        completed_count = len(completed_configs)
+        
+        # 计算缺失的实验数量
+        missing_count = expected_experiments - completed_count
+        
+        result = {
+            'project_id': project_id,
+            'expected_experiments': expected_experiments,
+            'completed_experiments': completed_count,
+            'missing_experiments': missing_count,
+            'completion_rate': completed_count / expected_experiments * 100 if expected_experiments > 0 else 0.0,
+            'is_complete': missing_count == 0
+        }
+        
+        logger.info(f"{project_id} 实验状态: {completed_count}/{expected_experiments} ({result['completion_rate']:.1f}%)")
+        if missing_count > 0:
+            logger.info(f"{project_id} 缺失实验: {missing_count} 个")
+        
+        return result
+    
     def get_project_progress(self, project_id: str) -> Dict:
         """获取Project的进度信息"""
         all_configs = self.get_project_configs(project_id)
@@ -151,6 +178,37 @@ class CheckpointManager:
         incomplete_projects = progress_df[progress_df['is_complete'] == False]['project_id'].tolist()
         logger.info(f"未完成Project: {len(incomplete_projects)} 个")
         return incomplete_projects
+    
+    def get_all_missing_experiments(self) -> pd.DataFrame:
+        """获取所有项目的缺失实验状态"""
+        missing_list = []
+        
+        # 扫描所有Project配置目录
+        for project_dir in self.config_base_dir.iterdir():
+            if project_dir.is_dir() and not project_dir.name.startswith('.'):
+                project_id = project_dir.name
+                missing_info = self.check_missing_experiments(project_id)
+                missing_list.append(missing_info)
+        
+        if missing_list:
+            df = pd.DataFrame(missing_list)
+            df = df.sort_values('project_id')
+            logger.info(f"📊 缺失实验统计: {len(df)} 个Project")
+            return df
+        else:
+            logger.info("📊 未找到任何Project配置")
+            return pd.DataFrame()
+    
+    def get_projects_with_missing_experiments(self) -> List[str]:
+        """获取有缺失实验的Project列表"""
+        missing_df = self.get_all_missing_experiments()
+        
+        if missing_df.empty:
+            return []
+        
+        projects_with_missing = missing_df[missing_df['missing_experiments'] > 0]['project_id'].tolist()
+        logger.info(f"有缺失实验的Project: {len(projects_with_missing)} 个")
+        return projects_with_missing
     
     def get_completed_projects(self) -> List[str]:
         """获取已完成的Project列表"""
