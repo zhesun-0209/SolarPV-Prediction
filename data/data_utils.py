@@ -104,6 +104,20 @@ def load_raw_data(path: str) -> pd.DataFrame:
 def preprocess_features(df: pd.DataFrame, config: dict):
     df_clean = df.dropna(subset=[TARGET_COL]).copy()
 
+    # 日期过滤：只使用2022-01-01之后的数据
+    start_date = config.get('start_date', '2022-01-01')
+    end_date = config.get('end_date', '2024-09-28')
+    
+    if start_date:
+        start_dt = pd.to_datetime(start_date)
+        df_clean = df_clean[df_clean['Datetime'] >= start_dt].copy()
+        print(f"📊 过滤后数据（从{start_date}开始）: {len(df_clean)}行")
+    
+    if end_date:
+        end_dt = pd.to_datetime(end_date)
+        df_clean = df_clean[df_clean['Datetime'] <= end_dt].copy()
+        print(f"📊 过滤后数据（到{end_date}结束）: {len(df_clean)}行")
+
     # 添加时间编码特征（根据开关决定）
     use_time_encoding = config.get('use_time_encoding', True)
     if use_time_encoding:
