@@ -135,7 +135,7 @@ def preprocess_features(df: pd.DataFrame, config: dict):
 
     # PV特征（历史发电量）
     if config.get('use_pv', False):
-        # 创建历史Capacity Factor特征（重命名避免与目标变量冲突）
+        # 创建历史Capacity Factor特征（过去24/72小时的发电量）
         df_clean['Capacity_Factor_hist'] = df_clean[TARGET_COL]
         hist_feats.append('Capacity_Factor_hist')
 

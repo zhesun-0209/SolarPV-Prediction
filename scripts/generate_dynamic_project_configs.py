@@ -274,10 +274,6 @@ def generate_project_configs(project_id):
                         if model == 'LSR' and complexity != 'low':
                             continue
                         
-                        # 线性回归不使用PV配置（因为不应该用Capacity Factor本身作为特征）
-                        if model == 'LSR' and input_cat == 'PV':
-                            continue
-                        
                         config_count += 1
                         
                         # 创建配置名称
