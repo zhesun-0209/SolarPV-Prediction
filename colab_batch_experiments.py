@@ -210,31 +210,47 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
                     r_square_match = re.search(r'r_square=([0-9.]+)', result_line)
                     
                     if mse_match and rmse_match and mae_match and r_square_match:
+                        # 从配置文件名中提取更多信息
+                        config_filename = os.path.basename(config_file)
+                        parts = config_filename.replace('.yaml', '').split('_')
+                        
+                        # 解析配置文件名: GRU_high_NWP_24h_TE.yaml
+                        model_name = parts[0] if len(parts) > 0 else config.get('model', 'Unknown')
+                        complexity = parts[1] if len(parts) > 1 else config.get('model_complexity', 'low')
+                        input_category = parts[2] if len(parts) > 2 else 'unknown'
+                        lookback_hours = parts[3].replace('h', '') if len(parts) > 3 else '24'
+                        time_encoding = parts[4] == 'TE' if len(parts) > 4 else config.get('use_time_encoding', False)
+                        
+                        # 根据input_category确定其他参数
+                        use_pv = input_category in ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW']
+                        use_hist_weather = input_category in ['PV_plus_HW']
+                        use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW', 'NWP', 'NWP_plus']
+                        
                         # 创建结果行
                         result_row = {
-                            'model': config.get('model', 'Unknown'),
-                            'use_pv': config.get('use_pv', False),
-                            'use_hist_weather': config.get('use_hist_weather', False),
-                            'use_forecast': config.get('use_forecast', False),
-                            'weather_category': config.get('weather_category', 'unknown'),
-                            'use_time_encoding': config.get('use_time_encoding', False),
+                            'model': model_name,
+                            'use_pv': use_pv,
+                            'use_hist_weather': use_hist_weather,
+                            'use_forecast': use_forecast,
+                            'weather_category': config.get('weather_category', 'all_weather'),
+                            'use_time_encoding': time_encoding,
                             'past_days': config.get('past_days', 1),
-                            'model_complexity': config.get('model_complexity', 'low'),
-                            'epochs': config.get('epochs', 15),
+                            'model_complexity': complexity,
+                            'epochs': config.get('epochs', 50 if complexity == 'high' else 15),
                             'batch_size': config.get('train_params', {}).get('batch_size', 32),
                             'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001),
-                            'train_time_sec': duration,
-                            'inference_time_sec': 0,
+                            'train_time_sec': round(duration, 4),
+                            'inference_time_sec': 0.0,
                             'param_count': 0,
                             'samples_count': 0,
                             'best_epoch': 0,
-                            'final_lr': 0,
+                            'final_lr': 0.0,
                             'mse': float(mse_match.group(1)),
                             'rmse': float(rmse_match.group(1)),
                             'mae': float(mae_match.group(1)),
-                            'nrmse': 0,
+                            'nrmse': 0.0,
                             'r_square': float(r_square_match.group(1)),
-                            'smape': 0,
+                            'smape': 0.0,
                             'gpu_memory_used': 0
                         }
                         
@@ -254,6 +270,10 @@ def run_project_experiments(project_id: str, all_config_files: list, data_dir: s
                         print(f"✅ 结果已硬编码保存到CSV文件")
                         print(f"📊 CSV文件当前行数: {len(df)}")
                         print(f"📊 最新实验: {result_row['model']} - {result_row['mse']:.4f}")
+                        print(f"🔍 解析的配置信息:")
+                        print(f"   模型: {result_row['model']}, 复杂度: {result_row['model_complexity']}")
+                        print(f"   输入类别: {input_category}, 时间编码: {result_row['use_time_encoding']}")
+                        print(f"   PV: {result_row['use_pv']}, 历史天气: {result_row['use_hist_weather']}, 预测天气: {result_row['use_forecast']}")
                     else:
                         print(f"❌ 无法解析实验结果: {result_line}")
                 else:
