@@ -162,7 +162,7 @@ def save_results(
         from eval.excel_utils import append_plant_excel_results
         excel_file = append_plant_excel_results(
             plant_id=config.get('plant_id', 'unknown'),
-            results=[result_data],
+            result=result_data,
             save_dir=save_dir
         )
     

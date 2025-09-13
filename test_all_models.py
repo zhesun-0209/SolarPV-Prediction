@@ -68,37 +68,72 @@ def create_test_config(model, model_type):
         'loss_type': 'mse'
     }
     
-    # 添加模型特定参数
+    # 添加模型特定参数（使用正确的结构）
     if model_type == 'ML':
         if model == 'Linear':
-            config['model_params'] = {}
+            config['model_params'] = {
+                'ml_low': {},
+                'ml_high': {}
+            }
         elif model == 'RF':
             config['model_params'] = {
-                'n_estimators': 10,
-                'max_depth': 3,
-                'random_state': 42
+                'ml_low': {
+                    'n_estimators': 10,
+                    'max_depth': 3,
+                    'random_state': 42
+                },
+                'ml_high': {
+                    'n_estimators': 20,
+                    'max_depth': 5,
+                    'random_state': 42
+                }
             }
         elif model == 'XGB':
             config['model_params'] = {
-                'n_estimators': 10,
-                'max_depth': 3,
-                'learning_rate': 0.1,
-                'verbosity': 0
+                'ml_low': {
+                    'n_estimators': 10,
+                    'max_depth': 3,
+                    'learning_rate': 0.1,
+                    'verbosity': 0
+                },
+                'ml_high': {
+                    'n_estimators': 20,
+                    'max_depth': 5,
+                    'learning_rate': 0.05,
+                    'verbosity': 0
+                }
             }
         elif model == 'LGBM':
             config['model_params'] = {
-                'n_estimators': 10,
-                'max_depth': 3,
-                'learning_rate': 0.1,
-                'random_state': 42
+                'ml_low': {
+                    'n_estimators': 10,
+                    'max_depth': 3,
+                    'learning_rate': 0.1,
+                    'random_state': 42
+                },
+                'ml_high': {
+                    'n_estimators': 20,
+                    'max_depth': 5,
+                    'learning_rate': 0.05,
+                    'random_state': 42
+                }
             }
     else:  # DL models
         config['model_params'] = {
-            'd_model': 32,
-            'num_heads': 2,
-            'num_layers': 2,
-            'hidden_dim': 16,
-            'dropout': 0.1
+            'low': {
+                'd_model': 32,
+                'num_heads': 2,
+                'num_layers': 2,
+                'hidden_dim': 16,
+                'dropout': 0.1
+            },
+            'high': {
+                'd_model': 64,
+                'num_heads': 4,
+                'num_layers': 4,
+                'hidden_dim': 32,
+                'dropout': 0.2
+            }
         }
     
     return config
@@ -106,14 +141,15 @@ def create_test_config(model, model_type):
 def test_single_model(model, config):
     """测试单个模型"""
     try:
-        # 创建测试数据
-        X_train = np.random.rand(50, 5)  # 减少数据量用于快速测试
-        Xf_train = np.random.rand(50, 3)
-        y_train = np.random.rand(50)
-        Xh_test = np.random.rand(10, 5)
-        Xf_test = np.random.rand(10, 3)
-        y_test = np.random.rand(10)
-        dates_test = [f"2024-01-01 {i:02d}:00:00" for i in range(10)]
+        # 创建测试数据（确保数据量足够）
+        future_hours = config.get('future_hours', 24)
+        X_train = np.random.rand(100, 5)
+        Xf_train = np.random.rand(100, 3)
+        y_train = np.random.rand(100, future_hours)  # 匹配future_hours
+        Xh_test = np.random.rand(30, 5)
+        Xf_test = np.random.rand(30, 3)
+        y_test = np.random.rand(30, future_hours)  # 匹配future_hours
+        dates_test = [f"2024-01-01 {i:02d}:00:00" for i in range(30)]
         
         # 根据模型类型选择训练函数
         if config['model'] in ['Linear', 'RF', 'XGB', 'LGBM']:
@@ -128,17 +164,21 @@ def test_single_model(model, config):
                 y_test=y_test,
                 dates_test=dates_test
             )
-        else:  # DL models
+        else:  # DL models - 使用正确的参数结构
             from train.train_dl import train_dl_model
+            
+            # 创建DL模型所需的数据结构
+            train_data = (X_train, Xf_train, y_train, np.zeros(100), None)
+            val_data = (X_train[:20], Xf_train[:20], y_train[:20], np.zeros(20), None)
+            test_data = (Xh_test, Xf_test, y_test, np.zeros(30), dates_test)
+            scalers = (None, None, None)
+            
             model_obj, metrics = train_dl_model(
                 config=config,
-                Xh_train=X_train,
-                Xf_train=Xf_train,
-                y_train=y_train,
-                Xh_test=Xh_test,
-                Xf_test=Xf_test,
-                y_test=y_test,
-                dates_test=dates_test
+                train_data=train_data,
+                val_data=val_data,
+                test_data=test_data,
+                scalers=scalers
             )
         
         # 检查关键指标
