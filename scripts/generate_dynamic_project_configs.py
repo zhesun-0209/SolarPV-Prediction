@@ -60,27 +60,27 @@ def create_feature_config(input_category, lookback_hours, use_time_encoding):
         config['use_pv'] = True
         config['use_hist_weather'] = False
         config['use_forecast'] = True
-        config['weather_category'] = 'forecast'
+        config['weather_category'] = 'all_weather'
     elif input_category == 'PV_plus_NWP_plus':
         config['use_pv'] = True
         config['use_hist_weather'] = False
         config['use_forecast'] = True
-        config['weather_category'] = 'forecast_ideal'
+        config['weather_category'] = 'all_weather'
     elif input_category == 'PV_plus_HW':
         config['use_pv'] = True
         config['use_hist_weather'] = True
         config['use_forecast'] = False
-        config['weather_category'] = 'historical'
+        config['weather_category'] = 'all_weather'
     elif input_category == 'NWP':
         config['use_pv'] = False
         config['use_hist_weather'] = False
         config['use_forecast'] = True
-        config['weather_category'] = 'forecast'
+        config['weather_category'] = 'all_weather'
     elif input_category == 'NWP_plus':
         config['use_pv'] = False
         config['use_hist_weather'] = False
         config['use_forecast'] = True
-        config['weather_category'] = 'forecast_ideal'
+        config['weather_category'] = 'all_weather'
     
     # 回看窗口配置
     config['past_hours'] = lookback_hours
@@ -105,6 +105,9 @@ def create_model_config(model, complexity):
         config['model_params'] = {
             'ml_low': {
                 'learning_rate': 0.001
+            },
+            'ml_high': {
+                'learning_rate': 0.001
             }
         }
     elif model in ['RF', 'XGB', 'LGBM']:
@@ -116,6 +119,11 @@ def create_model_config(model, complexity):
                     'n_estimators': 50,
                     'max_depth': 5,
                     'learning_rate': 0.1
+                },
+                'ml_high': {
+                    'n_estimators': 200,
+                    'max_depth': 12,
+                    'learning_rate': 0.01
                 }
             }
             config['train_params'].update({
@@ -125,6 +133,11 @@ def create_model_config(model, complexity):
             })
         else:  # high
             config['model_params'] = {
+                'ml_low': {
+                    'n_estimators': 50,
+                    'max_depth': 5,
+                    'learning_rate': 0.1
+                },
                 'ml_high': {
                     'n_estimators': 200,
                     'max_depth': 12,
@@ -147,6 +160,13 @@ def create_model_config(model, complexity):
                     'num_layers': 6,
                     'hidden_dim': 32,
                     'dropout': 0.1
+                },
+                'high': {
+                    'd_model': 256,
+                    'num_heads': 16,
+                    'num_layers': 18,
+                    'hidden_dim': 128,
+                    'dropout': 0.3
                 }
             }
             config['train_params'].update({
@@ -158,6 +178,13 @@ def create_model_config(model, complexity):
             })
         else:  # high
             config['model_params'] = {
+                'low': {
+                    'd_model': 64,
+                    'num_heads': 4,
+                    'num_layers': 6,
+                    'hidden_dim': 32,
+                    'dropout': 0.1
+                },
                 'high': {
                     'd_model': 256,
                     'num_heads': 16,
