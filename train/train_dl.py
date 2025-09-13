@@ -223,7 +223,9 @@ def train_dl_model(
         'mae': raw_mae,
         'nrmse': all_metrics['nrmse'],
         'r_square': all_metrics['r_square'],
+        'r2': all_metrics['r2'],  # 添加r2别名
         'smape': all_metrics['smape'],
+        'mape': all_metrics['mape'],  # 添加mape指标
         'best_epoch': best_epoch,
         'final_lr': final_lr,
         'gpu_memory_used': gpu_memory_used,
