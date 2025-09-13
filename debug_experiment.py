@@ -252,7 +252,7 @@ def test_model_training():
         
         # 测试配置
         config = {
-            'model': 'LSR',
+            'model': 'Linear',
             'model_params': {
                 'learning_rate': 0.001
             }
@@ -262,8 +262,27 @@ def test_model_training():
         print(f"   训练数据形状: X={X_train.shape}, y={y_train.shape}")
         print(f"   验证数据形状: X={X_val.shape}, y={y_val.shape}")
         
+        # 创建测试数据（添加缺失的参数）
+        Xf_train = np.random.rand(100, 3)
+        Xh_test = np.random.rand(20, 5)
+        Xf_test = np.random.rand(20, 3)
+        y_test = np.random.rand(20)
+        dates_test = [f"2024-01-01 {i:02d}:00:00" for i in range(20)]
+        
+        print(f"   完整训练数据形状: Xh={X_train.shape}, Xf={Xf_train.shape}, y={y_train.shape}")
+        print(f"   完整测试数据形状: Xh={Xh_test.shape}, Xf={Xf_test.shape}, y={y_test.shape}")
+        
         # 训练模型
-        model, metrics = train_ml_model(X_train, y_train, X_val, y_val, config)
+        model, metrics = train_ml_model(
+            config=config,
+            Xh_train=X_train,
+            Xf_train=Xf_train,
+            y_train=y_train,
+            Xh_test=Xh_test,
+            Xf_test=Xf_test,
+            y_test=y_test,
+            dates_test=dates_test
+        )
         
         print(f"✅ 模型训练成功")
         print(f"   模型类型: {type(model)}")
@@ -320,8 +339,10 @@ def test_result_saving():
         
         test_config = {
             'save_dir': str(test_save_dir),
-            'model': 'LSR',
-            'plot_days': 7
+            'model': 'Linear',
+            'plot_days': 7,
+            'past_hours': 24,
+            'future_hours': 24
         }
         
         print(f"📝 测试结果保存到: {test_save_dir}")

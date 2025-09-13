@@ -100,6 +100,7 @@ def create_model_config(model, complexity):
     config['train_params'] = {}
     
     if model == 'LSR':
+        config['model'] = 'Linear'  # LSR对应Linear模型
         config['model_complexity'] = 'baseline'
         config['epochs'] = 1
         config['model_params'] = {
