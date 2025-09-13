@@ -1,4 +1,5 @@
 total_configs: 340
+total_experiments: 34000  # 100 projects × 340 configs each
 experiment_design:
   input_categories: 6
   lookback_hours: 2
@@ -12,6 +13,7 @@ calculation:
   lsr_skip_72h: 2 × 1 × 2 × 1 × 1 = 4
   lsr_skip_high: 2 × 2 × 2 × 1 × 1 = 8
   actual_total: 384 - 32 - 4 - 8 = 340
+total_experiments_calculation: 100 projects × 340 configs = 34,000 experiments
 input_categories:
 - PV - 仅历史PV功率
 - PV+NWP - 历史PV + 目标日NWP
