@@ -178,17 +178,37 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                         config_filename = os.path.basename(config_file)
                         parts = config_filename.replace('.yaml', '').split('_')
                         
-                        # 解析配置文件名: GRU_high_NWP_24h_TE.yaml
+                        # 解析配置文件名: LGBM_low_NWP_72h_TE.yaml 或 RF_low_NWP_plus_24h_TE.yaml
                         model_name = parts[0] if len(parts) > 0 else config.get('model', 'Unknown')
                         complexity = parts[1] if len(parts) > 1 else config.get('model_complexity', 'low')
-                        input_category = parts[2] if len(parts) > 2 else 'unknown'
-                        lookback_hours = parts[3].replace('h', '') if len(parts) > 3 else '24'
-                        time_encoding = parts[4] == 'TE' if len(parts) > 4 else config.get('use_time_encoding', False)
+                        
+                        # 处理input_category（可能是NWP或NWP_plus）
+                        if len(parts) > 2:
+                            if parts[2] == 'NWP' and len(parts) > 3 and parts[3] == 'plus':
+                                input_category = 'NWP_plus'
+                                lookback_hours = parts[4].replace('h', '') if len(parts) > 4 else '24'
+                                time_encoding = parts[5] == 'TE' if len(parts) > 5 else config.get('use_time_encoding', False)
+                            else:
+                                input_category = parts[2]
+                                lookback_hours = parts[3].replace('h', '') if len(parts) > 3 else '24'
+                                time_encoding = parts[4] == 'TE' if len(parts) > 4 else config.get('use_time_encoding', False)
+                        else:
+                            input_category = 'unknown'
+                            lookback_hours = '24'
+                            time_encoding = config.get('use_time_encoding', False)
+                        
+                        # 调试信息
+                        print(f"🔍 配置文件名解析: {config_filename}")
+                        print(f"   解析结果: model={model_name}, complexity={complexity}, input_category={input_category}")
+                        print(f"   lookback_hours={lookback_hours}, time_encoding={time_encoding}")
                         
                         # 根据input_category确定其他参数
                         use_pv = input_category in ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW']
                         use_hist_weather = input_category in ['PV_plus_HW']
                         use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW', 'NWP', 'NWP_plus']
+                        
+                        # 计算past_days（基于lookback_hours）
+                        past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
                         
                         # 创建结果行
                         result_row = {
@@ -198,7 +218,7 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             'use_forecast': use_forecast,
                             'weather_category': config.get('weather_category', 'all_weather'),
                             'use_time_encoding': time_encoding,
-                            'past_days': config.get('past_days', 1),
+                            'past_days': past_days,
                             'model_complexity': complexity,
                             'epochs': config.get('epochs', 50 if complexity == 'high' else 15),
                             'batch_size': config.get('train_params', {}).get('batch_size', 32),
