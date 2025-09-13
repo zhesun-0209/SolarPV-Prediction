@@ -278,6 +278,10 @@ def generate_project_configs(project_id):
                         if model == 'LSR' and (input_cat == 'PV' or 'HW' in input_cat):
                             continue
                         
+                        # 线性回归不使用回望窗口（只能处理单点预测）
+                        if model == 'LSR' and lookback != 24:
+                            continue
+                        
                         config_count += 1
                         
                         # 创建配置名称
