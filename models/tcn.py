@@ -14,7 +14,10 @@ class TCNModel(nn.Module):
             layers = []
             in_ch = hist_dim
             for out_ch in channels:
-                layers.append(nn.Conv1d(in_ch, out_ch, kernel_size=kernel, padding=kernel // 2))
+                # 动态调整kernel_size，确保不超过输入长度
+                # 这里使用min(kernel, 3)来避免kernel_size过大的问题
+                actual_kernel = min(kernel, 3)
+                layers.append(nn.Conv1d(in_ch, out_ch, kernel_size=actual_kernel, padding=actual_kernel // 2))
                 layers.append(nn.ReLU())
                 in_ch = out_ch
             self.encoder = nn.Sequential(*layers)
@@ -38,8 +41,19 @@ class TCNModel(nn.Module):
         # (B, past_hours, hist_dim) → (B, hist_dim, past_hours)
         if self.encoder is not None and hist.shape[-1] > 0:
             x = hist.permute(0, 2, 1)
-            out = self.encoder(x)
-            last = out[:, :, -1]
+            
+            # 检查输入长度，如果太短则使用简单的线性层
+            if x.shape[-1] < 5:  # 如果序列长度小于5，使用线性层替代卷积
+                # 使用全局平均池化 + 线性层
+                x_pooled = x.mean(dim=-1)  # (B, hist_dim)
+                # 创建一个简单的线性层来替代卷积
+                if not hasattr(self, 'fallback_linear'):
+                    self.fallback_linear = nn.Linear(x.shape[1], self.encoder[0].out_channels).to(x.device)
+                out = self.fallback_linear(x_pooled).unsqueeze(-1)  # (B, out_channels, 1)
+                last = out[:, :, -1]
+            else:
+                out = self.encoder(x)
+                last = out[:, :, -1]
         else:
             last = None
 
