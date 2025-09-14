@@ -77,24 +77,21 @@ def create_project_csv(project_id, drive_path):
         print(f"📄 项目CSV文件已存在: {csv_file}")
         return True
 
-def get_completed_experiments(project_id, drive_path):
-    """获取已完成的实验"""
+def get_completed_experiments_count(project_id, drive_path):
+    """获取已完成的实验数量"""
     csv_file = os.path.join(drive_path, f"{project_id}.csv")
-    completed_experiments = set()
+    completed_count = 0
     
     if os.path.exists(csv_file):
         try:
             df = pd.read_csv(csv_file)
-            if 'config_name' in df.columns:
-                completed_experiments = set(df['config_name'].tolist())
-            else:
-                # 如果没有config_name列，使用行数判断
-                completed_experiments = {f"experiment_{i}" for i in range(len(df))}
-            print(f"📊 发现 {len(completed_experiments)} 个已完成实验")
+            completed_count = len(df)
+            print(f"📊 发现 {completed_count} 个已完成实验")
         except Exception as e:
             print(f"⚠️ 无法读取现有结果文件: {e}")
+            completed_count = 0
     
-    return completed_experiments
+    return completed_count
 
 def run_experiment(config_file, data_file, project_id):
     """运行单个实验"""
@@ -310,7 +307,7 @@ def main():
         project_configs = [cf for cf in config_files if f"/{project_id}/" in cf]
         
         # 检查已完成的实验
-        completed_experiments = get_completed_experiments(project_id, drive_path)
+        completed_count = get_completed_experiments_count(project_id, drive_path)
         
         print(f"📊 项目 {project_id}: 将运行 {len(project_configs)} 个实验")
         print(f"📁 结果保存到: {drive_path}")
@@ -319,9 +316,9 @@ def main():
         for exp_idx, config_file in enumerate(project_configs, 1):
             config_name = os.path.basename(config_file)
             
-            # 跳过已完成的实验
-            if config_name in completed_experiments:
-                print(f"⏭️ 跳过已完成实验: {config_name}")
+            # 跳过已完成的实验（使用行数判断）
+            if exp_idx <= completed_count:
+                print(f"⏭️ 跳过已完成实验: {config_name} ({exp_idx}/{completed_count})")
                 continue
                 
             print(f"\n🔄 进度: {exp_idx}/{len(project_configs)} - {config_name}")

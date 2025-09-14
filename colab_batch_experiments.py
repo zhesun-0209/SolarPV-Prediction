@@ -84,18 +84,15 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
         project_config_files = [f for f in all_config_files if "1140" in f]
     
     # 检查已完成的实验
-    completed_experiments = set()
+    completed_count = 0
     if os.path.exists(csv_file_path):
         try:
             df = pd.read_csv(csv_file_path)
-            if 'config_name' in df.columns:
-                completed_experiments = set(df['config_name'].tolist())
-            else:
-                # 如果没有config_name列，使用行数判断
-                completed_experiments = {f"experiment_{i}" for i in range(len(df))}
-            print(f"📊 发现 {len(completed_experiments)} 个已完成实验")
+            completed_count = len(df)
+            print(f"📊 发现 {completed_count} 个已完成实验")
         except Exception as e:
             print(f"⚠️ 无法读取现有结果文件: {e}")
+            completed_count = 0
     
     print(f"📊 项目 {project_id}: 将运行 {len(project_config_files)} 个实验")
     print(f"📁 结果保存到: {drive_save_dir}")
@@ -112,9 +109,9 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
     for i, config_file in enumerate(project_config_files, 1):
         config_name = os.path.basename(config_file)
         
-        # 跳过已完成的实验
-        if config_name in completed_experiments:
-            print(f"⏭️ 跳过已完成实验: {config_name}")
+        # 跳过已完成的实验（使用行数判断）
+        if i <= completed_count:
+            print(f"⏭️ 跳过已完成实验: {config_name} ({i}/{completed_count})")
             continue
             
         print(f"\n🔄 进度: {i}/{len(project_config_files)} - {config_name}")
