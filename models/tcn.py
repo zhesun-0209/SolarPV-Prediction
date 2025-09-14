@@ -46,11 +46,10 @@ class TCNModel(nn.Module):
             if x.shape[-1] < 5:  # 如果序列长度小于5，使用线性层替代卷积
                 # 使用全局平均池化 + 线性层
                 x_pooled = x.mean(dim=-1)  # (B, hist_dim)
-                # 创建一个简单的线性层来替代卷积
+                # 创建一个简单的线性层来替代卷积，输出维度要与channels[-1]匹配
                 if not hasattr(self, 'fallback_linear'):
-                    self.fallback_linear = nn.Linear(x.shape[1], self.encoder[0].out_channels).to(x.device)
-                out = self.fallback_linear(x_pooled).unsqueeze(-1)  # (B, out_channels, 1)
-                last = out[:, :, -1]
+                    self.fallback_linear = nn.Linear(x.shape[1], channels[-1]).to(x.device)
+                last = self.fallback_linear(x_pooled)  # (B, channels[-1])
             else:
                 out = self.encoder(x)
                 last = out[:, :, -1]
