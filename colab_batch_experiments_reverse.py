@@ -50,14 +50,14 @@ def get_config_files():
             project_path = os.path.join(config_dir, project_dir)
             if os.path.isdir(project_path):
                 for config_file in os.listdir(project_path):
-                    if config_file.endswith('.yaml'):
+                    if config_file.endswith('.yaml') and config_file != 'config_index.yaml':
                         all_config_files.append(os.path.join(project_path, config_file))
     
     return all_config_files
 
 def create_project_csv(project_id, drive_path):
     """为项目创建CSV文件"""
-    csv_file = os.path.join(drive_path, f"{project_id}.csv")
+    csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
     
     if not os.path.exists(csv_file):
         # 创建CSV文件头
@@ -79,7 +79,7 @@ def create_project_csv(project_id, drive_path):
 
 def get_completed_experiments_count(project_id, drive_path):
     """获取已完成的实验数量"""
-    csv_file = os.path.join(drive_path, f"{project_id}.csv")
+    csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
     completed_count = 0
     
     if os.path.exists(csv_file):
@@ -335,7 +335,7 @@ def main():
                 result_row = parse_experiment_output(stdout, config_file)
                 if result_row:
                     # 保存结果到CSV
-                    csv_file = os.path.join(drive_path, f"{project_id}.csv")
+                    csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
                     
                     # 读取现有CSV
                     if os.path.exists(csv_file):
