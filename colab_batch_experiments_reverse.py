@@ -77,6 +77,25 @@ def create_project_csv(project_id, drive_path):
         print(f"📄 项目CSV文件已存在: {csv_file}")
         return True
 
+def get_completed_experiments(project_id, drive_path):
+    """获取已完成的实验"""
+    csv_file = os.path.join(drive_path, f"{project_id}.csv")
+    completed_experiments = set()
+    
+    if os.path.exists(csv_file):
+        try:
+            df = pd.read_csv(csv_file)
+            if 'config_name' in df.columns:
+                completed_experiments = set(df['config_name'].tolist())
+            else:
+                # 如果没有config_name列，使用行数判断
+                completed_experiments = {f"experiment_{i}" for i in range(len(df))}
+            print(f"📊 发现 {len(completed_experiments)} 个已完成实验")
+        except Exception as e:
+            print(f"⚠️ 无法读取现有结果文件: {e}")
+    
+    return completed_experiments
+
 def run_experiment(config_file, data_file, project_id):
     """运行单个实验"""
     try:
@@ -245,6 +264,24 @@ def main():
     config_files = get_config_files()
     print(f"📊 找到 {len(config_files)} 个配置文件")
     
+    # 检查是否需要生成配置文件
+    if len(config_files) < len(data_files) * 100:
+        print("🔧 配置文件不足，正在生成...")
+        try:
+            result = subprocess.run([
+                'python', 'scripts/generate_dynamic_project_configs.py'
+            ], capture_output=True, text=True, timeout=300)
+            if result.returncode == 0:
+                print("✅ 配置文件生成完成")
+                config_files = get_config_files()
+                print(f"📊 现在有 {len(config_files)} 个配置文件")
+            else:
+                print(f"❌ 配置文件生成失败: {result.stderr}")
+                return
+        except Exception as e:
+            print(f"❌ 配置文件生成异常: {e}")
+            return
+    
     if not data_files or not config_files:
         print("❌ 没有找到数据文件或配置文件")
         return
@@ -271,12 +308,23 @@ def main():
         
         # 获取该项目的配置文件
         project_configs = [cf for cf in config_files if f"/{project_id}/" in cf]
+        
+        # 检查已完成的实验
+        completed_experiments = get_completed_experiments(project_id, drive_path)
+        
         print(f"📊 项目 {project_id}: 将运行 {len(project_configs)} 个实验")
         print(f"📁 结果保存到: {drive_path}")
         
         # 运行实验
         for exp_idx, config_file in enumerate(project_configs, 1):
-            print(f"\n🔄 进度: {exp_idx}/{len(project_configs)} - {os.path.basename(config_file)}")
+            config_name = os.path.basename(config_file)
+            
+            # 跳过已完成的实验
+            if config_name in completed_experiments:
+                print(f"⏭️ 跳过已完成实验: {config_name}")
+                continue
+                
+            print(f"\n🔄 进度: {exp_idx}/{len(project_configs)} - {config_name}")
             
             # 运行实验
             success, stdout, stderr = run_experiment(config_file, data_file, project_id)
