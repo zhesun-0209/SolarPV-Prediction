@@ -35,9 +35,9 @@ def save_plant_excel_results(
         config = result.get('config', {})
         metrics = result.get('metrics', {})
         
-        # 构建行数据 (26列)
+        # 构建行数据 (28列)
         row_data = {
-            # 实验配置列 (14列)
+            # 实验配置列 (16列)
             'model': config.get('model', ''),
             'use_pv': config.get('use_pv', True),
             'use_hist_weather': config.get('use_hist_weather', False),
@@ -49,6 +49,8 @@ def save_plant_excel_results(
             'epochs': config.get('epochs', 15),
             'batch_size': config.get('batch_size', 32),
             'learning_rate': config.get('learning_rate', 0.001),
+            'use_ideal_nwp': config.get('use_ideal_nwp', False),
+            'no_hist_power': config.get('no_hist_power', False),
             
             # 性能指标列 (6列)
             'train_time_sec': round(metrics.get('train_time_sec', 0), 4),
@@ -126,9 +128,9 @@ def append_plant_excel_results(
     config = result.get('config', {})
     metrics = result.get('metrics', {})
     
-    # 构建行数据 (26列，移除r2列)
+    # 构建行数据 (28列，移除r2列)
     row_data = {
-        # 实验配置列 (14列)
+        # 实验配置列 (16列)
         'model': config.get('model', ''),
         'use_pv': config.get('use_pv', True),
         'use_hist_weather': config.get('use_hist_weather', False),
@@ -140,6 +142,8 @@ def append_plant_excel_results(
         'epochs': config.get('epochs', 15),
         'batch_size': config.get('batch_size', 32),
         'learning_rate': config.get('learning_rate', 0.001),
+        'use_ideal_nwp': config.get('use_ideal_nwp', False),
+        'no_hist_power': config.get('no_hist_power', False),
         
         # 性能指标列 (6列)
         'train_time_sec': round(metrics.get('train_time_sec', 0), 4),

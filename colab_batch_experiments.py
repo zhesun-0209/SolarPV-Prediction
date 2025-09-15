@@ -67,7 +67,7 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
         empty_df = pd.DataFrame(columns=[
             'model', 'use_pv', 'use_hist_weather', 'use_forecast', 'weather_category',
             'use_time_encoding', 'past_days', 'model_complexity', 'epochs', 'batch_size',
-            'learning_rate', 'train_time_sec', 'inference_time_sec', 'param_count',
+            'learning_rate', 'use_ideal_nwp', 'no_hist_power', 'train_time_sec', 'inference_time_sec', 'param_count',
             'samples_count', 'best_epoch', 'final_lr', 'mse', 'rmse', 'mae', 'nrmse',
             'r_square', 'smape', 'gpu_memory_used'
         ])
@@ -307,6 +307,8 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             'epochs': config.get('epochs', 50 if complexity == 'high' else 15) if is_dl_model else 0,
                             'batch_size': config.get('train_params', {}).get('batch_size', 32) if is_dl_model else 0,
                             'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if has_learning_rate else 0.0,
+                            'use_ideal_nwp': config.get('use_ideal_nwp', False),
+                            'no_hist_power': config.get('no_hist_power', False),
                             'train_time_sec': round(duration, 4),
                             'inference_time_sec': inference_time,
                             'param_count': param_count,
