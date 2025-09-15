@@ -109,23 +109,25 @@ def run_experiment(config_file, data_file, project_id):
         with open(temp_config, 'w', encoding='utf-8') as f:
             yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
         
-        # 运行实验
+        # 运行实验并记录时间
         cmd = ['python', 'main.py', '--config', temp_config]
+        start_time = time.time()
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        duration = time.time() - start_time
         
         # 清理临时文件
         if os.path.exists(temp_config):
             os.remove(temp_config)
         
         if result.returncode == 0:
-            return True, result.stdout, result.stderr
+            return True, result.stdout, result.stderr, duration
         else:
-            return False, result.stdout, result.stderr
+            return False, result.stdout, result.stderr, duration
             
     except Exception as e:
-        return False, "", str(e)
+        return False, "", str(e), 0.0
 
-def parse_experiment_output(output, config_file):
+def parse_experiment_output(output, config_file, duration):
     """解析实验输出，提取结果"""
     try:
         # 提取基本指标
@@ -134,41 +136,61 @@ def parse_experiment_output(output, config_file):
         mae_match = re.search(r'mae=([0-9.]+)', output)
         r_square_match = re.search(r'r_square=([0-9.]+)', output)
         
-        # 提取训练时间
-        train_time_match = re.search(r'训练用时: ([0-9.]+)秒', output)
-        train_time = float(train_time_match.group(1)) if train_time_match else 0.0
+        # 初始化额外字段
+        inference_time = 0.0
+        param_count = 0
+        samples_count = 0
+        best_epoch = 0
+        final_lr = 0.0
+        nrmse = 0.0
+        smape = 0.0
+        gpu_memory_used = 0
         
-        # 提取推理时间
-        inference_time_match = re.search(r'推理用时: ([0-9.]+)秒', output)
-        inference_time = float(inference_time_match.group(1)) if inference_time_match else 0.0
+        # 调试：显示所有输出行
+        print("🔍 调试：检查实验输出中的METRICS行")
+        for line in output.split('\n'):
+            if "[METRICS]" in line:
+                print(f"   找到METRICS行: {line}")
         
-        # 提取参数数量
-        param_count_match = re.search(r'参数数量: (\d+)', output)
-        param_count = int(param_count_match.group(1)) if param_count_match else 0
-        
-        # 提取样本数量
-        samples_count_match = re.search(r'样本数量: (\d+)', output)
-        samples_count = int(samples_count_match.group(1)) if samples_count_match else 0
-        
-        # 提取最佳轮次
-        best_epoch_match = re.search(r'最佳轮次: (\d+)', output)
-        best_epoch = int(best_epoch_match.group(1)) if best_epoch_match else 0
-        
-        # 提取最终学习率
-        final_lr_match = re.search(r'最终学习率: ([0-9.e-]+)', output)
-        final_lr = float(final_lr_match.group(1)) if final_lr_match else 0.0
-        
-        # 提取NRMSE
-        nrmse_match = re.search(r'NRMSE: ([0-9.]+)', output)
-        nrmse = float(nrmse_match.group(1)) if nrmse_match else 0.0
-        
-        # 提取SMAPE
-        smape_match = re.search(r'SMAPE: ([0-9.]+)', output)
-        smape = float(smape_match.group(1)) if smape_match else 0.0
-        
-        # 提取GPU内存使用
-        gpu_memory_match = re.search(r'GPU内存: ([0-9.]+)MB', output)
-        gpu_memory_used = float(gpu_memory_match.group(1)) if gpu_memory_match else 0.0
+        # 使用METRICS标签提取额外信息（与colab_batch_experiments.py保持一致）
+        for line in output.split('\n'):
+            if "[METRICS]" in line:
+                # 使用正则表达式提取所有键值对
+                metrics_in_line = re.findall(r'(\w+)=([0-9.-]+)', line)
+                for key, value_str in metrics_in_line:
+                    try:
+                        if key == 'inference_time':
+                            inference_time = float(value_str)
+                            print(f"🔍 调试：提取inference_time={inference_time}")
+                        elif key == 'param_count':
+                            param_count = int(float(value_str))
+                            print(f"🔍 调试：提取param_count={param_count}")
+                        elif key == 'samples_count':
+                            samples_count = int(float(value_str))
+                            print(f"🔍 调试：提取samples_count={samples_count}")
+                        elif key == 'best_epoch':
+                            if value_str.lower() == 'nan':
+                                best_epoch = 0
+                            else:
+                                best_epoch = int(float(value_str))
+                            print(f"🔍 调试：提取best_epoch={best_epoch}")
+                        elif key == 'final_lr':
+                            if value_str.lower() == 'nan':
+                                final_lr = 0.0
+                            else:
+                                final_lr = float(value_str)
+                            print(f"🔍 调试：提取final_lr={final_lr}")
+                        elif key == 'nrmse':
+                            nrmse = float(value_str)
+                            print(f"🔍 调试：提取nrmse={nrmse}")
+                        elif key == 'smape':
+                            smape = float(value_str)
+                            print(f"🔍 调试：提取smape={smape}")
+                        elif key == 'gpu_memory_used':
+                            gpu_memory_used = int(float(value_str))
+                            print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
+                    except Exception as e:
+                        print(f"🔍 调试：{key}提取失败: {e}")
         
         # 从配置文件名解析参数
         config_filename = os.path.basename(config_file)
@@ -217,7 +239,7 @@ def parse_experiment_output(output, config_file):
             'epochs': 50 if complexity == 'high' else 15 if is_dl_model else 0,
             'batch_size': 32 if is_dl_model else 0,
             'learning_rate': 0.001 if has_learning_rate else 0.0,
-            'train_time_sec': train_time,
+            'train_time_sec': round(duration, 4),  # 使用传入的duration参数
             'inference_time_sec': inference_time,
             'param_count': param_count,
             'samples_count': samples_count,
@@ -324,15 +346,15 @@ def main():
             print(f"\n🔄 进度: {exp_idx}/{len(project_configs)} - {config_name}")
             
             # 运行实验
-            success, stdout, stderr = run_experiment(config_file, data_file, project_id)
+            success, stdout, stderr, duration = run_experiment(config_file, data_file, project_id)
             total_experiments += 1
             
             if success:
-                print(f"✅ 实验成功!")
+                print(f"✅ 实验成功! 用时: {duration:.1f}秒")
                 successful_experiments += 1
                 
                 # 解析结果
-                result_row = parse_experiment_output(stdout, config_file)
+                result_row = parse_experiment_output(stdout, config_file, duration)
                 if result_row:
                     # 保存结果到CSV
                     csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
@@ -350,6 +372,16 @@ def main():
                     # 保存CSV
                     df.to_csv(csv_file, index=False)
                     print(f"💾 结果已保存到: {csv_file}")
+                    print(f"📊 CSV文件当前行数: {len(df)}")
+                    print(f"📊 最新实验: {result_row['model']} - {result_row['mse']:.4f}")
+                    print(f"🔍 解析的配置信息:")
+                    print(f"   模型: {result_row['model']}, 复杂度: {result_row['model_complexity']}")
+                    print(f"   输入类别: {input_category}, 时间编码: {result_row['use_time_encoding']}")
+                    print(f"   PV: {result_row['use_pv']}, 历史天气: {result_row['use_hist_weather']}, 预测天气: {result_row['use_forecast']}")
+                    print(f"🔍 提取的额外字段:")
+                    print(f"   推理时间: {result_row['inference_time_sec']}s, 参数数量: {result_row['param_count']}, 样本数量: {result_row['samples_count']}")
+                    print(f"   最佳轮次: {result_row['best_epoch']}, 最终学习率: {result_row['final_lr']}")
+                    print(f"   NRMSE: {result_row['nrmse']}, SMAPE: {result_row['smape']}, GPU内存: {result_row['gpu_memory_used']}MB")
                 else:
                     print("⚠️ 无法解析实验结果")
             else:
