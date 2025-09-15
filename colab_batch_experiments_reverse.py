@@ -120,12 +120,12 @@ def run_experiment(config_file, data_file, project_id):
             os.remove(temp_config)
         
         if result.returncode == 0:
-            return True, result.stdout, result.stderr, duration
+            return True, result.stdout, result.stderr, duration, config
         else:
-            return False, result.stdout, result.stderr, duration
+            return False, result.stdout, result.stderr, duration, config
             
     except Exception as e:
-        return False, "", str(e), 0.0
+        return False, "", str(e), 0.0, {}
 
 def parse_experiment_output(output, config_file, duration, config):
     """解析实验输出，提取结果"""
@@ -348,7 +348,7 @@ def main():
             print(f"\n🔄 进度: {exp_idx}/{len(project_configs)} - {config_name}")
             
             # 运行实验
-            success, stdout, stderr, duration = run_experiment(config_file, data_file, project_id)
+            success, stdout, stderr, duration, config = run_experiment(config_file, data_file, project_id)
             total_experiments += 1
             
             if success:
