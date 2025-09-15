@@ -376,7 +376,7 @@ def main():
                     print(f"📊 最新实验: {result_row['model']} - {result_row['mse']:.4f}")
                     print(f"🔍 解析的配置信息:")
                     print(f"   模型: {result_row['model']}, 复杂度: {result_row['model_complexity']}")
-                    print(f"   输入类别: {input_category}, 时间编码: {result_row['use_time_encoding']}")
+                    print(f"   时间编码: {result_row['use_time_encoding']}")
                     print(f"   PV: {result_row['use_pv']}, 历史天气: {result_row['use_hist_weather']}, 预测天气: {result_row['use_forecast']}")
                     print(f"🔍 提取的额外字段:")
                     print(f"   推理时间: {result_row['inference_time_sec']}s, 参数数量: {result_row['param_count']}, 样本数量: {result_row['samples_count']}")
