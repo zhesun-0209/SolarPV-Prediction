@@ -428,11 +428,11 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
         print(f"   best_epoch: {result_row['best_epoch']}, final_lr: {result_row['final_lr']}")
         print(f"   smape: {result_row['smape']}, gpu_memory_used: {result_row['gpu_memory_used']}")
         print(f"   是否为DL模型: {is_dl_model}")
-                    else:
-                        print(f"❌ 无法解析实验结果: {result_line}")
-                else:
-                    print(f"❌ 未找到实验结果行")
-            else:
+        else:
+            print(f"❌ 无法解析实验结果: {result_line}")
+        else:
+            print(f"❌ 未找到实验结果行")
+        else:
                 stats['failed'] += 1
                 error_msg = f"返回码: {result.returncode}, 错误: {result.stderr[-200:]}"
                 if "[ERROR]" in result.stdout:
