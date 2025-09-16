@@ -23,7 +23,7 @@ past_hours: 24
 plot_days: 7
 save_dir: temp_results/1140/TCN_high_PV_24h_TE
 save_options:
-  save_excel_results: true
+  save_excel_results: false
   save_model: false
   save_predictions: false
   save_summary: false

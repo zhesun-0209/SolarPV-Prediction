@@ -100,8 +100,20 @@ def generate_project_configs(project_id):
     
     for model in models:
         for complexity in complexities:
+            # 跳过LSR的复杂度设置
+            if model == 'LSR' and complexity != 'low':
+                continue
+            
             for input_category in input_categories:
+                # 线性回归只使用预测天气配置（NWP, NWP_plus）
+                if model == 'LSR' and input_category not in ['NWP', 'NWP_plus']:
+                    continue
+                
                 for lookback_hour in lookback_hours:
+                    # 线性回归不使用回望窗口（只能处理单点预测）
+                    if model == 'LSR' and lookback_hour != 24:
+                        continue
+                    
                     for time_encoding in time_encodings:
                         # 创建基础配置
                         config = create_model_config(model, complexity)
@@ -120,9 +132,10 @@ def generate_project_configs(project_id):
                             'plot_days': 7,
                             'use_pv': input_category in ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW'],
                             'use_hist_weather': input_category in ['PV_plus_HW'],
-                            'use_forecast': input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW', 'NWP', 'NWP_plus'],
+                            'use_forecast': input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'NWP', 'NWP_plus'],
+                            'use_ideal_nwp': input_category in ['PV_plus_NWP_plus', 'NWP_plus'],
                             'use_time_encoding': time_encoding,
-                            'weather_category': 'all_weather',
+                            'weather_category': 'none' if input_category == 'PV' else 'all_weather',
                             'save_options': {
                                 'save_excel_results': True,
                                 'save_model': False,

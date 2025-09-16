@@ -22,7 +22,7 @@ past_hours: 72
 plot_days: 7
 save_dir: temp_results/1140/LSTM_high_NWP_plus_72h_noTE
 save_options:
-  save_excel_results: true
+  save_excel_results: false
   save_model: false
   save_predictions: false
   save_summary: false
