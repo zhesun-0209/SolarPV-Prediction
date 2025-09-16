@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 生成所有模型对比图 - 修复版本
-为171、172、186项目生成21张图片（每个项目7个模型）
+为171、172、186项目生成3张图片（每个项目7个模型，7天预测）
 """
 
 import os
@@ -162,15 +162,15 @@ def plot_single_model(project_id, model_name, y_true, y_pred):
     # 创建图形
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
     
-    # 取前72小时的数据（3天）
-    n_samples = min(72, len(y_true))
+    # 取前168小时的数据（7天）
+    n_samples = min(168, len(y_true))
     y_true_plot = y_true[:n_samples].flatten()  # 数据已经是百分比形式
     y_pred_plot = y_pred[:n_samples].flatten()  # 数据已经是百分比形式
     
-    # 确保只取前72个时间步
-    if len(y_true_plot) > 72:
-        y_true_plot = y_true_plot[:72]
-        y_pred_plot = y_pred_plot[:72]
+    # 确保只取前168个时间步
+    if len(y_true_plot) > 168:
+        y_true_plot = y_true_plot[:168]
+        y_pred_plot = y_pred_plot[:168]
     
     # 绘制
     timesteps = range(len(y_true_plot))
@@ -178,7 +178,7 @@ def plot_single_model(project_id, model_name, y_true, y_pred):
     ax.plot(timesteps, y_true_plot, 'gray', linewidth=3, label='Ground Truth', alpha=0.8)
     ax.plot(timesteps, y_pred_plot, 'red', linewidth=3, label=f'{model_name}', alpha=0.8)
     
-    ax.set_title(f'Project {project_id}: {model_name} Forecasting Results', fontweight='bold')
+    ax.set_title(f'Project {project_id}: {model_name} Forecasting Results (7 days)', fontweight='bold')
     ax.set_xlabel('Timestep')
     ax.set_ylabel('Capacity Factor (%)')
     ax.legend()
@@ -200,7 +200,7 @@ def plot_single_model(project_id, model_name, y_true, y_pred):
 
 def main():
     """主函数"""
-    print("🚀 生成所有模型对比图...")
+    print("🚀 生成所有模型对比图（3张图片，每张显示1个厂的7个模型，7天预测）...")
     
     # 要绘制的项目和模型
     projects = [171, 172, 186]
