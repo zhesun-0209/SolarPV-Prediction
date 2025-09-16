@@ -212,6 +212,14 @@ def plot_project_models(project_id, results):
         print(f"📊 {model_name} - Ground Truth范围: {y_true_plot.min():.2f} - {y_true_plot.max():.2f}")
         print(f"📊 {model_name} - 预测值范围: {y_pred_plot.min():.2f} - {y_pred_plot.max():.2f}")
         
+        # 检查数据是否像electricity generated而不是capacity factor
+        if y_true_plot.max() > 100:
+            print(f"⚠️ {model_name} - Ground Truth最大值超过100%: {y_true_plot.max():.2f}%")
+            print(f"   这可能不是Capacity Factor，而是Electricity Generated!")
+        if y_pred_plot.max() > 100:
+            print(f"⚠️ {model_name} - 预测值最大值超过100%: {y_pred_plot.max():.2f}%")
+            print(f"   这可能不是Capacity Factor，而是Electricity Generated!")
+        
         # 检查是否有值超出150
         if y_true_plot.max() > 150:
             print(f"⚠️ {model_name} - Ground Truth有值超出150: {y_true_plot.max():.2f}")
