@@ -252,10 +252,37 @@ def parse_experiment_output(output, config_file, duration, config):
         
         # 解析输入类别和时间编码
         if len(parts) > 2:
-            if parts[2] == 'NWP' and len(parts) > 3 and parts[3] == 'plus':
+            # 处理包含下划线的输入类别名称
+            if parts[2] == 'PV' and len(parts) > 3:
+                if parts[3] == 'plus' and len(parts) > 4:
+                    if parts[4] == 'NWP' and len(parts) > 5 and parts[5] == 'plus':
+                        input_category = 'PV_plus_NWP_plus'
+                        lookback_hours = parts[6].replace('h', '') if len(parts) > 6 else '24'
+                        time_encoding = parts[7] == 'TE' if len(parts) > 7 else False
+                    elif parts[4] == 'NWP':
+                        input_category = 'PV_plus_NWP'
+                        lookback_hours = parts[5].replace('h', '') if len(parts) > 5 else '24'
+                        time_encoding = parts[6] == 'TE' if len(parts) > 6 else False
+                    elif parts[4] == 'HW':
+                        input_category = 'PV_plus_HW'
+                        lookback_hours = parts[5].replace('h', '') if len(parts) > 5 else '24'
+                        time_encoding = parts[6] == 'TE' if len(parts) > 6 else False
+                    else:
+                        input_category = 'PV'
+                        lookback_hours = parts[3].replace('h', '') if len(parts) > 3 else '24'
+                        time_encoding = parts[4] == 'TE' if len(parts) > 4 else False
+                else:
+                    input_category = 'PV'
+                    lookback_hours = parts[3].replace('h', '') if len(parts) > 3 else '24'
+                    time_encoding = parts[4] == 'TE' if len(parts) > 4 else False
+            elif parts[2] == 'NWP' and len(parts) > 3 and parts[3] == 'plus':
                 input_category = 'NWP_plus'
                 lookback_hours = parts[4].replace('h', '') if len(parts) > 4 else '24'
                 time_encoding = parts[5] == 'TE' if len(parts) > 5 else False
+            elif parts[2] == 'NWP':
+                input_category = 'NWP'
+                lookback_hours = parts[3].replace('h', '') if len(parts) > 3 else '24'
+                time_encoding = parts[4] == 'TE' if len(parts) > 4 else False
             else:
                 input_category = parts[2]
                 lookback_hours = parts[3].replace('h', '') if len(parts) > 3 else '24'
