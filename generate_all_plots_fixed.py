@@ -133,11 +133,14 @@ def train_and_predict_single_model(df, project_id, model_name):
             
             # 训练模型
             if model_name == 'RF':
-                model = train_rf(X_tr, y_tr, config['model_params']['low'])
+                # RF模型不使用复杂度参数，使用默认参数
+                model = train_rf(X_tr, y_tr, {})
             elif model_name == 'XGB':
-                model = train_xgb(X_tr, y_tr, config['model_params']['low'])
+                # XGB模型不使用复杂度参数，使用默认参数
+                model = train_xgb(X_tr, y_tr, {})
             elif model_name == 'LGBM':
-                model = train_lgbm(X_tr, y_tr, config['model_params']['low'])
+                # LGBM模型不使用复杂度参数，使用默认参数
+                model = train_lgbm(X_tr, y_tr, {})
             
             # 预测
             y_pred = model.predict(X_te)
