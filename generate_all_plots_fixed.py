@@ -160,11 +160,8 @@ def train_and_predict_single_model(df, project_id, model_name):
         return None, None, None
 
 def plot_project_models(project_id, results):
-    """绘制单个项目的所有模型对比"""
+    """绘制单个项目的所有模型对比（子图形式）"""
     print(f"🎨 绘制项目 {project_id} 的所有模型对比...")
-    
-    # 创建图形
-    fig, ax = plt.subplots(1, 1, figsize=(16, 10))
     
     # 模型名称映射
     model_names = {
@@ -177,27 +174,29 @@ def plot_project_models(project_id, results):
         'LGBM': 'LightGBM'
     }
     
-    # 颜色列表
-    colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink']
+    # 创建子图：2行4列
+    fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+    axes = axes.flatten()
     
-    # 绘制Ground Truth（只画一次）
+    # 获取Ground Truth数据（从第一个模型）
     if results:
         first_model = list(results.keys())[0]
-        y_true, _, _ = results[first_model]
+        y_true_ref, _, _ = results[first_model]
         
         # 取前72小时的数据
-        n_samples = min(72, len(y_true))
-        y_true_plot = y_true[:n_samples].flatten() * 100  # 转换为百分数
+        n_samples = min(72, len(y_true_ref))
+        y_true_plot = y_true_ref[:n_samples].flatten() * 100  # 转换为百分数
         
         # 确保只取前72个时间步
         if len(y_true_plot) > 72:
             y_true_plot = y_true_plot[:72]
         
         timesteps = range(len(y_true_plot))
-        ax.plot(timesteps, y_true_plot, 'gray', linewidth=3, label='Ground Truth', alpha=0.8)
     
-    # 绘制每个模型的预测结果
+    # 绘制每个模型的子图
     for i, (model_name, (y_true, y_pred, _)) in enumerate(results.items()):
+        ax = axes[i]
+        
         # 取前72小时的数据
         n_samples = min(72, len(y_true))
         y_pred_plot = y_pred[:n_samples].flatten() * 100  # 转换为百分数
@@ -206,19 +205,23 @@ def plot_project_models(project_id, results):
         if len(y_pred_plot) > 72:
             y_pred_plot = y_pred_plot[:72]
         
-        timesteps = range(len(y_pred_plot))
-        color = colors[i % len(colors)]
-        ax.plot(timesteps, y_pred_plot, color, linewidth=2, 
-                label=f'{model_names[model_name]}', alpha=0.8)
+        # 绘制Ground Truth和预测结果
+        ax.plot(timesteps, y_true_plot, 'gray', linewidth=2, label='Ground Truth', alpha=0.8)
+        ax.plot(timesteps, y_pred_plot, 'red', linewidth=2, label=f'{model_names[model_name]}', alpha=0.8)
+        
+        ax.set_title(f'{model_names[model_name]}', fontweight='bold')
+        ax.set_xlabel('Timestep')
+        ax.set_ylabel('Capacity Factor (%)')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        ax.set_ylim(0, 150)
     
-    ax.set_title(f'Project {project_id}: Day-ahead Forecasting Results (72h, noTE, low, PV+NWP+)', 
-                 fontweight='bold')
-    ax.set_xlabel('Timestep')
-    ax.set_ylabel('Capacity Factor (%)')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.set_ylim(0, 150)  # 设置Y轴范围为0-150
+    # 隐藏多余的子图
+    for i in range(len(results), len(axes)):
+        axes[i].set_visible(False)
     
+    plt.suptitle(f'Project {project_id}: Day-ahead Forecasting Results (72h, noTE, low, PV+NWP+)', 
+                 fontsize=16, fontweight='bold', y=0.98)
     plt.tight_layout()
     
     # 创建输出目录
@@ -272,8 +275,11 @@ def main():
         
         # 绘制该项目的所有模型对比图
         if project_results:
+            print(f"📊 项目 {project_id} 成功训练的模型: {list(project_results.keys())}")
             plot_project_models(project_id, project_results)
             total_plots += 1
+        else:
+            print(f"❌ 项目 {project_id} 没有成功训练的模型")
     
     print(f"\n✅ 所有图片生成完成！")
     print(f"📊 总共生成了 {total_plots} 张图片")
