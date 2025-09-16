@@ -106,8 +106,10 @@ def train_and_predict_single_model(df, project_id, model_name):
             # 预测
             model.eval()
             with torch.no_grad():
-                Xh_tensor = torch.FloatTensor(Xh_te)
-                Xf_tensor = torch.FloatTensor(Xf_te) if Xf_te is not None else None
+                # 确保数据在正确的设备上
+                device = next(model.parameters()).device
+                Xh_tensor = torch.FloatTensor(Xh_te).to(device)
+                Xf_tensor = torch.FloatTensor(Xf_te).to(device) if Xf_te is not None else None
                 
                 if Xf_tensor is not None:
                     y_pred = model(Xh_tensor, Xf_tensor)
