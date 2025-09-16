@@ -385,11 +385,11 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                             'samples_count': samples_count,
                             'best_epoch': best_epoch if is_dl_model else 0,
                             'final_lr': final_lr if is_dl_model else 0.0,
-                            'mse': float(mse_match.group(1)),
-                            'rmse': float(rmse_match.group(1)),
-                            'mae': float(mae_match.group(1)),
+                            'mse': float(mse_match.group(1)) if mse_match else 0.0,
+                            'rmse': float(rmse_match.group(1)) if rmse_match else 0.0,
+                            'mae': float(mae_match.group(1)) if mae_match else 0.0,
                             'nrmse': nrmse,
-                            'r_square': float(r_square_match.group(1)),
+                            'r_square': float(r_square_match.group(1)) if r_square_match else 0.0,
                             'smape': smape,
                             'gpu_memory_used': gpu_memory_used
                         }
