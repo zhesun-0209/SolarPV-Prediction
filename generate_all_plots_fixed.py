@@ -187,7 +187,7 @@ def plot_project_models(project_id, results):
         
         # 取前72小时的数据
         n_samples = min(72, len(y_true))
-        y_true_plot = y_true[:n_samples].flatten()
+        y_true_plot = y_true[:n_samples].flatten() * 100  # 转换为百分数
         
         # 确保只取前72个时间步
         if len(y_true_plot) > 72:
@@ -200,7 +200,7 @@ def plot_project_models(project_id, results):
     for i, (model_name, (y_true, y_pred, _)) in enumerate(results.items()):
         # 取前72小时的数据
         n_samples = min(72, len(y_true))
-        y_pred_plot = y_pred[:n_samples].flatten()
+        y_pred_plot = y_pred[:n_samples].flatten() * 100  # 转换为百分数
         
         # 确保只取前72个时间步
         if len(y_pred_plot) > 72:
@@ -214,10 +214,10 @@ def plot_project_models(project_id, results):
     ax.set_title(f'Project {project_id}: Day-ahead Forecasting Results (72h, noTE, low, PV+NWP+)', 
                  fontweight='bold')
     ax.set_xlabel('Timestep')
-    ax.set_ylabel('Capacity Factor')
+    ax.set_ylabel('Capacity Factor (%)')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    ax.set_ylim(1.0, 1.5)  # 设置Y轴范围为1-1.5
+    ax.set_ylim(0, 150)  # 设置Y轴范围为0-150
     
     plt.tight_layout()
     
