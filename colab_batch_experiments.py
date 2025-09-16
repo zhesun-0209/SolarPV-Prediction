@@ -46,10 +46,10 @@ def get_config_files():
     all_config_files = []
     
     if os.path.exists(config_dir):
-        for project_dir in os.listdir(config_dir):
+        for project_dir in sorted(os.listdir(config_dir)):
             project_path = os.path.join(config_dir, project_dir)
             if os.path.isdir(project_path):
-                for config_file in os.listdir(project_path):
+                for config_file in sorted(os.listdir(project_path)):
                     if config_file.endswith('.yaml') and config_file != 'config_index.yaml':
                         all_config_files.append(os.path.join(project_path, config_file))
     
@@ -411,8 +411,8 @@ def main():
             print(f"❌ 无法为项目 {project_id} 创建CSV文件")
             continue
         
-        # 获取该项目的配置文件
-        project_configs = [cf for cf in config_files if f"/{project_id}/" in cf]
+        # 获取该项目的配置文件（按文件名排序确保正序）
+        project_configs = sorted([cf for cf in config_files if f"/{project_id}/" in cf])
         
         # 检查已完成的实验
         completed_count = get_completed_experiments_count(project_id, drive_path)
