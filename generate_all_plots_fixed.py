@@ -159,35 +159,65 @@ def train_and_predict_single_model(df, project_id, model_name):
         traceback.print_exc()
         return None, None, None
 
-def plot_single_model(project_id, model_name, y_true, y_pred):
-    """绘制单个模型的预测结果"""
-    print(f"🎨 绘制 {model_name} 模型...")
+def plot_project_models(project_id, results):
+    """绘制单个项目的所有模型对比"""
+    print(f"🎨 绘制项目 {project_id} 的所有模型对比...")
     
     # 创建图形
-    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    fig, ax = plt.subplots(1, 1, figsize=(16, 10))
     
-    # 取前72小时的数据（3天）
-    n_samples = min(72, len(y_true))
-    y_true_plot = y_true[:n_samples].flatten() * 100  # 转换为百分数
-    y_pred_plot = y_pred[:n_samples].flatten() * 100  # 转换为百分数
+    # 模型名称映射
+    model_names = {
+        'LSTM': 'LSTM',
+        'GRU': 'GRU', 
+        'TCN': 'TCN',
+        'Transformer': 'Transformer',
+        'RF': 'Random Forest',
+        'XGB': 'XGBoost',
+        'LGBM': 'LightGBM'
+    }
     
-    # 确保只取前72个时间步
-    if len(y_true_plot) > 72:
-        y_true_plot = y_true_plot[:72]
-        y_pred_plot = y_pred_plot[:72]
+    # 颜色列表
+    colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink']
     
-    # 绘制
-    timesteps = range(len(y_true_plot))
+    # 绘制Ground Truth（只画一次）
+    if results:
+        first_model = list(results.keys())[0]
+        y_true, _, _ = results[first_model]
+        
+        # 取前72小时的数据
+        n_samples = min(72, len(y_true))
+        y_true_plot = y_true[:n_samples].flatten()
+        
+        # 确保只取前72个时间步
+        if len(y_true_plot) > 72:
+            y_true_plot = y_true_plot[:72]
+        
+        timesteps = range(len(y_true_plot))
+        ax.plot(timesteps, y_true_plot, 'gray', linewidth=3, label='Ground Truth', alpha=0.8)
     
-    ax.plot(timesteps, y_true_plot, 'gray', linewidth=3, label='Ground Truth', alpha=0.8)
-    ax.plot(timesteps, y_pred_plot, 'red', linewidth=3, label=f'{model_name}', alpha=0.8)
+    # 绘制每个模型的预测结果
+    for i, (model_name, (y_true, y_pred, _)) in enumerate(results.items()):
+        # 取前72小时的数据
+        n_samples = min(72, len(y_true))
+        y_pred_plot = y_pred[:n_samples].flatten()
+        
+        # 确保只取前72个时间步
+        if len(y_pred_plot) > 72:
+            y_pred_plot = y_pred_plot[:72]
+        
+        timesteps = range(len(y_pred_plot))
+        color = colors[i % len(colors)]
+        ax.plot(timesteps, y_pred_plot, color, linewidth=2, 
+                label=f'{model_names[model_name]}', alpha=0.8)
     
-    ax.set_title(f'Project {project_id}: {model_name} Forecasting Results', fontweight='bold')
+    ax.set_title(f'Project {project_id}: Day-ahead Forecasting Results (72h, noTE, low, PV+NWP+)', 
+                 fontweight='bold')
     ax.set_xlabel('Timestep')
-    ax.set_ylabel('Capacity Factor (%)')
+    ax.set_ylabel('Capacity Factor')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    ax.set_ylim(0, 100)
+    ax.set_ylim(1.0, 1.5)  # 设置Y轴范围为1-1.5
     
     plt.tight_layout()
     
@@ -196,7 +226,7 @@ def plot_single_model(project_id, model_name, y_true, y_pred):
     os.makedirs(output_dir, exist_ok=True)
     
     # 保存图片
-    output_path = os.path.join(output_dir, f'project_{project_id}_{model_name}_forecasting.png')
+    output_path = os.path.join(output_dir, f'project_{project_id}_all_models_comparison.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"💾 图片已保存: {output_path}")
     
@@ -204,7 +234,7 @@ def plot_single_model(project_id, model_name, y_true, y_pred):
 
 def main():
     """主函数"""
-    print("🚀 生成所有模型对比图...")
+    print("🚀 生成模型对比图（3张图片，每张显示1个厂的7个模型）...")
     
     # 要绘制的项目和模型
     projects = [171, 172, 186]
@@ -226,18 +256,24 @@ def main():
         if df is None:
             continue
         
-        # 为每个模型生成单独的图片
+        # 存储该项目的所有模型结果
+        project_results = {}
+        
+        # 训练所有模型
         for model_name in models:
             print(f"\n--- 处理 {model_name} 模型 ---")
             
             # 训练模型并预测
             y_true, y_pred, name = train_and_predict_single_model(df, project_id, model_name)
             if y_true is not None:
-                # 绘制单个模型
-                plot_single_model(project_id, model_name, y_true, y_pred)
-                total_plots += 1
+                project_results[model_name] = (y_true, y_pred, name)
             else:
                 print(f"❌ 跳过 {model_name} 模型")
+        
+        # 绘制该项目的所有模型对比图
+        if project_results:
+            plot_project_models(project_id, project_results)
+            total_plots += 1
     
     print(f"\n✅ 所有图片生成完成！")
     print(f"📊 总共生成了 {total_plots} 张图片")
