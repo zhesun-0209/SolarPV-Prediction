@@ -298,6 +298,12 @@ def parse_experiment_output(output, config_file, duration, config):
         use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'NWP', 'NWP_plus']
         use_ideal_nwp = input_category in ['PV_plus_NWP_plus', 'NWP_plus']
         
+        # 根据input_category确定weather_category
+        if input_category == 'PV':
+            weather_category = 'none'
+        else:
+            weather_category = 'all_weather'
+        
         # 计算past_days
         past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
         
@@ -311,7 +317,7 @@ def parse_experiment_output(output, config_file, duration, config):
             'use_pv': use_pv,
             'use_hist_weather': use_hist_weather,
             'use_forecast': use_forecast,
-            'weather_category': config.get('weather_category', 'all_weather'),
+            'weather_category': weather_category,
             'use_time_encoding': time_encoding,
             'past_days': past_days,
             'model_complexity': complexity,

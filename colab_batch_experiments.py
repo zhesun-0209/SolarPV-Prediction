@@ -352,76 +352,82 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                         print(f"   解析结果: model={model_name}, complexity={complexity}, input_category={input_category}")
                         print(f"   lookback_hours={lookback_hours}, time_encoding={time_encoding}")
                         
-                        # 根据input_category确定其他参数
-                        use_pv = input_category in ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW']
-                        use_hist_weather = input_category in ['PV_plus_HW']
-                        use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'NWP', 'NWP_plus']
-                        use_ideal_nwp = input_category in ['PV_plus_NWP_plus', 'NWP_plus']
+        # 根据input_category确定其他参数
+        use_pv = input_category in ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW']
+        use_hist_weather = input_category in ['PV_plus_HW']
+        use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'NWP', 'NWP_plus']
+        use_ideal_nwp = input_category in ['PV_plus_NWP_plus', 'NWP_plus']
+        
+        # 根据input_category确定weather_category
+        if input_category == 'PV':
+            weather_category = 'none'
+        else:
+            weather_category = 'all_weather'
                         
-                        # 计算past_days（基于lookback_hours）
-                        past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
+        # 计算past_days（基于lookback_hours）
+        past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
+        
+        # 判断模型类型
+        is_dl_model = model_name in ['Transformer', 'LSTM', 'GRU', 'TCN']
+        has_learning_rate = model_name in ['XGB', 'LGBM']  # 只有XGB和LGBM有learning_rate
+        
+        # 创建结果行
+        result_row = {
+            'model': model_name,
+            'use_pv': use_pv,
+            'use_hist_weather': use_hist_weather,
+            'use_forecast': use_forecast,
+            'weather_category': weather_category,
+            'use_time_encoding': time_encoding,
+            'past_days': past_days,
+            'model_complexity': complexity,
+            'epochs': config.get('epochs', 50 if complexity == 'high' else 15) if is_dl_model else 0,
+            'batch_size': config.get('train_params', {}).get('batch_size', 32) if is_dl_model else 0,
+            'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if has_learning_rate else 0.0,
+            'use_ideal_nwp': use_ideal_nwp,
+            'train_time_sec': round(duration, 4),
+            'inference_time_sec': inference_time,
+            'param_count': param_count,
+            'samples_count': samples_count,
+            'best_epoch': best_epoch if is_dl_model else 0,
+            'final_lr': final_lr if is_dl_model else 0.0,
+            'mse': float(mse_match.group(1)) if mse_match else 0.0,
+            'rmse': float(rmse_match.group(1)) if rmse_match else 0.0,
+            'mae': float(mae_match.group(1)) if mae_match else 0.0,
+            'nrmse': nrmse,
+            'r_square': float(r_square_match.group(1)) if r_square_match else 0.0,
+            'smape': smape,
+            'gpu_memory_used': gpu_memory_used
+        }
                         
-                        # 判断模型类型
-                        is_dl_model = model_name in ['Transformer', 'LSTM', 'GRU', 'TCN']
-                        has_learning_rate = model_name in ['XGB', 'LGBM']  # 只有XGB和LGBM有learning_rate
-                        
-                        # 创建结果行
-                        result_row = {
-                            'model': model_name,
-                            'use_pv': use_pv,
-                            'use_hist_weather': use_hist_weather,
-                            'use_forecast': use_forecast,
-                            'weather_category': config.get('weather_category', 'all_weather'),
-                            'use_time_encoding': time_encoding,
-                            'past_days': past_days,
-                            'model_complexity': complexity,
-                            'epochs': config.get('epochs', 50 if complexity == 'high' else 15) if is_dl_model else 0,
-                            'batch_size': config.get('train_params', {}).get('batch_size', 32) if is_dl_model else 0,
-                            'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if has_learning_rate else 0.0,
-                            'use_ideal_nwp': use_ideal_nwp,
-                            'train_time_sec': round(duration, 4),
-                            'inference_time_sec': inference_time,
-                            'param_count': param_count,
-                            'samples_count': samples_count,
-                            'best_epoch': best_epoch if is_dl_model else 0,
-                            'final_lr': final_lr if is_dl_model else 0.0,
-                            'mse': float(mse_match.group(1)) if mse_match else 0.0,
-                            'rmse': float(rmse_match.group(1)) if rmse_match else 0.0,
-                            'mae': float(mae_match.group(1)) if mae_match else 0.0,
-                            'nrmse': nrmse,
-                            'r_square': float(r_square_match.group(1)) if r_square_match else 0.0,
-                            'smape': smape,
-                            'gpu_memory_used': gpu_memory_used
-                        }
-                        
-                        # 读取现有CSV文件
-                        if os.path.exists(csv_file_path):
-                            df = pd.read_csv(csv_file_path)
-                        else:
-                            df = pd.DataFrame()
-                        
-                        # 添加新行
-                        new_row_df = pd.DataFrame([result_row])
-                        df = pd.concat([df, new_row_df], ignore_index=True)
-                        
-                        # 保存CSV文件
-                        df.to_csv(csv_file_path, index=False)
-                        print(f"✅ 结果已硬编码保存到CSV文件")
-                        print(f"📊 CSV文件当前行数: {len(df)}")
-                        print(f"📊 最新实验: {result_row['model']} - {result_row['mse']:.4f}")
-                        print(f"🔍 解析的配置信息:")
-                        print(f"   模型: {result_row['model']}, 复杂度: {result_row['model_complexity']}")
-                        print(f"   输入类别: {input_category}, 时间编码: {result_row['use_time_encoding']}")
-                        print(f"   PV: {result_row['use_pv']}, 历史天气: {result_row['use_hist_weather']}, 预测天气: {result_row['use_forecast']}")
-                        print(f"🔍 提取的额外字段:")
-                        print(f"   推理时间: {inference_time}s, 参数数量: {param_count}, 样本数量: {samples_count}")
-                        print(f"   最佳轮次: {best_epoch}, 最终学习率: {final_lr}")
-                        print(f"   NRMSE: {nrmse}, SMAPE: {smape}, GPU内存: {gpu_memory_used}MB")
-                        print(f"🔍 最终结果行字段:")
-                        print(f"   param_count: {result_row['param_count']}, samples_count: {result_row['samples_count']}")
-                        print(f"   best_epoch: {result_row['best_epoch']}, final_lr: {result_row['final_lr']}")
-                        print(f"   smape: {result_row['smape']}, gpu_memory_used: {result_row['gpu_memory_used']}")
-                        print(f"   是否为DL模型: {is_dl_model}")
+        # 读取现有CSV文件
+        if os.path.exists(csv_file_path):
+            df = pd.read_csv(csv_file_path)
+        else:
+            df = pd.DataFrame()
+        
+        # 添加新行
+        new_row_df = pd.DataFrame([result_row])
+        df = pd.concat([df, new_row_df], ignore_index=True)
+        
+        # 保存CSV文件
+        df.to_csv(csv_file_path, index=False)
+        print(f"✅ 结果已硬编码保存到CSV文件")
+        print(f"📊 CSV文件当前行数: {len(df)}")
+        print(f"📊 最新实验: {result_row['model']} - {result_row['mse']:.4f}")
+        print(f"🔍 解析的配置信息:")
+        print(f"   模型: {result_row['model']}, 复杂度: {result_row['model_complexity']}")
+        print(f"   输入类别: {input_category}, 时间编码: {result_row['use_time_encoding']}")
+        print(f"   PV: {result_row['use_pv']}, 历史天气: {result_row['use_hist_weather']}, 预测天气: {result_row['use_forecast']}")
+        print(f"🔍 提取的额外字段:")
+        print(f"   推理时间: {inference_time}s, 参数数量: {param_count}, 样本数量: {samples_count}")
+        print(f"   最佳轮次: {best_epoch}, 最终学习率: {final_lr}")
+        print(f"   NRMSE: {nrmse}, SMAPE: {smape}, GPU内存: {gpu_memory_used}MB")
+        print(f"🔍 最终结果行字段:")
+        print(f"   param_count: {result_row['param_count']}, samples_count: {result_row['samples_count']}")
+        print(f"   best_epoch: {result_row['best_epoch']}, final_lr: {result_row['final_lr']}")
+        print(f"   smape: {result_row['smape']}, gpu_memory_used: {result_row['gpu_memory_used']}")
+        print(f"   是否为DL模型: {is_dl_model}")
                     else:
                         print(f"❌ 无法解析实验结果: {result_line}")
                 else:
