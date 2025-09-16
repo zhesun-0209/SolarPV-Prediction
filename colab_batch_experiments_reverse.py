@@ -295,7 +295,7 @@ def parse_experiment_output(output, config_file, duration, config):
         # 根据input_category确定其他参数
         use_pv = input_category in ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW']
         use_hist_weather = input_category in ['PV_plus_HW']
-        use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW', 'NWP', 'NWP_plus']
+        use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'NWP', 'NWP_plus']
         
         # 计算past_days
         past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
