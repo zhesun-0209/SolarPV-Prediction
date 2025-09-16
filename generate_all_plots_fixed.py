@@ -133,25 +133,18 @@ def train_and_predict_single_model(df, project_id, model_name):
             
             # 训练模型
             if model_name == 'RF':
-                # RF模型不使用复杂度参数，使用默认参数
-                model = train_rf(X_tr, y_tr, {})
+                model = train_rf(X_tr, y_tr, config['model_params']['ml_low'])
             elif model_name == 'XGB':
-                # XGB模型不使用复杂度参数，使用默认参数
-                model = train_xgb(X_tr, y_tr, {})
+                model = train_xgb(X_tr, y_tr, config['model_params']['ml_low'])
             elif model_name == 'LGBM':
-                # LGBM模型不使用复杂度参数，使用默认参数
-                model = train_lgbm(X_tr, y_tr, {})
+                model = train_lgbm(X_tr, y_tr, config['model_params']['ml_low'])
             
             # 预测
             y_pred = model.predict(X_te)
         
-        # 反标准化
-        if scaler_target is not None:
-            y_te_orig = scaler_target.inverse_transform(y_te)
-            y_pred_orig = scaler_target.inverse_transform(y_pred)
-        else:
-            y_te_orig = y_te
-            y_pred_orig = y_pred
+        # Capacity Factor不需要反标准化（已经是0-100范围）
+        y_te_orig = y_te
+        y_pred_orig = y_pred
         
         print(f"✅ {model_name} 模型训练完成")
         return y_te_orig, y_pred_orig, model_name
@@ -162,87 +155,36 @@ def train_and_predict_single_model(df, project_id, model_name):
         traceback.print_exc()
         return None, None, None
 
-def plot_project_models(project_id, results):
-    """绘制单个项目的所有模型对比（子图形式）"""
-    print(f"🎨 绘制项目 {project_id} 的所有模型对比...")
+def plot_single_model(project_id, model_name, y_true, y_pred):
+    """绘制单个模型的预测结果"""
+    print(f"🎨 绘制 {model_name} 模型...")
     
-    # 模型名称映射
-    model_names = {
-        'LSTM': 'LSTM',
-        'GRU': 'GRU', 
-        'TCN': 'TCN',
-        'Transformer': 'Transformer',
-        'RF': 'Random Forest',
-        'XGB': 'XGBoost',
-        'LGBM': 'LightGBM'
-    }
+    # 创建图形
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
     
-    # 创建子图：2行4列
-    fig, axes = plt.subplots(2, 4, figsize=(20, 10))
-    axes = axes.flatten()
+    # 取前72小时的数据（3天）
+    n_samples = min(72, len(y_true))
+    y_true_plot = y_true[:n_samples].flatten()  # 数据已经是百分比形式
+    y_pred_plot = y_pred[:n_samples].flatten()  # 数据已经是百分比形式
     
-    # 获取Ground Truth数据（从第一个模型）
-    if results:
-        first_model = list(results.keys())[0]
-        y_true_ref, _, _ = results[first_model]
-        
-        # 取前72小时的数据
-        n_samples = min(72, len(y_true_ref))
-        y_true_plot = y_true_ref[:n_samples].flatten() * 100  # 转换为百分数
-        
-        # 确保只取前72个时间步
-        if len(y_true_plot) > 72:
-            y_true_plot = y_true_plot[:72]
-        
-        timesteps = range(len(y_true_plot))
+    # 确保只取前72个时间步
+    if len(y_true_plot) > 72:
+        y_true_plot = y_true_plot[:72]
+        y_pred_plot = y_pred_plot[:72]
     
-    # 绘制每个模型的子图
-    for i, (model_name, (y_true, y_pred, _)) in enumerate(results.items()):
-        ax = axes[i]
-        
-        # 取前72小时的数据
-        n_samples = min(72, len(y_true))
-        y_pred_plot = y_pred[:n_samples].flatten() * 100  # 转换为百分数
-        
-        # 确保只取前72个时间步
-        if len(y_pred_plot) > 72:
-            y_pred_plot = y_pred_plot[:72]
-        
-        # 输出capacity factor范围
-        print(f"📊 {model_name} - Ground Truth范围: {y_true_plot.min():.2f} - {y_true_plot.max():.2f}")
-        print(f"📊 {model_name} - 预测值范围: {y_pred_plot.min():.2f} - {y_pred_plot.max():.2f}")
-        
-        # 检查数据是否像electricity generated而不是capacity factor
-        if y_true_plot.max() > 100:
-            print(f"⚠️ {model_name} - Ground Truth最大值超过100%: {y_true_plot.max():.2f}%")
-            print(f"   这可能不是Capacity Factor，而是Electricity Generated!")
-        if y_pred_plot.max() > 100:
-            print(f"⚠️ {model_name} - 预测值最大值超过100%: {y_pred_plot.max():.2f}%")
-            print(f"   这可能不是Capacity Factor，而是Electricity Generated!")
-        
-        # 检查是否有值超出150
-        if y_true_plot.max() > 150:
-            print(f"⚠️ {model_name} - Ground Truth有值超出150: {y_true_plot.max():.2f}")
-        if y_pred_plot.max() > 150:
-            print(f"⚠️ {model_name} - 预测值有值超出150: {y_pred_plot.max():.2f}")
-        
-        # 绘制Ground Truth和预测结果
-        ax.plot(timesteps, y_true_plot, 'gray', linewidth=2, label='Ground Truth', alpha=0.8)
-        ax.plot(timesteps, y_pred_plot, 'red', linewidth=2, label=f'{model_names[model_name]}', alpha=0.8)
-        
-        ax.set_title(f'{model_names[model_name]}', fontweight='bold')
-        ax.set_xlabel('Timestep')
-        ax.set_ylabel('Capacity Factor (%)')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-        ax.set_ylim(0, 150)
+    # 绘制
+    timesteps = range(len(y_true_plot))
     
-    # 隐藏多余的子图
-    for i in range(len(results), len(axes)):
-        axes[i].set_visible(False)
+    ax.plot(timesteps, y_true_plot, 'gray', linewidth=3, label='Ground Truth', alpha=0.8)
+    ax.plot(timesteps, y_pred_plot, 'red', linewidth=3, label=f'{model_name}', alpha=0.8)
     
-    plt.suptitle(f'Project {project_id}: Day-ahead Forecasting Results (72h, noTE, low, PV+NWP+)', 
-                 fontsize=16, fontweight='bold', y=0.98)
+    ax.set_title(f'Project {project_id}: {model_name} Forecasting Results', fontweight='bold')
+    ax.set_xlabel('Timestep')
+    ax.set_ylabel('Capacity Factor (%)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim(0, 100)
+    
     plt.tight_layout()
     
     # 创建输出目录
@@ -250,7 +192,7 @@ def plot_project_models(project_id, results):
     os.makedirs(output_dir, exist_ok=True)
     
     # 保存图片
-    output_path = os.path.join(output_dir, f'project_{project_id}_all_models_comparison.png')
+    output_path = os.path.join(output_dir, f'project_{project_id}_{model_name}_forecasting.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"💾 图片已保存: {output_path}")
     
@@ -258,7 +200,7 @@ def plot_project_models(project_id, results):
 
 def main():
     """主函数"""
-    print("🚀 生成模型对比图（3张图片，每张显示1个厂的7个模型）...")
+    print("🚀 生成所有模型对比图...")
     
     # 要绘制的项目和模型
     projects = [171, 172, 186]
@@ -280,27 +222,18 @@ def main():
         if df is None:
             continue
         
-        # 存储该项目的所有模型结果
-        project_results = {}
-        
-        # 训练所有模型
+        # 为每个模型生成单独的图片
         for model_name in models:
             print(f"\n--- 处理 {model_name} 模型 ---")
             
             # 训练模型并预测
             y_true, y_pred, name = train_and_predict_single_model(df, project_id, model_name)
             if y_true is not None:
-                project_results[model_name] = (y_true, y_pred, name)
+                # 绘制单个模型
+                plot_single_model(project_id, model_name, y_true, y_pred)
+                total_plots += 1
             else:
                 print(f"❌ 跳过 {model_name} 模型")
-        
-        # 绘制该项目的所有模型对比图
-        if project_results:
-            print(f"📊 项目 {project_id} 成功训练的模型: {list(project_results.keys())}")
-            plot_project_models(project_id, project_results)
-            total_plots += 1
-        else:
-            print(f"❌ 项目 {project_id} 没有成功训练的模型")
     
     print(f"\n✅ 所有图片生成完成！")
     print(f"📊 总共生成了 {total_plots} 张图片")
