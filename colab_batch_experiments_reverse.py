@@ -296,6 +296,7 @@ def parse_experiment_output(output, config_file, duration, config):
         use_pv = input_category in ['PV', 'PV_plus_NWP', 'PV_plus_NWP_plus', 'PV_plus_HW']
         use_hist_weather = input_category in ['PV_plus_HW']
         use_forecast = input_category in ['PV_plus_NWP', 'PV_plus_NWP_plus', 'NWP', 'NWP_plus']
+        use_ideal_nwp = input_category in ['PV_plus_NWP_plus', 'NWP_plus']
         
         # 计算past_days
         past_days = int(int(lookback_hours) / 24) if lookback_hours.isdigit() else 1
@@ -317,7 +318,7 @@ def parse_experiment_output(output, config_file, duration, config):
             'epochs': 50 if complexity == 'high' else 15 if is_dl_model else 0,
             'batch_size': 32 if is_dl_model else 0,
             'learning_rate': 0.001 if has_learning_rate else 0.0,
-            'use_ideal_nwp': config.get('use_ideal_nwp', False),
+            'use_ideal_nwp': use_ideal_nwp,
             'train_time_sec': round(duration, 4),  # 使用传入的duration参数
             'inference_time_sec': inference_time,
             'param_count': param_count,
