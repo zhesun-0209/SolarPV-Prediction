@@ -291,10 +291,10 @@ def run_project_experiments(project_id, data_file, all_config_files, drive_save_
                 
                 if result_line:
                     # 解析结果
-                    mse_match = re.search(r'mse=([0-9.]+)', result_line)
-                    rmse_match = re.search(r'rmse=([0-9.]+)', result_line)
-                    mae_match = re.search(r'mae=([0-9.]+)', result_line)
-                    r_square_match = re.search(r'r_square=([0-9.]+)', result_line)
+                    mse_match = re.search(r'mse=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', result_line)
+                    rmse_match = re.search(r'rmse=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', result_line)
+                    mae_match = re.search(r'mae=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', result_line)
+                    r_square_match = re.search(r'r_square=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', result_line)
                     
                     if mse_match and rmse_match and mae_match and r_square_match:
                         # 从配置文件名中提取更多信息

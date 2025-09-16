@@ -181,11 +181,11 @@ def run_experiment(config_file, data_file, project_id):
 def parse_experiment_output(output, config_file, duration, config):
     """解析实验输出，提取结果"""
     try:
-        # 提取基本指标
-        mse_match = re.search(r'mse=([0-9.]+)', output)
-        rmse_match = re.search(r'rmse=([0-9.]+)', output)
-        mae_match = re.search(r'mae=([0-9.]+)', output)
-        r_square_match = re.search(r'r_square=([0-9.]+)', output)
+        # 提取基本指标（支持负数和小数）
+        mse_match = re.search(r'mse=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
+        rmse_match = re.search(r'rmse=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
+        mae_match = re.search(r'mae=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
+        r_square_match = re.search(r'r_square=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
         
         # 初始化额外字段
         inference_time = 0.0
