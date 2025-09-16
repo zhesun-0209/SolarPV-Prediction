@@ -78,7 +78,6 @@ def save_results(
         'model_complexity': config.get('model_complexity', 'low'),
         'correlation_level': config.get('correlation_level', 'high'),
         'use_time_encoding': config.get('use_time_encoding', True),
-        'no_hist_power':   config.get('no_hist_power', False),
         'past_hours':      config['past_hours'],
         'future_hours':    config['future_hours'],
         

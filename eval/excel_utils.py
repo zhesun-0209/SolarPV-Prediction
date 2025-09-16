@@ -48,9 +48,8 @@ def save_plant_excel_results(
             'model_complexity': config.get('model_complexity', 'low'),
             'epochs': config.get('epochs', 15),
             'batch_size': config.get('batch_size', 32),
-            'learning_rate': config.get('learning_rate', 0.001),
-            'use_ideal_nwp': config.get('use_ideal_nwp', False),
-            'no_hist_power': config.get('no_hist_power', False),
+        'learning_rate': config.get('learning_rate', 0.001),
+        'use_ideal_nwp': config.get('use_ideal_nwp', False),
             
             # 性能指标列 (6列)
             'train_time_sec': round(metrics.get('train_time_sec', 0), 4),
@@ -143,7 +142,6 @@ def append_plant_excel_results(
         'batch_size': config.get('batch_size', 32),
         'learning_rate': config.get('learning_rate', 0.001),
         'use_ideal_nwp': config.get('use_ideal_nwp', False),
-        'no_hist_power': config.get('no_hist_power', False),
         
         # 性能指标列 (6列)
         'train_time_sec': round(metrics.get('train_time_sec', 0), 4),
