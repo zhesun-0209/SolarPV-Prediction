@@ -9,6 +9,9 @@ class TCNModel(nn.Module):
         self.use_fcst = config.get('use_forecast', False)
         future_hours = config['future_hours']
 
+        # Store channels for later use
+        self.channels = channels
+        
         # Build TCN encoder on historical sequence (only if hist_dim > 0)
         if hist_dim > 0:
             layers = []
@@ -48,7 +51,7 @@ class TCNModel(nn.Module):
                 x_pooled = x.mean(dim=-1)  # (B, hist_dim)
                 # 创建一个简单的线性层来替代卷积，输出维度要与channels[-1]匹配
                 if not hasattr(self, 'fallback_linear'):
-                    self.fallback_linear = nn.Linear(x.shape[1], channels[-1]).to(x.device)
+                    self.fallback_linear = nn.Linear(x.shape[1], self.channels[-1]).to(x.device)
                 last = self.fallback_linear(x_pooled)  # (B, channels[-1])
             else:
                 out = self.encoder(x)
