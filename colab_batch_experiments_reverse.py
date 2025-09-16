@@ -93,6 +93,57 @@ def get_completed_experiments_count(project_id, drive_path):
     
     return completed_count
 
+def get_completed_experiment_configs(project_id, drive_path):
+    """获取已完成的实验配置名称列表"""
+    csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
+    completed_configs = set()
+    
+    if os.path.exists(csv_file):
+        try:
+            df = pd.read_csv(csv_file)
+            # 从CSV中提取配置信息，重建配置名称
+            for _, row in df.iterrows():
+                # 根据CSV中的参数重建配置名称
+                model = row['model']
+                complexity = row['model_complexity']
+                use_pv = row['use_pv']
+                use_hist_weather = row['use_hist_weather']
+                use_forecast = row['use_forecast']
+                use_ideal_nwp = row.get('use_ideal_nwp', False)
+                past_days = row['past_days']
+                use_time_encoding = row['use_time_encoding']
+                
+                # 确定输入类别
+                if use_pv and not use_hist_weather and not use_forecast:
+                    input_cat = 'PV'
+                elif use_pv and not use_hist_weather and use_forecast and not use_ideal_nwp:
+                    input_cat = 'PV_plus_NWP'
+                elif use_pv and not use_hist_weather and use_forecast and use_ideal_nwp:
+                    input_cat = 'PV_plus_NWP_plus'
+                elif use_pv and use_hist_weather and not use_forecast:
+                    input_cat = 'PV_plus_HW'
+                elif not use_pv and not use_hist_weather and use_forecast and not use_ideal_nwp:
+                    input_cat = 'NWP'
+                elif not use_pv and not use_hist_weather and use_forecast and use_ideal_nwp:
+                    input_cat = 'NWP_plus'
+                else:
+                    continue  # 跳过无法识别的组合
+                
+                # 确定回看小时数
+                lookback_hours = past_days * 24
+                
+                # 确定时间编码后缀
+                te_suffix = 'TE' if use_time_encoding else 'noTE'
+                
+                # 重建配置名称
+                config_name = f"{model}_{complexity}_{input_cat}_{lookback_hours}h_{te_suffix}"
+                completed_configs.add(config_name)
+                
+        except Exception as e:
+            print(f"⚠️ 无法读取现有结果文件: {e}")
+    
+    return completed_configs
+
 def run_experiment(config_file, data_file, project_id):
     """运行单个实验"""
     try:
@@ -332,17 +383,21 @@ def main():
         
         # 检查已完成的实验
         completed_count = get_completed_experiments_count(project_id, drive_path)
+        completed_configs = get_completed_experiment_configs(project_id, drive_path)
         
         print(f"📊 项目 {project_id}: 将运行 {len(project_configs)} 个实验")
         print(f"📁 结果保存到: {drive_path}")
+        print(f"📊 已完成实验: {len(completed_configs)} 个")
         
         # 运行实验
         for exp_idx, config_file in enumerate(project_configs, 1):
             config_name = os.path.basename(config_file)
+            # 移除.yaml后缀获取配置名称
+            config_name_without_ext = config_name.replace('.yaml', '')
             
-            # 跳过已完成的实验（使用行数判断）
-            if exp_idx <= completed_count:
-                print(f"⏭️ 跳过已完成实验: {config_name} ({exp_idx}/{completed_count})")
+            # 跳过已完成的实验（基于配置名称判断）
+            if config_name_without_ext in completed_configs:
+                print(f"⏭️ 跳过已完成实验: {config_name}")
                 continue
                 
             print(f"\n🔄 进度: {exp_idx}/{len(project_configs)} - {config_name}")
