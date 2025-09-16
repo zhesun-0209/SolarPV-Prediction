@@ -44,7 +44,9 @@ class TCNModel(nn.Module):
         self.eps = 1e-8
 
     def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:
-        # (B, past_hours, hist_dim) → (B, hist_dim, past_hours)
+        last = None
+        
+        # 处理历史数据（如果存在）
         if self.encoder is not None and hist.shape[-1] > 0:
             x = hist.permute(0, 2, 1)
             
@@ -59,20 +61,30 @@ class TCNModel(nn.Module):
             else:
                 out = self.encoder(x)
                 last = out[:, :, -1]
-        else:
-            last = None
 
+        # 处理预测数据（如果存在）
         if self.use_fcst and fcst is not None and self.fcst_proj is not None:
             # 简化的预测特征处理，与ML模型保持一致
             f_flat = fcst.reshape(fcst.size(0), -1)
             f_proj = self.fcst_proj(f_flat)
+            
+            # 添加调试信息
+            print(f"🔍 TCN调试: fcst形状={fcst.shape}, f_flat形状={f_flat.shape}, f_proj形状={f_proj.shape}")
+            print(f"🔍 TCN调试: f_proj统计 - min={f_proj.min().item():.6f}, max={f_proj.max().item():.6f}, mean={f_proj.mean().item():.6f}")
+            
             if last is not None:
                 last = last + f_proj  # 简单相加融合
+                print(f"🔍 TCN调试: 融合后last统计 - min={last.min().item():.6f}, max={last.max().item():.6f}, mean={last.mean().item():.6f}")
             else:
                 last = f_proj
+                print(f"🔍 TCN调试: 使用预测数据作为last - min={last.min().item():.6f}, max={last.max().item():.6f}, mean={last.mean().item():.6f}")
 
+        # 如果既没有历史数据也没有预测数据，创建零向量
         if last is None:
-            raise ValueError("Both historical and forecast features are missing or zero-dimensional.")
+            # 创建一个零向量作为默认输出
+            batch_size = hist.size(0) if hist is not None else fcst.size(0)
+            last = torch.zeros(batch_size, self.channels[-1]).to(hist.device if hist is not None else fcst.device)
+            print(f"⚠️ 警告: TCN模型没有有效输入，使用零向量作为默认输出")
 
         # 添加数值稳定性处理
         output = self.head(last)
