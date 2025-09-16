@@ -166,10 +166,15 @@ def plot_single_model(project_id, model_name, y_true, y_pred):
     # 创建图形
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
     
-    # 取前72小时的数据
+    # 取前72小时的数据（3天）
     n_samples = min(72, len(y_true))
     y_true_plot = y_true[:n_samples].flatten() * 100  # 转换为百分数
     y_pred_plot = y_pred[:n_samples].flatten() * 100  # 转换为百分数
+    
+    # 确保只取前72个时间步
+    if len(y_true_plot) > 72:
+        y_true_plot = y_true_plot[:72]
+        y_pred_plot = y_pred_plot[:72]
     
     # 绘制
     timesteps = range(len(y_true_plot))
