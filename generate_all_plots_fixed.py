@@ -208,6 +208,16 @@ def plot_project_models(project_id, results):
         if len(y_pred_plot) > 72:
             y_pred_plot = y_pred_plot[:72]
         
+        # 输出capacity factor范围
+        print(f"📊 {model_name} - Ground Truth范围: {y_true_plot.min():.2f} - {y_true_plot.max():.2f}")
+        print(f"📊 {model_name} - 预测值范围: {y_pred_plot.min():.2f} - {y_pred_plot.max():.2f}")
+        
+        # 检查是否有值超出150
+        if y_true_plot.max() > 150:
+            print(f"⚠️ {model_name} - Ground Truth有值超出150: {y_true_plot.max():.2f}")
+        if y_pred_plot.max() > 150:
+            print(f"⚠️ {model_name} - 预测值有值超出150: {y_pred_plot.max():.2f}")
+        
         # 绘制Ground Truth和预测结果
         ax.plot(timesteps, y_true_plot, 'gray', linewidth=2, label='Ground Truth', alpha=0.8)
         ax.plot(timesteps, y_pred_plot, 'red', linewidth=2, label=f'{model_names[model_name]}', alpha=0.8)
