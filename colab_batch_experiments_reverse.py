@@ -311,7 +311,7 @@ def parse_experiment_output(output, config_file, duration, config):
             'use_pv': use_pv,
             'use_hist_weather': use_hist_weather,
             'use_forecast': use_forecast,
-            'weather_category': 'none' if not use_forecast and not use_hist_weather else 'all_weather',
+            'weather_category': config.get('weather_category', 'all_weather'),
             'use_time_encoding': time_encoding,
             'past_days': past_days,
             'model_complexity': complexity,
