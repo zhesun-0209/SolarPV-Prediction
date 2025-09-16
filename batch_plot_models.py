@@ -187,8 +187,8 @@ def plot_project_models(project_id, df):
         
         # 取前72小时的数据
         n_samples = min(72, len(y_true))
-        y_true_plot = y_true[:n_samples].flatten()
-        y_pred_plot = y_pred[:n_samples].flatten()
+        y_true_plot = y_true[:n_samples].flatten() * 100  # 转换为百分数
+        y_pred_plot = y_pred[:n_samples].flatten() * 100  # 转换为百分数
         
         # 绘制
         timesteps = range(len(y_true_plot))
@@ -198,15 +198,10 @@ def plot_project_models(project_id, df):
         
         ax.set_title(f'{model_names[model_name]}', fontweight='bold')
         ax.set_xlabel('Timestep')
-        ax.set_ylabel('Capacity Factor')
+        ax.set_ylabel('Capacity Factor (%)')
         ax.legend()
         ax.grid(True, alpha=0.3)
-        ax.set_ylim(0, 1.0)
-        
-        # 计算并显示RMSE
-        rmse = np.sqrt(np.mean((y_true_plot - y_pred_plot) ** 2))
-        ax.text(0.02, 0.98, f'RMSE: {rmse:.4f}', transform=ax.transAxes, 
-                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        ax.set_ylim(0, 100)
     
     # 隐藏多余的子图
     for i in range(len(results), len(axes)):

@@ -131,8 +131,8 @@ def quick_plot_single_model(project_id=171, model_name='LSTM'):
         
         # 取前72小时的数据
         n_samples = min(72, len(y_te_orig))
-        y_true_plot = y_te_orig[:n_samples].flatten()
-        y_pred_plot = y_pred_orig[:n_samples].flatten()
+        y_true_plot = y_te_orig[:n_samples].flatten() * 100  # 转换为百分数
+        y_pred_plot = y_pred_orig[:n_samples].flatten() * 100  # 转换为百分数
         
         # 绘制
         plt.figure(figsize=(12, 6))
@@ -144,15 +144,10 @@ def quick_plot_single_model(project_id=171, model_name='LSTM'):
         plt.title(f'Project {project_id}: {model_name} Forecasting Results (72h, noTE, low, PV+NWP+)', 
                  fontsize=14, fontweight='bold')
         plt.xlabel('Timestep', fontsize=12)
-        plt.ylabel('Capacity Factor', fontsize=12)
+        plt.ylabel('Capacity Factor (%)', fontsize=12)
         plt.legend(fontsize=11)
         plt.grid(True, alpha=0.3)
-        plt.ylim(0, 1.0)
-        
-        # 计算并显示RMSE
-        rmse = np.sqrt(np.mean((y_true_plot - y_pred_plot) ** 2))
-        plt.text(0.02, 0.98, f'RMSE: {rmse:.4f}', transform=plt.gca().transAxes, 
-                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        plt.ylim(0, 100)
         
         plt.tight_layout()
         
