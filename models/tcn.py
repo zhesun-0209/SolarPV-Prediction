@@ -39,6 +39,9 @@ class TCNModel(nn.Module):
             nn.Linear(channels[-1], future_hours),
             nn.Softplus()
         )
+        
+        # 添加数值稳定性处理
+        self.eps = 1e-8
 
     def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:
         # (B, past_hours, hist_dim) → (B, hist_dim, past_hours)
@@ -71,4 +74,15 @@ class TCNModel(nn.Module):
         if last is None:
             raise ValueError("Both historical and forecast features are missing or zero-dimensional.")
 
-        return self.head(last)
+        # 添加数值稳定性处理
+        output = self.head(last)
+        
+        # 检查并处理NaN值
+        if torch.isnan(output).any():
+            print(f"⚠️ 警告: TCN模型输出包含NaN值，使用零值替代")
+            output = torch.where(torch.isnan(output), torch.zeros_like(output), output)
+        
+        # 确保输出为正值（太阳能发电量不能为负）
+        output = torch.clamp(output, min=self.eps)
+        
+        return output
