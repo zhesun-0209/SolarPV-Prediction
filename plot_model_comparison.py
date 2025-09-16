@@ -45,7 +45,7 @@ def load_config(project_id, model_name):
 
 def load_test_data(project_id):
     """加载测试数据"""
-    data_path = f"data/Plant_{project_id}.csv"
+    data_path = f"data/Plant{project_id}.csv"
     
     if not os.path.exists(data_path):
         print(f"❌ 数据文件不存在: {data_path}")

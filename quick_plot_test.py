@@ -35,7 +35,7 @@ def quick_plot_single_model(project_id=171, model_name='LSTM'):
     print(f"🎨 绘制项目 {project_id} 的 {model_name} 模型...")
     
     # 加载数据
-    data_path = f"data/Plant_{project_id}.csv"
+    data_path = f"data/Plant{project_id}.csv"
     if not os.path.exists(data_path):
         print(f"❌ 数据文件不存在: {data_path}")
         return

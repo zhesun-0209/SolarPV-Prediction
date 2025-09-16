@@ -47,7 +47,7 @@ def load_and_prepare_data(project_id):
     print(f"📊 加载项目 {project_id} 数据...")
     
     # 加载数据
-    data_path = f"data/Plant_{project_id}.csv"
+    data_path = f"data/Plant{project_id}.csv"
     if not os.path.exists(data_path):
         print(f"❌ 数据文件不存在: {data_path}")
         return None
