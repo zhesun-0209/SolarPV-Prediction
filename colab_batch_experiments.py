@@ -37,7 +37,7 @@ def get_data_files():
             project_id = file.replace("Project", "").replace(".csv", "")
             csv_files.append((project_id, os.path.join(data_dir, file)))
     
-    csv_files.sort(key=lambda x: int(x[0]), reverse=True)  # 逆序排序
+    csv_files.sort(key=lambda x: int(x[0]))  # 正序排序
     return csv_files
 
 def get_config_files():
