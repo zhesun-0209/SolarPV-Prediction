@@ -479,7 +479,7 @@ def main():
         max_parallel = 6
     elif gpu_memory >= 24:  # 24GB+ (RTX 4090, RTX 3090等)
         max_parallel = 5
-    elif gpu_memory >= 16:  # 16GB+ (RTX 4080, T4等)
+    elif gpu_memory >= 14:  # 16GB+ (RTX 4080, T4等)
         max_parallel = 4
     elif gpu_memory >= 12:  # 12GB+ (RTX 4070等)
         max_parallel = 3
