@@ -376,6 +376,7 @@ def main():
                     completed_experiments += 1
                     print(f"✅ 实验完成: {config_name} ({duration:.1f}s) - MSE: {result_row['mse']:.4f}")
                     print(f"🔍 调试: 解析成功，结果字段: {list(result_row.keys())}")
+                    print(f"🔍 调试: 当前project_results数量: {len(project_results)}")
                 else:
                     failed_experiments += 1
                     print(f"⚠️ 无法解析实验结果: {config_name}")
@@ -390,10 +391,15 @@ def main():
             print(f"⏭️ ... 还有 {skipped_count - 5} 个已完成的实验被跳过")
         
         # 保存项目结果
+        print(f"🔍 调试: 准备保存项目 {project_id} 的结果")
+        print(f"🔍 调试: project_results数量: {len(project_results)}")
         if project_results:
+            print(f"🔍 调试: 开始保存 {len(project_results)} 个结果到Drive")
             save_results_to_drive(project_results, drive_path)
             all_results.extend(project_results)
             print(f"💾 项目 {project_id} 完成，保存了 {len(project_results)} 个结果")
+        else:
+            print(f"⚠️ 项目 {project_id} 没有结果需要保存")
         
         print(f"📊 项目 {project_id} 统计:")
         print(f"   总实验: {len(project_configs)}")
