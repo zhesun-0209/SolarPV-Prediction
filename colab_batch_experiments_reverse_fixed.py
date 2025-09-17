@@ -231,30 +231,48 @@ def parse_experiment_output(output, config_file, duration, config):
 def save_results_to_drive(results, drive_path):
     """保存结果到Google Drive"""
     try:
+        print(f"🔍 调试: 准备保存 {len(results)} 个结果到 {drive_path}")
+        
         results_dir = os.path.join(drive_path, "SolarPV_Results")
+        print(f"🔍 调试: 结果目录: {results_dir}")
+        
+        # 确保目录存在
         os.makedirs(results_dir, exist_ok=True)
+        print(f"🔍 调试: 目录创建成功: {os.path.exists(results_dir)}")
         
         # 保存到CSV
         results_file = os.path.join(results_dir, "all_results.csv")
+        print(f"🔍 调试: CSV文件路径: {results_file}")
         
         if os.path.exists(results_file):
+            print(f"🔍 调试: 读取现有CSV文件")
             # 读取现有结果
             existing_df = pd.read_csv(results_file)
+            print(f"🔍 调试: 现有结果数量: {len(existing_df)}")
             new_df = pd.DataFrame(results)
+            print(f"🔍 调试: 新结果数量: {len(new_df)}")
             combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+            print(f"🔍 调试: 合并后结果数量: {len(combined_df)}")
         else:
+            print(f"🔍 调试: 创建新的CSV文件")
             combined_df = pd.DataFrame(results)
+            print(f"🔍 调试: 新结果数量: {len(combined_df)}")
         
+        # 保存CSV
         combined_df.to_csv(results_file, index=False)
         print(f"✅ 结果已保存到: {results_file}")
+        print(f"🔍 调试: 文件大小: {os.path.getsize(results_file)} 字节")
         
         # 保存到Excel
         excel_file = os.path.join(results_dir, "all_results.xlsx")
         combined_df.to_excel(excel_file, index=False)
         print(f"✅ Excel结果已保存到: {excel_file}")
+        print(f"🔍 调试: Excel文件大小: {os.path.getsize(excel_file)} 字节")
         
     except Exception as e:
         print(f"❌ 保存结果失败: {e}")
+        import traceback
+        print(f"🔍 调试: 详细错误信息: {traceback.format_exc()}")
 
 def main():
     """主函数"""
@@ -346,18 +364,22 @@ def main():
             
             if success:
                 # 解析结果
+                print(f"🔍 调试: 开始解析实验结果: {config_name}")
                 result_row = parse_experiment_output(stdout, config_file, duration, config)
                 if result_row:
                     project_results.append(result_row)
                     completed_experiments += 1
                     print(f"✅ 实验完成: {config_name} ({duration:.1f}s) - MSE: {result_row['mse']:.4f}")
+                    print(f"🔍 调试: 解析成功，结果字段: {list(result_row.keys())}")
                 else:
                     failed_experiments += 1
                     print(f"⚠️ 无法解析实验结果: {config_name}")
+                    print(f"🔍 调试: 实验输出前500字符: {stdout[:500]}")
             else:
                 failed_experiments += 1
                 print(f"❌ 实验失败: {config_name}")
                 print(f"   错误: {stderr}")
+                print(f"🔍 调试: 标准输出: {stdout[:200]}")
         
         if skipped_count > 5:
             print(f"⏭️ ... 还有 {skipped_count - 5} 个已完成的实验被跳过")
