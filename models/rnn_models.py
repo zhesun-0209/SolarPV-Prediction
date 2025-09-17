@@ -51,7 +51,50 @@ class LSTM(RNNBase):
     def __init__(self, hist_dim: int, fcst_dim: int, config: dict):
         super().__init__(hist_dim, fcst_dim, config, rnn_type='LSTM')
 
-class GRU(RNNBase):
-    """GRU forecasting model."""
+class GRU(nn.Module):
+    """改进的GRU forecasting model - 解决周期性问题"""
     def __init__(self, hist_dim: int, fcst_dim: int, config: dict):
-        super().__init__(hist_dim, fcst_dim, config, rnn_type='GRU')
+        super().__init__()
+        self.cfg = config
+        hidden = config['hidden_dim']
+        layers = config['num_layers']
+
+        self.hist_proj = nn.Linear(hist_dim, hidden) if hist_dim > 0 else None
+        self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None
+
+        # GRU层保持不变
+        self.gru = nn.GRU(hidden, hidden, num_layers=layers,
+                          batch_first=True, dropout=config['dropout'])
+
+        # 改进：使用ReLU + Sigmoid激活函数 (解决周期性问题)
+        self.head = nn.Sequential(
+            nn.Linear(hidden, hidden // 2),
+            nn.ReLU(),  # 改为ReLU (更好的梯度流)
+            nn.Dropout(config['dropout']),
+            nn.Linear(hidden // 2, config['future_hours']),
+            nn.Sigmoid()  # 改为Sigmoid，输出[0,1]
+        )
+
+    def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:
+        seqs = []
+
+        if self.hist_proj is not None and hist.shape[-1] > 0:
+            h_proj = self.hist_proj(hist)
+            seqs.append(h_proj)
+
+        if self.fcst_proj is not None and fcst is not None and fcst.shape[-1] > 0:
+            f_proj = self.fcst_proj(fcst)
+            seqs.append(f_proj)
+
+        if not seqs:
+            raise ValueError("Both hist and forecast inputs are missing or zero-dimensional.")
+
+        seq = torch.cat(seqs, dim=1)  # (B, past+future, hidden)
+        out, _ = self.gru(seq)        # (B, seq_len, hidden)
+        
+        # 使用最后时间步
+        last_output = out[:, -1, :]    # (B, hidden)
+        result = self.head(last_output) # (B, future_hours)
+        
+        # 改进：乘以100转换为百分比 (解决周期性问题)
+        return result * 100
