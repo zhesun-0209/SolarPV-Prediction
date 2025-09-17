@@ -166,8 +166,9 @@ def run_experiment(config_file, data_file, project_id):
         config['data_path'] = data_file
         config['plant_id'] = project_id
         
-        # 创建临时配置文件
-        temp_config = f"temp_config_{project_id}_{int(time.time())}_{threading.current_thread().ident}.yaml"
+        # 创建临时配置文件（使用UUID避免冲突）
+        import uuid
+        temp_config = f"temp_config_{project_id}_{uuid.uuid4().hex[:8]}.yaml"
         with open(temp_config, 'w', encoding='utf-8') as f:
             yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
         
@@ -389,11 +390,11 @@ class SingleGPUParallelExecutor:
                                 actual_gpu_memory = 1000  # 1GB
                         elif model_name in ['LSTM', 'GRU']:
                             if complexity == 'high':
-                                actual_gpu_memory = 800   # 800MB
+                                actual_gpu_memory = 1200  # 1200MB (注意力机制增加内存)
                             elif complexity == 'medium':
-                                actual_gpu_memory = 600   # 600MB
+                                actual_gpu_memory = 900   # 900MB (注意力机制增加内存)
                             else:
-                                actual_gpu_memory = 400   # 400MB
+                                actual_gpu_memory = 600   # 600MB (注意力机制增加内存)
                         elif model_name in ['TCN']:
                             if complexity == 'high':
                                 actual_gpu_memory = 1200  # 1.2GB
