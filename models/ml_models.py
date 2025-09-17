@@ -30,13 +30,25 @@ except ImportError:
 LGB_GPU_AVAILABLE = False
 try:
     import lightgbm as lgb
+    import numpy as np
+    from sklearn.multioutput import MultiOutputRegressor
     # 测试LightGBM GPU支持
     try:
-        test_model = lgb.LGBMRegressor(device='gpu', gpu_platform_id=0, gpu_device_id=0, n_estimators=1)
+        # 创建测试数据
+        X_test = np.random.rand(10, 5)
+        y_test = np.random.rand(10, 24)
+        
+        # 测试GPU训练
+        base = lgb.LGBMRegressor(device='gpu', gpu_platform_id=0, gpu_device_id=0, n_estimators=1, verbose=-1)
+        model = MultiOutputRegressor(base)
+        model.fit(X_test, y_test)
         LGB_GPU_AVAILABLE = True
         print("✅ LightGBM GPU 可用")
-    except:
-        print("⚠️ LightGBM GPU 不可用，使用CPU版本")
+    except Exception as e:
+        if "GPU Tree Learner was not enabled" in str(e):
+            print("❌ LightGBM GPU 不可用 - 需要重新编译支持GPU")
+        else:
+            print(f"⚠️ LightGBM GPU 不可用: {e}")
 except ImportError:
     print("❌ LightGBM 不可用")
 
@@ -105,7 +117,8 @@ def train_xgb(X_train, y_train, params: dict):
             gpu_params = params.copy()
             gpu_params.update({
                 'tree_method': 'hist',
-                'device': 'cuda'
+                'device': 'cuda',
+                'verbosity': 0  # 减少输出
             })
             base = XGBRegressor(**gpu_params)
             
@@ -136,7 +149,8 @@ def train_lgbm(X_train, y_train, params: dict):
             gpu_params.update({
                 'device': 'gpu',
                 'gpu_platform_id': 0,
-                'gpu_device_id': 0
+                'gpu_device_id': 0,
+                'verbose': -1  # 减少输出
             })
             base = LGBMRegressor(**gpu_params)
             

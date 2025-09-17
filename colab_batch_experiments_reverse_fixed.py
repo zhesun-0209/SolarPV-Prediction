@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-SolarPV项目 - 批量实验脚本 (修复版本)
+SolarPV项目 - 批量实验脚本 (逆序修复版本)
 在Colab上运行100个项目的完整实验，保存结果到Google Drive
+从最大项目ID开始，逆序训练
 修复了临时文件冲突、超时设置等问题
 """
 
@@ -38,7 +39,7 @@ def get_data_files():
             project_id = file.replace("Project", "").replace(".csv", "")
             csv_files.append((project_id, os.path.join(data_dir, file)))
     
-    csv_files.sort(key=lambda x: int(x[0]))  # 正序排序
+    csv_files.sort(key=lambda x: int(x[0]), reverse=True)  # 逆序排序
     return csv_files
 
 def get_config_files():
@@ -47,10 +48,10 @@ def get_config_files():
     all_config_files = []
     
     if os.path.exists(config_dir):
-        for project_dir in sorted(os.listdir(config_dir)):
+        for project_dir in os.listdir(config_dir):
             project_path = os.path.join(config_dir, project_dir)
             if os.path.isdir(project_path):
-                for config_file in sorted(os.listdir(project_path)):
+                for config_file in os.listdir(project_path):
                     if config_file.endswith('.yaml'):
                         all_config_files.append(os.path.join(project_path, config_file))
     
@@ -257,7 +258,7 @@ def save_results_to_drive(results, drive_path):
 
 def main():
     """主函数"""
-    print("🌟 SolarPV项目 - 批量实验脚本 (修复版本)")
+    print("🌟 SolarPV项目 - 批量实验脚本 (逆序修复版本)")
     print("=" * 60)
     
     # 检查Google Drive
@@ -308,20 +309,20 @@ def main():
     failed_experiments = 0
     
     for project_idx, (project_id, data_file) in enumerate(data_files, 1):
-        print(f"\n🚀 开始项目 {project_id} 的实验 ({project_idx}/{len(data_files)})")
+        print(f"\n🚀 开始项目 {project_id} 的实验 (逆序: {project_idx}/{len(data_files)})")
         print(f"📁 数据文件: {data_file}")
         
         # 获取该项目的配置文件
-        project_configs = sorted([cf for cf in config_files if f"/{project_id}/" in cf])
+        project_configs = [cf for cf in config_files if f"/{project_id}/" in cf]
         print(f"📊 找到 {len(project_configs)} 个配置文件")
         
         if not project_configs:
             print(f"⚠️ 项目 {project_id} 没有配置文件，跳过")
             continue
         
-        # 显示一些已完成的实验示例
+        # 显示一些已完成的实验示例（用于调试）
         if completed_configs:
-            sample_completed = list(completed_configs)[:5]
+            sample_completed = list(completed_configs)[:5]  # 显示前5个
             print(f"🔍 已完成实验示例: {sample_completed}")
         
         project_results = []
@@ -334,7 +335,7 @@ def main():
             # 检查是否已完成
             if config_name in completed_configs:
                 skipped_count += 1
-                if skipped_count <= 5:
+                if skipped_count <= 5:  # 只显示前5个跳过的实验
                     print(f"⏭️ 跳过已完成实验: {config_name}")
                 continue
             
