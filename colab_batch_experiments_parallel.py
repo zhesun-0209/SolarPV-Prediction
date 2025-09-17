@@ -17,7 +17,7 @@ from pathlib import Path
 import re
 from concurrent.futures import ThreadPoolExecutor
 import torch
-from utils.experiment_gpu_utils import get_single_experiment_gpu_memory, global_monitor
+from utils.experiment_gpu_utils import get_single_experiment_gpu_memory
 
 def check_drive_mount():
     """检查Google Drive是否已挂载"""
@@ -362,15 +362,31 @@ class SingleGPUParallelExecutor:
         try:
             print(f"🔄 开始实验: {config_name}")
             
-            # 开始GPU内存监控
-            global_monitor.start_monitoring(experiment_id)
+            # 记录实验开始前的GPU内存
+            start_memory = 0
+            peak_memory_before = 0
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                start_memory = torch.cuda.memory_allocated() / 1024 / 1024
+                peak_memory_before = torch.cuda.max_memory_allocated() / 1024 / 1024
+                # 重置峰值内存计数器
+                torch.cuda.reset_peak_memory_stats()
             
             # 运行实验
             success, stdout, stderr, duration, config = run_experiment(config_file, data_file, project_id)
             
             if success:
-                # 获取准确的GPU内存使用量
-                actual_gpu_memory = global_monitor.stop_monitoring(experiment_id)
+                # 计算GPU内存使用量
+                actual_gpu_memory = 0
+                if torch.cuda.is_available():
+                    # 使用峰值内存来更准确地测量实验的内存使用
+                    peak_memory_after = torch.cuda.max_memory_allocated() / 1024 / 1024
+                    actual_gpu_memory = max(0, peak_memory_after - peak_memory_before)
+                    
+                    # 如果峰值内存测量失败，使用当前内存作为备选
+                    if actual_gpu_memory == 0:
+                        end_memory = torch.cuda.memory_allocated() / 1024 / 1024
+                        actual_gpu_memory = max(0, end_memory - start_memory)
                 
                 # 解析结果
                 result_row = parse_experiment_output(stdout, config_file, duration, config)
@@ -392,30 +408,27 @@ class SingleGPUParallelExecutor:
                         new_row_df = pd.DataFrame([result_row])
                         df = pd.concat([df, new_row_df], ignore_index=True)
                         
-                        # 保存CSV
-                        df.to_csv(csv_file, index=False)
-                        self.completed_count += 1
-                        
-                        print(f"✅ 完成: {config_name} ({duration:.1f}s) - MSE: {result_row['mse']:.4f}")
-                        print(f"💾 结果已保存到: {csv_file}")
-                        print(f"📊 GPU内存使用: {result_row['gpu_memory_used']}MB (准确测量)")
+                    # 保存CSV
+                    df.to_csv(csv_file, index=False)
+                    self.completed_count += 1
+                    
+                    print(f"✅ 完成: {config_name} ({duration:.1f}s) - MSE: {result_row['mse']:.4f}")
+                    print(f"💾 结果已保存到: {csv_file}")
+                    print(f"📊 GPU内存使用: {result_row['gpu_memory_used']}MB")
+                    if torch.cuda.is_available():
+                        current_memory = torch.cuda.memory_allocated() / 1024 / 1024
+                        print(f"🔍 调试信息: 开始内存={start_memory:.1f}MB, 峰值前={peak_memory_before:.1f}MB, 当前内存={current_memory:.1f}MB")
                 else:
                     with self.results_lock:
                         self.failed_count += 1
                     print(f"⚠️ 无法解析实验结果: {config_name}")
             else:
-                # 停止监控（即使实验失败）
-                global_monitor.stop_monitoring(experiment_id)
-                
                 with self.results_lock:
                     self.failed_count += 1
                 print(f"❌ 实验失败: {config_name}")
                 print(f"   错误: {stderr}")
                 
         except Exception as e:
-            # 停止监控（即使出现异常）
-            global_monitor.stop_monitoring(experiment_id)
-            
             with self.results_lock:
                 self.failed_count += 1
             print(f"💥 实验异常: {config_name} - {e}")
