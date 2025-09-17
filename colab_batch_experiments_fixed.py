@@ -377,6 +377,11 @@ def main():
                     print(f"✅ 实验完成: {config_name} ({duration:.1f}s) - MSE: {result_row['mse']:.4f}")
                     print(f"🔍 调试: 解析成功，结果字段: {list(result_row.keys())}")
                     print(f"🔍 调试: 当前project_results数量: {len(project_results)}")
+                    
+                    # 立即保存到CSV
+                    print(f"💾 立即保存结果到CSV...")
+                    save_results_to_drive([result_row], drive_path)
+                    print(f"✅ 结果已保存到CSV")
                 else:
                     failed_experiments += 1
                     print(f"⚠️ 无法解析实验结果: {config_name}")
