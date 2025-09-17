@@ -15,13 +15,14 @@ def get_optimizer(
     lr: float
 ) -> torch.optim.Optimizer:
     """
-    Create an Adam optimizer for the given model.
+    Create an AdamW optimizer for the given model.
+    使用AdamW解决周期性问题，有更好的泛化能力
 
     Args:
         model: PyTorch model
         lr: learning rate
     """
-    return torch.optim.Adam(model.parameters(), lr=lr)
+    return torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
 
 
 def get_scheduler(
