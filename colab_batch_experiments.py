@@ -103,6 +103,12 @@ def get_completed_experiment_configs(project_id, drive_path):
             df = pd.read_csv(csv_file)
             # 从CSV中提取配置信息，重建配置名称
             for _, row in df.iterrows():
+                # 获取所有必要的参数来重建完整的配置名称
+                model = row['model']
+                complexity = row['model_complexity']
+                past_days = row['past_days']
+                use_time_encoding = row['use_time_encoding']
+                
                 # 优先使用input_category字段（如果存在）
                 if 'input_category' in df.columns and pd.notna(row.get('input_category')):
                     input_cat = row['input_category']
@@ -129,19 +135,13 @@ def get_completed_experiment_configs(project_id, drive_path):
                     else:
                         continue  # 跳过无法识别的组合
                 
-                # 获取其他必要参数
-                model = row['model']
-                complexity = row['model_complexity']
-                past_days = row['past_days']
-                use_time_encoding = row['use_time_encoding']
-                
                 # 确定回看小时数
                 lookback_hours = past_days * 24
                 
                 # 确定时间编码后缀
                 te_suffix = 'TE' if use_time_encoding else 'noTE'
                 
-                # 重建配置名称
+                # 重建完整的配置名称（包含所有关键字段）
                 config_name = f"{model}_{complexity}_{input_cat}_{lookback_hours}h_{te_suffix}"
                 completed_configs.add(config_name)
                 

@@ -108,6 +108,12 @@ def get_completed_experiment_configs(project_id, drive_path):
             df = pd.read_csv(csv_file)
             # 从CSV中提取配置信息，重建配置名称
             for _, row in df.iterrows():
+                # 获取所有必要的参数来重建完整的配置名称
+                model = row['model']
+                complexity = row['model_complexity']
+                past_days = row['past_days']
+                use_time_encoding = row['use_time_encoding']
+                
                 # 优先使用input_category字段（如果存在）
                 if 'input_category' in df.columns and pd.notna(row.get('input_category')):
                     input_cat = row['input_category']
@@ -134,19 +140,13 @@ def get_completed_experiment_configs(project_id, drive_path):
                     else:
                         continue  # 跳过无法识别的组合
                 
-                # 获取其他必要参数
-                model = row['model']
-                complexity = row['model_complexity']
-                past_days = row['past_days']
-                use_time_encoding = row['use_time_encoding']
-                
                 # 确定回看小时数
                 lookback_hours = past_days * 24
                 
                 # 确定时间编码后缀
                 te_suffix = 'TE' if use_time_encoding else 'noTE'
                 
-                # 重建配置名称
+                # 重建完整的配置名称（包含所有关键字段）
                 config_name = f"{model}_{complexity}_{input_cat}_{lookback_hours}h_{te_suffix}"
                 completed_configs.add(config_name)
                 
@@ -556,18 +556,29 @@ def main():
         print(f"📁 结果保存到: {drive_path}")
         print(f"📊 已完成实验: {len(completed_configs)} 个")
         
+        # 显示一些已完成的实验示例（用于调试）
+        if completed_configs:
+            sample_completed = list(completed_configs)[:5]  # 显示前5个
+            print(f"🔍 已完成实验示例: {sample_completed}")
+        
         # 准备实验列表（跳过已完成的）
         experiments_to_run = []
+        skipped_count = 0
         for config_file in project_configs:
             config_name = os.path.basename(config_file)
             config_name_without_ext = config_name.replace('.yaml', '')
             
             # 跳过已完成的实验
             if config_name_without_ext in completed_configs:
-                print(f"⏭️ 跳过已完成实验: {config_name}")
+                skipped_count += 1
+                if skipped_count <= 5:  # 只显示前5个跳过的实验
+                    print(f"⏭️ 跳过已完成实验: {config_name}")
                 continue
             
             experiments_to_run.append((config_file, data_file, project_id))
+        
+        if skipped_count > 5:
+            print(f"⏭️ ... 还有 {skipped_count - 5} 个已完成的实验被跳过")
         
         if not experiments_to_run:
             print(f"✅ 项目 {project_id} 所有实验已完成!")
