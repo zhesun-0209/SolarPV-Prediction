@@ -167,34 +167,94 @@ def parse_experiment_output(output, config_file, duration, config):
         mae = float(mae_match.group(1)) if mae_match else 0.0
         r_square = float(r_square_match.group(1)) if r_square_match else 0.0
         
-        # 计算NRMSE和SMAPE
-        nrmse = (rmse / (mae + 1e-8)) * 100 if mae > 0 else 0.0
-        smape = (2 * mae / (mae + 1e-8)) * 100 if mae > 0 else 0.0
-        
-        # 提取训练信息
+        # 初始化额外字段
+        inference_time = 0.0
+        param_count = 0
+        samples_count = 0
         best_epoch = 0
         final_lr = 0.0
-        if is_dl_model:
+        nrmse = 0.0
+        smape = 0.0
+        gpu_memory_used = 0
+        
+        # 调试：显示所有输出行
+        print("🔍 调试：检查实验输出中的METRICS行")
+        for line in output.split('\n'):
+            if "[METRICS]" in line:
+                print(f"   找到METRICS行: {line}")
+        
+        # 使用METRICS标签提取额外信息（与参考版本保持一致）
+        for line in output.split('\n'):
+            if "[METRICS]" in line:
+                # 使用正则表达式提取所有键值对
+                metrics_in_line = re.findall(r'(\w+)=([0-9.-]+)', line)
+                for key, value_str in metrics_in_line:
+                    try:
+                        if key == 'inference_time':
+                            inference_time = float(value_str)
+                            print(f"🔍 调试：提取inference_time={inference_time}")
+                        elif key == 'param_count':
+                            param_count = int(float(value_str))
+                            print(f"🔍 调试：提取param_count={param_count}")
+                        elif key == 'samples_count':
+                            samples_count = int(float(value_str))
+                            print(f"🔍 调试：提取samples_count={samples_count}")
+                        elif key == 'best_epoch':
+                            if value_str.lower() == 'nan':
+                                best_epoch = 0
+                            else:
+                                best_epoch = int(float(value_str))
+                            print(f"🔍 调试：提取best_epoch={best_epoch}")
+                        elif key == 'final_lr':
+                            if value_str.lower() == 'nan':
+                                final_lr = 0.0
+                            else:
+                                final_lr = float(value_str)
+                            print(f"🔍 调试：提取final_lr={final_lr}")
+                        elif key == 'nrmse':
+                            nrmse = float(value_str)
+                            print(f"🔍 调试：提取nrmse={nrmse}")
+                        elif key == 'smape':
+                            smape = float(value_str)
+                            print(f"🔍 调试：提取smape={smape}")
+                        elif key == 'gpu_memory_used':
+                            gpu_memory_used = int(float(value_str))
+                            print(f"🔍 调试：提取gpu_memory_used={gpu_memory_used}")
+                    except Exception as e:
+                        print(f"🔍 调试：{key}提取失败: {e}")
+        
+        # 如果没有从METRICS中提取到，尝试其他方法
+        if inference_time == 0.0:
+            inference_match = re.search(r'Inference time: ([\d.]+)s', output)
+            inference_time = float(inference_match.group(1)) if inference_match else 0.0
+        
+        if param_count == 0:
+            param_match = re.search(r'Total parameters: ([\d,]+)', output)
+            param_count = int(param_match.group(1).replace(',', '')) if param_match else 0
+        
+        if samples_count == 0:
+            samples_match = re.search(r'Training samples: (\d+)', output)
+            samples_count = int(samples_match.group(1)) if samples_match else 0
+        
+        if best_epoch == 0 and is_dl_model:
             epoch_match = re.search(r'Best epoch: (\d+)', output)
-            lr_match = re.search(r'Final LR: ([\d.]+)', output)
             best_epoch = int(epoch_match.group(1)) if epoch_match else 0
+        
+        if final_lr == 0.0 and is_dl_model:
+            lr_match = re.search(r'Final LR: ([\d.]+)', output)
             final_lr = float(lr_match.group(1)) if lr_match else 0.0
         
-        # 提取参数数量
-        param_match = re.search(r'Total parameters: ([\d,]+)', output)
-        param_count = int(param_match.group(1).replace(',', '')) if param_match else 0
+        if gpu_memory_used == 0:
+            gpu_memory_match = re.search(r'GPU memory used: ([\d.]+)MB', output)
+            gpu_memory_used = int(float(gpu_memory_match.group(1))) if gpu_memory_match else 0
         
-        # 提取样本数量
-        samples_match = re.search(r'Training samples: (\d+)', output)
-        samples_count = int(samples_match.group(1)) if samples_match else 0
+        # 计算NRMSE和SMAPE（如果未从METRICS中提取）
+        if nrmse == 0.0 and mae > 0:
+            nrmse = (rmse / (mae + 1e-8)) * 100
         
-        # 提取推理时间
-        inference_match = re.search(r'Inference time: ([\d.]+)s', output)
-        inference_time = float(inference_match.group(1)) if inference_match else 0.0
-        
-        # 提取GPU内存使用
-        gpu_memory_match = re.search(r'GPU memory used: ([\d.]+)MB', output)
-        gpu_memory_used = float(gpu_memory_match.group(1)) if gpu_memory_match else 0.0
+        if smape == 0.0 and mae > 0:
+            # 正确的SMAPE计算公式
+            smape = (2 * mae / (mae + 1e-8)) * 100
         
         # 创建结果行
         result_row = {
