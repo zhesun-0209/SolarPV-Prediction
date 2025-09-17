@@ -28,8 +28,7 @@ save_options:
   save_training_log: false
 start_date: '2022-01-01'
 train_params:
-  batch_size: 64
-  learning_rate: 0.001
+  learning_rate: 0.01
   max_depth: 12
   n_estimators: 200
 train_ratio: 0.8

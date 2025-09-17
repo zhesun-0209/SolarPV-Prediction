@@ -17,6 +17,7 @@ from pathlib import Path
 import re
 from concurrent.futures import ThreadPoolExecutor
 import torch
+from utils.experiment_gpu_utils import get_single_experiment_gpu_memory, global_monitor
 
 def check_drive_mount():
     """检查Google Drive是否已挂载"""
@@ -349,17 +350,27 @@ class SingleGPUParallelExecutor:
     def execute_experiment(self, config_file, data_file, project_id, drive_path):
         """执行单个实验"""
         config_name = os.path.basename(config_file)
+        experiment_id = f"{project_id}_{config_name}_{int(time.time())}"
         
         try:
             print(f"🔄 开始实验: {config_name}")
+            
+            # 开始GPU内存监控
+            global_monitor.start_monitoring(experiment_id)
             
             # 运行实验
             success, stdout, stderr, duration, config = run_experiment(config_file, data_file, project_id)
             
             if success:
+                # 获取准确的GPU内存使用量
+                actual_gpu_memory = global_monitor.stop_monitoring(experiment_id)
+                
                 # 解析结果
                 result_row = parse_experiment_output(stdout, config_file, duration, config)
                 if result_row:
+                    # 使用准确的GPU内存测量值替换解析出的值
+                    result_row['gpu_memory_used'] = int(actual_gpu_memory)
+                    
                     # 保存结果到CSV
                     csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
                     
@@ -380,18 +391,24 @@ class SingleGPUParallelExecutor:
                         
                         print(f"✅ 完成: {config_name} ({duration:.1f}s) - MSE: {result_row['mse']:.4f}")
                         print(f"💾 结果已保存到: {csv_file}")
-                        print(f"📊 GPU内存使用: {result_row['gpu_memory_used']}MB")
+                        print(f"📊 GPU内存使用: {result_row['gpu_memory_used']}MB (准确测量)")
                 else:
                     with self.results_lock:
                         self.failed_count += 1
                     print(f"⚠️ 无法解析实验结果: {config_name}")
             else:
+                # 停止监控（即使实验失败）
+                global_monitor.stop_monitoring(experiment_id)
+                
                 with self.results_lock:
                     self.failed_count += 1
                 print(f"❌ 实验失败: {config_name}")
                 print(f"   错误: {stderr}")
                 
         except Exception as e:
+            # 停止监控（即使出现异常）
+            global_monitor.stop_monitoring(experiment_id)
+            
             with self.results_lock:
                 self.failed_count += 1
             print(f"💥 实验异常: {config_name} - {e}")
