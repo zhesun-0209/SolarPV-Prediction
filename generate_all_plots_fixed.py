@@ -151,6 +151,8 @@ def train_and_predict_single_model(df, project_id, model_name):
                 X_te = Xh_te.reshape(Xh_te.shape[0], -1)
             
             # 训练模型（抑制输出）
+            import io
+            from contextlib import redirect_stdout, redirect_stderr
             f = io.StringIO()
             with redirect_stdout(f), redirect_stderr(f):
                 if model_name == 'RF':
