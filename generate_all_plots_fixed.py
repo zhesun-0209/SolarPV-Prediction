@@ -16,8 +16,19 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
+# 抑制LGBM和TCN的调试信息
+import logging
+logging.getLogger('lightgbm').setLevel(logging.WARNING)
+logging.getLogger('tensorflow').setLevel(logging.WARNING)
+logging.getLogger('torch').setLevel(logging.WARNING)
+
+# 抑制其他可能的调试输出
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 抑制TensorFlow信息
+os.environ['LIGHTGBM_VERBOSE'] = '0'     # 抑制LightGBM信息
+
 # 设置matplotlib参数
-plt.rcParams['font.family'] = 'Arial'
+
 plt.rcParams['font.size'] = 16
 plt.rcParams['axes.labelsize'] = 18
 plt.rcParams['axes.titlesize'] = 20
@@ -101,7 +112,15 @@ def train_and_predict_single_model(df, project_id, model_name):
             test_data = (Xh_te, Xf_te, y_te, hrs_te, dates_te)
             scalers = (scaler_hist, scaler_fcst, scaler_target)
             
-            model, metrics = train_dl_model(config, train_data, val_data, test_data, scalers)
+            # 抑制训练过程中的输出
+            import sys
+            from contextlib import redirect_stdout, redirect_stderr
+            import io
+            
+            # 重定向stdout和stderr来抑制训练输出
+            f = io.StringIO()
+            with redirect_stdout(f), redirect_stderr(f):
+                model, metrics = train_dl_model(config, train_data, val_data, test_data, scalers)
             
             # 预测
             model.eval()
@@ -127,17 +146,19 @@ def train_and_predict_single_model(df, project_id, model_name):
             
             # 准备测试数据
             if Xf_te is not None:
-                X_te = np.concatenate([Xh_te.reshape(Xh_te.shape[0], -1), Xf_te.reshape(Xh_te.shape[0], -1)], axis=1)
+                X_te = np.concatenate([Xh_te.reshape(Xh_te.shape[0], -1), Xf_te.reshape(Xf_te.shape[0], -1)], axis=1)
             else:
                 X_te = Xh_te.reshape(Xh_te.shape[0], -1)
             
-            # 训练模型
-            if model_name == 'RF':
-                model = train_rf(X_tr, y_tr, config['model_params']['ml_low'])
-            elif model_name == 'XGB':
-                model = train_xgb(X_tr, y_tr, config['model_params']['ml_low'])
-            elif model_name == 'LGBM':
-                model = train_lgbm(X_tr, y_tr, config['model_params']['ml_low'])
+            # 训练模型（抑制输出）
+            f = io.StringIO()
+            with redirect_stdout(f), redirect_stderr(f):
+                if model_name == 'RF':
+                    model = train_rf(X_tr, y_tr, config['model_params']['ml_low'])
+                elif model_name == 'XGB':
+                    model = train_xgb(X_tr, y_tr, config['model_params']['ml_low'])
+                elif model_name == 'LGBM':
+                    model = train_lgbm(X_tr, y_tr, config['model_params']['ml_low'])
             
             # 预测
             y_pred = model.predict(X_te)
@@ -174,32 +195,28 @@ def plot_project_models(project_id, results):
     fig, axes = plt.subplots(2, 4, figsize=(20, 10))
     axes = axes.flatten()
     
-    # 获取Ground Truth数据（从第一个模型）
-    if results:
-        first_model = list(results.keys())[0]
-        y_true_ref, _, _ = results[first_model]
-        
-        # 取前168小时的数据（7天）
-        n_samples = min(168, len(y_true_ref))
-        y_true_plot = y_true_ref[:n_samples].flatten()  # 数据已经是百分比形式
-        
-        # 确保只取前168个时间步
-        if len(y_true_plot) > 168:
-            y_true_plot = y_true_plot[:168]
-        
-        timesteps = range(len(y_true_plot))
-    
     # 绘制每个模型的子图
     for i, (model_name, (y_true, y_pred, _)) in enumerate(results.items()):
         ax = axes[i]
         
         # 取前168小时的数据（7天）
         n_samples = min(168, len(y_true))
+        y_true_plot = y_true[:n_samples].flatten()  # 数据已经是百分比形式
         y_pred_plot = y_pred[:n_samples].flatten()  # 数据已经是百分比形式
         
         # 确保只取前168个时间步
+        if len(y_true_plot) > 168:
+            y_true_plot = y_true_plot[:168]
         if len(y_pred_plot) > 168:
             y_pred_plot = y_pred_plot[:168]
+        
+        # 确保两个数组长度一致
+        min_len = min(len(y_true_plot), len(y_pred_plot))
+        y_true_plot = y_true_plot[:min_len]
+        y_pred_plot = y_pred_plot[:min_len]
+        
+        # 重新计算timesteps以确保长度一致
+        timesteps = range(len(y_true_plot))
         
         # 绘制Ground Truth和预测结果
         ax.plot(timesteps, y_true_plot, 'gray', linewidth=2, label='Ground Truth', alpha=0.8)
