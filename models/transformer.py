@@ -21,7 +21,7 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 class Transformer(nn.Module):
-    """PV forecasting Transformer model with improved Encoder-Decoder architecture."""
+    """PV forecasting Transformer model - 使用正确的简单Encoder-only架构"""
     def __init__(
         self,
         hist_dim: int,
@@ -36,8 +36,8 @@ class Transformer(nn.Module):
         self.hist_proj = nn.Linear(hist_dim, d_model)
         self.fcst_proj = nn.Linear(fcst_dim, d_model) if fcst_dim > 0 else None
 
-        # Positional encoding
-        self.pos_enc = PositionalEncoding(d_model)
+        # 改进：局部位置编码
+        self.pos_enc = LocalPositionalEncoding(d_model)
 
         # Transformer encoder
         encoder_layer = nn.TransformerEncoderLayer(
@@ -49,29 +49,13 @@ class Transformer(nn.Module):
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=config['num_layers'])
 
-        # Improved architecture: use decoder-like approach for better sequence modeling
-        self.decoder = nn.TransformerDecoder(
-            nn.TransformerDecoderLayer(
-                d_model=d_model,
-                nhead=config['num_heads'],
-                dim_feedforward=d_model * 4,
-                dropout=config['dropout'],
-                batch_first=True
-            ),
-            num_layers=2
-        )
-        
-        # Create learnable query embeddings for future time steps
-        self.query_embeddings = nn.Parameter(
-            torch.randn(config['future_hours'], d_model)
-        )
-        
+        # 改进：使用ReLU激活和Sigmoid输出
         self.head = nn.Sequential(
             nn.Linear(d_model, config['hidden_dim']),
-            nn.ReLU(),
+            nn.ReLU(),  # 改为ReLU
             nn.Dropout(config['dropout']),
-            nn.Linear(config['hidden_dim'], 1),
-            nn.Softplus()
+            nn.Linear(config['hidden_dim'], config['future_hours']),  # 直接输出future_hours维度
+            nn.Sigmoid()  # 改为Sigmoid，输出[0,1]
         )
 
     def forward(
@@ -79,33 +63,43 @@ class Transformer(nn.Module):
         hist: torch.Tensor,        # shape: (B, past_hours, hist_dim)
         fcst: torch.Tensor = None  # shape: (B, future_hours, fcst_dim), optional
     ) -> torch.Tensor:
-        batch_size = hist.size(0)
-        
         # Encode historical input
         h = self.hist_proj(hist)              # (B, past_hours, d_model)
         h = self.pos_enc(h)
         h_enc = self.encoder(h)               # (B, past_hours, d_model)
 
-        # Create memory from historical encoding
-        memory = h_enc
-
-        # Encode forecast input if applicable and add to memory
+        # Encode forecast input if applicable
         if self.cfg.get('use_forecast', False) and fcst is not None and self.fcst_proj is not None:
             f = self.fcst_proj(fcst)          # (B, future_hours, d_model)
             f = self.pos_enc(f)
             f_enc = self.encoder(f)           # (B, future_hours, d_model)
-            memory = torch.cat([h_enc, f_enc], dim=1)  # (B, total_seq, d_model)
+            
+            # 使用历史编码的最后部分和预测编码
+            combined = torch.cat([h_enc, f_enc], dim=1)
+        else:
+            combined = h_enc
 
-        # Create query embeddings for future time steps
-        queries = self.query_embeddings.unsqueeze(0).expand(batch_size, -1, -1)  # (B, future_hours, d_model)
+        # 使用最后的时间步进行预测
+        last_timestep = combined[:, -1, :]  # (B, d_model)
+        result = self.head(last_timestep)   # (B, future_hours)
         
-        # Use decoder to generate predictions
-        decoded = self.decoder(queries, memory)  # (B, future_hours, d_model)
+        return result * 100  # 乘以100转换为百分比
+
+class LocalPositionalEncoding(nn.Module):
+    """局部位置编码"""
+    def __init__(self, d_model, max_len=100):
+        super().__init__()
+        self.d_model = d_model
         
-        # Apply head to each time step
-        outputs = []
-        for i in range(decoded.size(1)):
-            outputs.append(self.head(decoded[:, i, :]))  # (B, 1)
-        
-        return torch.cat(outputs, dim=1)  # (B, future_hours)
+        # 创建局部位置编码
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * 
+                           (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe.unsqueeze(0))
+
+    def forward(self, x):
+        return x + self.pe[:, :x.size(1)]
 
