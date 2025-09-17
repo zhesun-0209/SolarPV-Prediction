@@ -150,11 +150,11 @@ def parse_experiment_output(output, config_file, duration, config):
         is_dl_model = model_name in ['LSTM', 'GRU', 'Transformer', 'TCN']
         has_learning_rate = is_dl_model or model_name in ['XGB', 'LGBM']
         
-        # 提取指标
-        mse_match = re.search(r'MSE: ([\d.]+)', output)
-        rmse_match = re.search(r'RMSE: ([\d.]+)', output)
-        mae_match = re.search(r'MAE: ([\d.]+)', output)
-        r_square_match = re.search(r'R²: ([\d.]+)', output)
+        # 提取指标（使用正确的格式：mse=0.1234）
+        mse_match = re.search(r'mse=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
+        rmse_match = re.search(r'rmse=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
+        mae_match = re.search(r'mae=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
+        r_square_match = re.search(r'r_square=([+-]?[0-9]*\.?[0-9]+(?:[eE][+-]?[0-9]+)?)', output)
         
         # 调试：显示匹配结果
         print(f"🔍 调试: MSE匹配: {mse_match.group(1) if mse_match else 'None'}")
