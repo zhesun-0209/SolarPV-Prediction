@@ -155,6 +155,12 @@ def parse_experiment_output(output, config_file, duration, config):
         mae_match = re.search(r'MAE: ([\d.]+)', output)
         r_square_match = re.search(r'R²: ([\d.]+)', output)
         
+        # 调试：显示匹配结果
+        print(f"🔍 调试: MSE匹配: {mse_match.group(1) if mse_match else 'None'}")
+        print(f"🔍 调试: RMSE匹配: {rmse_match.group(1) if rmse_match else 'None'}")
+        print(f"🔍 调试: MAE匹配: {mae_match.group(1) if mae_match else 'None'}")
+        print(f"🔍 调试: R²匹配: {r_square_match.group(1) if r_square_match else 'None'}")
+        
         # 计算其他指标
         mse = float(mse_match.group(1)) if mse_match else 0.0
         rmse = float(rmse_match.group(1)) if rmse_match else 0.0
