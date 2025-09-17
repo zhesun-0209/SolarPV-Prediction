@@ -22,10 +22,15 @@ def generate_base_config():
         'start_date': '2022-01-01',
         'end_date': '2024-09-28',
         'train_params': {
-            'batch_size': 32,
-            'learning_rate': 5e-4,
+            'batch_size': 64,  # 优化后的批次大小
+            'learning_rate': 0.001,  # 统一学习率
             'loss_type': 'mse',
             'future_hours': 24
+        },
+        # 优化的训练参数
+        'epoch_params': {
+            'low': 50,   # 增加训练轮数解决周期性问题
+            'high': 80
         },
         'save_options': {
             'save_model': False,
@@ -119,7 +124,7 @@ def create_model_config(model, complexity):
         }
     elif model in ['RF', 'XGB', 'LGBM']:
         config['model_complexity'] = complexity
-        config['epochs'] = 15 if complexity == 'low' else 50
+        config['epochs'] = 50 if complexity == 'low' else 80  # 使用优化的epochs
         if complexity == 'low':
             config['model_params'] = {
                 'ml_low': {
@@ -158,7 +163,7 @@ def create_model_config(model, complexity):
             })
     else:  # 深度学习模型
         config['model_complexity'] = complexity
-        config['epochs'] = 15 if complexity == 'low' else 50
+        config['epochs'] = 50 if complexity == 'low' else 80  # 使用优化的epochs
         if complexity == 'low':
             if model == 'TCN':
                 config['model_params'] = {
@@ -192,12 +197,12 @@ def create_model_config(model, complexity):
                 }
             if model == 'TCN':
                 config['train_params'].update({
-                    'batch_size': 32,
+                    'batch_size': 64,  # 优化后的批次大小
                     'learning_rate': 0.001
                 })
             else:
                 config['train_params'].update({
-                    'batch_size': 32,
+                    'batch_size': 64,  # 优化后的批次大小
                     'learning_rate': 0.001
                 })
         else:  # high
@@ -233,12 +238,12 @@ def create_model_config(model, complexity):
                 }
             if model == 'TCN':
                 config['train_params'].update({
-                    'batch_size': 32,
+                    'batch_size': 64,  # 优化后的批次大小
                     'learning_rate': 0.001
                 })
             else:
                 config['train_params'].update({
-                    'batch_size': 32,
+                    'batch_size': 64,  # 优化后的批次大小
                     'learning_rate': 0.001
                 })
     

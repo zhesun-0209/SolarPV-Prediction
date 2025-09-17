@@ -1,6 +1,9 @@
 data_path: data/Project1140.csv
 end_date: '2024-09-28'
-epochs: 50
+epoch_params:
+  high: 80
+  low: 50
+epochs: 80
 future_hours: 24
 model: Transformer
 model_complexity: high
@@ -29,7 +32,7 @@ save_options:
   save_training_log: false
 start_date: '2022-01-01'
 train_params:
-  batch_size: 32
+  batch_size: 64
   learning_rate: 0.001
 train_ratio: 0.8
 use_forecast: false

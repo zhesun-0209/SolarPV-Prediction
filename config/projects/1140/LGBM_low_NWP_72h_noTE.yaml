@@ -1,6 +1,9 @@
 data_path: data/Project1140.csv
 end_date: '2024-09-28'
-epochs: 15
+epoch_params:
+  high: 80
+  low: 50
+epochs: 50
 future_hours: 24
 model: LGBM
 model_complexity: low
@@ -25,7 +28,8 @@ save_options:
   save_training_log: false
 start_date: '2022-01-01'
 train_params:
-  learning_rate: 0.1
+  batch_size: 64
+  learning_rate: 0.001
   max_depth: 5
   n_estimators: 50
 train_ratio: 0.8

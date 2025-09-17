@@ -1,3 +1,6 @@
+epoch_params:
+  high: 80
+  low: 50
 projects:
 - config_dir: config/projects/1140
   index_file: config/projects/1140/config_index.yaml

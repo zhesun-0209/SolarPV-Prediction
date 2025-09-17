@@ -1019,5 +1019,8 @@ configs:
 - config_id: 340
   file: Transformer_high_NWP_plus_72h_TE.yaml
   name: Transformer_high_NWP_plus_72h_TE
+epoch_params:
+  high: 80
+  low: 50
 project_id: '1140'
 total_configs: 340
