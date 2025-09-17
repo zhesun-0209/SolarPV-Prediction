@@ -64,7 +64,7 @@ def create_project_csv(project_id, drive_path):
         columns = [
             'model', 'use_pv', 'use_hist_weather', 'use_forecast', 'weather_category',
             'use_time_encoding', 'past_days', 'model_complexity', 'epochs', 'batch_size',
-            'learning_rate', 'use_ideal_nwp', 'train_time_sec', 'inference_time_sec', 'param_count',
+            'learning_rate', 'use_ideal_nwp', 'input_category', 'train_time_sec', 'inference_time_sec', 'param_count',
             'samples_count', 'best_epoch', 'final_lr', 'mse', 'rmse', 'mae', 'nrmse',
             'r_square', 'smape', 'gpu_memory_used'
         ]
@@ -103,31 +103,37 @@ def get_completed_experiment_configs(project_id, drive_path):
             df = pd.read_csv(csv_file)
             # 从CSV中提取配置信息，重建配置名称
             for _, row in df.iterrows():
-                # 根据CSV中的参数重建配置名称
+                # 获取所有必要的参数来重建完整的配置名称
                 model = row['model']
                 complexity = row['model_complexity']
-                use_pv = row['use_pv']
-                use_hist_weather = row['use_hist_weather']
-                use_forecast = row['use_forecast']
-                use_ideal_nwp = row.get('use_ideal_nwp', False)
                 past_days = row['past_days']
                 use_time_encoding = row['use_time_encoding']
                 
-                # 确定输入类别
-                if use_pv and not use_hist_weather and not use_forecast:
-                    input_cat = 'PV'
-                elif use_pv and not use_hist_weather and use_forecast and not use_ideal_nwp:
-                    input_cat = 'PV_plus_NWP'
-                elif use_pv and not use_hist_weather and use_forecast and use_ideal_nwp:
-                    input_cat = 'PV_plus_NWP_plus'
-                elif use_pv and use_hist_weather and not use_forecast:
-                    input_cat = 'PV_plus_HW'
-                elif not use_pv and not use_hist_weather and use_forecast and not use_ideal_nwp:
-                    input_cat = 'NWP'
-                elif not use_pv and not use_hist_weather and use_forecast and use_ideal_nwp:
-                    input_cat = 'NWP_plus'
+                # 优先使用input_category字段（如果存在）
+                if 'input_category' in df.columns and pd.notna(row.get('input_category')):
+                    input_cat = row['input_category']
                 else:
-                    continue  # 跳过无法识别的组合
+                    # 兼容旧格式：根据CSV中的参数重建配置名称
+                    use_pv = row['use_pv']
+                    use_hist_weather = row['use_hist_weather']
+                    use_forecast = row['use_forecast']
+                    use_ideal_nwp = row.get('use_ideal_nwp', False)
+                    
+                    # 确定输入类别
+                    if use_pv and not use_hist_weather and not use_forecast:
+                        input_cat = 'PV'
+                    elif use_pv and not use_hist_weather and use_forecast and not use_ideal_nwp:
+                        input_cat = 'PV_plus_NWP'
+                    elif use_pv and not use_hist_weather and use_forecast and use_ideal_nwp:
+                        input_cat = 'PV_plus_NWP_plus'
+                    elif use_pv and use_hist_weather and not use_forecast:
+                        input_cat = 'PV_plus_HW'
+                    elif not use_pv and not use_hist_weather and use_forecast and not use_ideal_nwp:
+                        input_cat = 'NWP'
+                    elif not use_pv and not use_hist_weather and use_forecast and use_ideal_nwp:
+                        input_cat = 'NWP_plus'
+                    else:
+                        continue  # 跳过无法识别的组合
                 
                 # 确定回看小时数
                 lookback_hours = past_days * 24
@@ -135,7 +141,7 @@ def get_completed_experiment_configs(project_id, drive_path):
                 # 确定时间编码后缀
                 te_suffix = 'TE' if use_time_encoding else 'noTE'
                 
-                # 重建配置名称
+                # 重建完整的配置名称（包含所有关键字段）
                 config_name = f"{model}_{complexity}_{input_cat}_{lookback_hours}h_{te_suffix}"
                 completed_configs.add(config_name)
                 
@@ -325,6 +331,7 @@ def parse_experiment_output(output, config_file, duration, config):
             'batch_size': config.get('train_params', {}).get('batch_size', 32) if is_dl_model else 0,
             'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if has_learning_rate else 0.0,
             'use_ideal_nwp': use_ideal_nwp,
+            'input_category': input_category,  # 添加input_category字段
             'train_time_sec': round(duration, 4),  # 使用传入的duration参数
             'inference_time_sec': inference_time,
             'param_count': param_count,
@@ -422,7 +429,13 @@ def main():
         print(f"📁 结果保存到: {drive_path}")
         print(f"📊 已完成实验: {len(completed_configs)} 个")
         
+        # 显示一些已完成的实验示例（用于调试）
+        if completed_configs:
+            sample_completed = list(completed_configs)[:5]  # 显示前5个
+            print(f"🔍 已完成实验示例: {sample_completed}")
+        
         # 运行实验
+        skipped_count = 0
         for exp_idx, config_file in enumerate(project_configs, 1):
             config_name = os.path.basename(config_file)
             # 移除.yaml后缀获取配置名称
@@ -430,7 +443,9 @@ def main():
             
             # 跳过已完成的实验（基于配置名称判断）
             if config_name_without_ext in completed_configs:
-                print(f"⏭️ 跳过已完成实验: {config_name}")
+                skipped_count += 1
+                if skipped_count <= 5:  # 只显示前5个跳过的实验
+                    print(f"⏭️ 跳过已完成实验: {config_name}")
                 continue
                 
             print(f"\n🔄 进度: {exp_idx}/{len(project_configs)} - {config_name}")
@@ -478,6 +493,9 @@ def main():
                 print(f"❌ 实验失败!")
                 print(f"   错误: {stderr}")
                 failed_experiments += 1
+        
+        if skipped_count > 5:
+            print(f"⏭️ ... 还有 {skipped_count - 5} 个已完成的实验被跳过")
         
         print(f"✅ 项目 {project_id} 完成!")
     
