@@ -5,14 +5,14 @@ import torch
 import torch.nn as nn
 
 class RNNBase(nn.Module):
-    def __init__(self, hist_dim: int, fcst_dim: int, config: dict, rnn_type: str = 'LSTM'):
+    def __init__(self, hist_dim: int, fcst_dim: int, config: dict, rnn_type: str = 'LSTM'):                                                                             
         super().__init__()
         self.cfg = config
         hidden = config['hidden_dim']
         layers = config['num_layers']
 
         self.hist_proj = nn.Linear(hist_dim, hidden) if hist_dim > 0 else None
-        self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None
+        self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None                                                    
 
         # 简化的RNN架构，与ML模型保持一致
         if rnn_type == 'LSTM':
@@ -27,7 +27,7 @@ class RNNBase(nn.Module):
             nn.Softplus()
         )
 
-    def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:                                                                                   
         seqs = []
 
         if self.hist_proj is not None and hist.shape[-1] > 0:
@@ -39,7 +39,7 @@ class RNNBase(nn.Module):
             seqs.append(f_proj)
 
         if not seqs:
-            raise ValueError("Both hist and forecast inputs are missing or zero-dimensional.")
+            raise ValueError("Both hist and forecast inputs are missing or zero-dimensional.")                                                                          
 
         seq = torch.cat(seqs, dim=1)  # (B, past+future, hidden)
         out, _ = self.rnn(seq)        # (B, seq_len, hidden)
@@ -55,7 +55,7 @@ class LSTM(nn.Module):
         layers = config['num_layers']
 
         self.hist_proj = nn.Linear(hist_dim, hidden) if hist_dim > 0 else None
-        self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None
+        self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None                                                    
 
         # LSTM层保持不变
         self.lstm = nn.LSTM(hidden, hidden, num_layers=layers,
@@ -76,7 +76,7 @@ class LSTM(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:                                                                                   
         seqs = []
 
         if self.hist_proj is not None and hist.shape[-1] > 0:
@@ -88,7 +88,7 @@ class LSTM(nn.Module):
             seqs.append(f_proj)
 
         if not seqs:
-            raise ValueError("Both hist and forecast inputs are missing or zero-dimensional.")
+            raise ValueError("Both hist and forecast inputs are missing or zero-dimensional.")                                                                          
 
         seq = torch.cat(seqs, dim=1)
         out, _ = self.lstm(seq)
@@ -112,7 +112,7 @@ class GRU(nn.Module):
         layers = config['num_layers']
 
         self.hist_proj = nn.Linear(hist_dim, hidden) if hist_dim > 0 else None
-        self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None
+        self.fcst_proj = nn.Linear(fcst_dim, hidden) if config.get('use_forecast', False) and fcst_dim > 0 else None                                                    
 
         # GRU层保持不变
         self.gru = nn.GRU(hidden, hidden, num_layers=layers,
@@ -127,7 +127,7 @@ class GRU(nn.Module):
             nn.Sigmoid()  # 改为Sigmoid，输出[0,1]
         )
 
-    def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, hist: torch.Tensor, fcst: torch.Tensor = None) -> torch.Tensor:                                                                                   
         seqs = []
 
         if self.hist_proj is not None and hist.shape[-1] > 0:
@@ -139,7 +139,7 @@ class GRU(nn.Module):
             seqs.append(f_proj)
 
         if not seqs:
-            raise ValueError("Both hist and forecast inputs are missing or zero-dimensional.")
+            raise ValueError("Both hist and forecast inputs are missing or zero-dimensional.")                                                                          
 
         seq = torch.cat(seqs, dim=1)  # (B, past+future, hidden)
         out, _ = self.gru(seq)        # (B, seq_len, hidden)

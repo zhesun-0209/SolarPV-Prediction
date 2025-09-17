@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 测试改进的LSTM和GRU模型 - 168小时预测
-使用多头注意力机制解决周期性问题
+使用残差连接和优化激活函数解决周期性问题
 """
 
 import os
@@ -504,12 +504,13 @@ def main():
     plot_168h_comparison(models, scaler)
     
     print("\n🎯 改进效果总结:")
-    print("   - 添加了多头时间注意力机制，让模型关注重要的时间步")
     print("   - 使用残差连接，改善梯度流和训练稳定性")
+    print("   - 优化激活函数组合 (ReLU + Sigmoid)，解决周期性问题")
     print("   - 统一了LSTM和GRU的架构配置")
     print("   - 专门针对168小时长期预测进行了优化")
     print("   - 梯度裁剪防止梯度爆炸问题")
     print("   - 使用真实Project1140数据训练，目标变量为Capacity Factor")
+    print("   - 时间特征使用正余弦编码，提高周期性建模能力")
 
 if __name__ == "__main__":
     main()
