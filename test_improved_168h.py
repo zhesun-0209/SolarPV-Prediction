@@ -266,16 +266,16 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
     return train_losses, val_losses
 
 def generate_predictions(model, X_test, y_test, config, model_name):
-    """生成预测并可视化 - 168小时（7天）连续预测对比图"""
-    print(f"🎨 生成{model_name}的168小时连续预测对比图...")
+    """生成预测并可视化 - 7个24小时预测连续展示"""
+    print(f"🎨 生成{model_name}的7天预测 (7个24小时预测)...")
     
     # 检查设备
     device = next(model.parameters()).device
     print(f"🖥️ 使用设备: {device}")
     
-    # 选择测试集前168个时间步（7天 * 24小时）
-    n_timesteps = min(168, len(X_test))
-    sample_indices = list(range(n_timesteps))
+    # 选择测试集前7个样本，每个样本预测24小时
+    n_samples = min(7, len(X_test))
+    sample_indices = list(range(n_samples))
     
     model.eval()
     with torch.no_grad():
@@ -288,27 +288,37 @@ def generate_predictions(model, X_test, y_test, config, model_name):
             hist_data = X_sample[:, :config['past_hours']]
             fcst_data = X_sample[:, config['past_hours']:]
             
-            # 生成预测
+            # 生成24小时预测
             pred = model(hist_data, fcst_data)
             pred_np = pred.cpu().numpy()[0]
             
-            # 只取第一个时间步的预测值（24小时预测的第一个小时）
-            predictions.append(pred_np[0])
-            ground_truths.append(y_test[idx][0])
+            predictions.append(pred_np)
+            ground_truths.append(y_test[idx])
     
-    # 创建168小时连续预测对比图
+    # 创建7天连续预测图 - 将7个24小时预测连接起来
     plt.figure(figsize=(20, 8))
     
-    # 时间轴：168小时 = 7天
-    time_hours = np.arange(168)
-    time_days = time_hours / 24  # 转换为天数
+    # 连接所有预测和真实值
+    all_predictions = []
+    all_ground_truths = []
     
-    # 绘制预测和真实值
-    plt.plot(time_hours, ground_truths, 'b-', label='Ground Truth', linewidth=2, alpha=0.8)
-    plt.plot(time_hours, predictions, 'r--', label=f'{model_name} Prediction', linewidth=2, alpha=0.8)
+    for i, (pred, gt) in enumerate(zip(predictions, ground_truths)):
+        # 为每个预测添加时间偏移
+        time_offset = i * 24
+        pred_times = np.arange(time_offset, time_offset + 24)
+        gt_times = np.arange(time_offset, time_offset + 24)
+        
+        all_predictions.extend(pred)
+        all_ground_truths.extend(gt)
+        
+        # 绘制每一天的预测
+        plt.plot(pred_times, pred, 'r--', linewidth=2, alpha=0.8, 
+                label=f'{model_name} Prediction' if i == 0 else "")
+        plt.plot(gt_times, gt, 'b-', linewidth=2, alpha=0.8,
+                label='Ground Truth' if i == 0 else "")
     
     # 设置图形属性
-    plt.title(f'{model_name} Model: 168-Hour Continuous Prediction vs Ground Truth (First 7 Days of Test Set)', 
+    plt.title(f'{model_name} Model: 7-Day Continuous Prediction (7 × 24-Hour Forecasts)', 
               fontsize=16, fontweight='bold')
     plt.xlabel('Time (Hours)', fontsize=14)
     plt.ylabel('Capacity Factor (0-100)', fontsize=14)
@@ -324,15 +334,15 @@ def generate_predictions(model, X_test, y_test, config, model_name):
     ax2.set_xlabel('Days', fontsize=14)
     
     # 设置y轴范围
-    all_values = ground_truths + predictions
+    all_values = all_ground_truths + all_predictions
     y_min, y_max = min(all_values), max(all_values)
     y_range = y_max - y_min
     plt.ylim(y_min - 0.1 * y_range, y_max + 0.1 * y_range)
     
     # 添加统计信息
-    mse = np.mean((np.array(predictions) - np.array(ground_truths)) ** 2)
+    mse = np.mean((np.array(all_predictions) - np.array(all_ground_truths)) ** 2)
     rmse = np.sqrt(mse)
-    mae = np.mean(np.abs(np.array(predictions) - np.array(ground_truths)))
+    mae = np.mean(np.abs(np.array(all_predictions) - np.array(all_ground_truths)))
     
     stats_text = f'RMSE: {rmse:.3f}\nMAE: {mae:.3f}'
     plt.text(0.02, 0.98, stats_text, transform=plt.gca().transAxes, 
@@ -340,38 +350,48 @@ def generate_predictions(model, X_test, y_test, config, model_name):
              fontsize=12)
     
     plt.tight_layout()
-    save_path = f'improved_{model_name.lower()}_168h_prediction.png'
+    save_path = f'improved_{model_name.lower()}_7days_prediction.png'
     plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.show()
     
-    print(f"✅ {model_name} 168小时连续预测对比图已保存到: {save_path}")
+    print(f"✅ {model_name} 7天连续预测对比图已保存到: {save_path}")
     print(f"📊 统计信息: RMSE={rmse:.3f}, MAE={mae:.3f}")
     
     return predictions, ground_truths
 
-def plot_168h_comparison(models, scaler):
-    """绘制168小时连续预测对比图 - LSTM vs GRU"""
-    print("📊 绘制168小时连续预测对比图...")
+def plot_7days_comparison(models, scaler):
+    """绘制7天连续预测对比图 - LSTM vs GRU"""
+    print("📊 绘制7天连续预测对比图...")
     
     fig, axes = plt.subplots(2, 1, figsize=(20, 12))
     
-    # 获取168小时的连续预测数据
-    lstm_pred = models['LSTM']['predictions']
-    gru_pred = models['GRU']['predictions']
-    y_true = models['LSTM']['ground_truths']
+    # 获取所有7天的预测数据
+    lstm_predictions = models['LSTM']['predictions']
+    gru_predictions = models['GRU']['predictions']
+    ground_truths = models['LSTM']['ground_truths']
     
-    # Capacity Factor不需要反标准化，已经是0-100范围
-    lstm_pred_denorm = lstm_pred
-    gru_pred_denorm = gru_pred
-    y_true_denorm = y_true
+    # 连接所有预测和真实值
+    all_lstm_preds = []
+    all_gru_preds = []
+    all_ground_truths = []
     
-    # 绘制预测结果
-    time_hours = np.arange(168)
-    axes[0].plot(time_hours, y_true_denorm, 'b-', label='Ground Truth', linewidth=2, alpha=0.8)
-    axes[0].plot(time_hours, lstm_pred_denorm, 'r--', label='LSTM Prediction', linewidth=2, alpha=0.8)
-    axes[0].plot(time_hours, gru_pred_denorm, 'g--', label='GRU Prediction', linewidth=2, alpha=0.8)
+    for i in range(len(lstm_predictions)):
+        time_offset = i * 24
+        pred_times = np.arange(time_offset, time_offset + 24)
+        
+        all_lstm_preds.extend(lstm_predictions[i])
+        all_gru_preds.extend(gru_predictions[i])
+        all_ground_truths.extend(ground_truths[i])
+        
+        # 绘制每一天的预测
+        axes[0].plot(pred_times, ground_truths[i], 'b-', linewidth=2, alpha=0.8,
+                    label='Ground Truth' if i == 0 else "")
+        axes[0].plot(pred_times, lstm_predictions[i], 'r--', linewidth=2, alpha=0.8,
+                    label='LSTM Prediction' if i == 0 else "")
+        axes[0].plot(pred_times, gru_predictions[i], 'g--', linewidth=2, alpha=0.8,
+                    label='GRU Prediction' if i == 0 else "")
     
-    axes[0].set_title('LSTM vs GRU: 168-Hour Continuous Prediction Comparison (First 7 Days of Test Set)', 
+    axes[0].set_title('LSTM vs GRU: 7-Day Continuous Prediction Comparison (7 × 24-Hour Forecasts)', 
                       fontsize=16, fontweight='bold')
     axes[0].set_xlabel('Time (Hours)', fontsize=14)
     axes[0].set_ylabel('Capacity Factor (0-100)', fontsize=14)
@@ -387,13 +407,25 @@ def plot_168h_comparison(models, scaler):
     ax2.set_xlabel('Days', fontsize=14)
     
     # 绘制误差对比
-    lstm_error = np.abs(lstm_pred_denorm - y_true_denorm)
-    gru_error = np.abs(gru_pred_denorm - y_true_denorm)
+    lstm_errors = []
+    gru_errors = []
     
-    axes[1].plot(time_hours, lstm_error, 'r-', label='LSTM Error', linewidth=2, alpha=0.8)
-    axes[1].plot(time_hours, gru_error, 'g-', label='GRU Error', linewidth=2, alpha=0.8)
+    for i in range(len(lstm_predictions)):
+        time_offset = i * 24
+        pred_times = np.arange(time_offset, time_offset + 24)
+        
+        lstm_error = np.abs(np.array(lstm_predictions[i]) - np.array(ground_truths[i]))
+        gru_error = np.abs(np.array(gru_predictions[i]) - np.array(ground_truths[i]))
+        
+        lstm_errors.extend(lstm_error)
+        gru_errors.extend(gru_error)
+        
+        axes[1].plot(pred_times, lstm_error, 'r-', linewidth=2, alpha=0.8,
+                    label='LSTM Error' if i == 0 else "")
+        axes[1].plot(pred_times, gru_error, 'g-', linewidth=2, alpha=0.8,
+                    label='GRU Error' if i == 0 else "")
     
-    axes[1].set_title('Prediction Error Comparison (Capacity Factor)', fontsize=16, fontweight='bold')
+    axes[1].set_title('Prediction Error Comparison (7 Days)', fontsize=16, fontweight='bold')
     axes[1].set_xlabel('Time (Hours)', fontsize=14)
     axes[1].set_ylabel('Absolute Error (0-100)', fontsize=14)
     axes[1].legend(fontsize=12)
@@ -408,10 +440,10 @@ def plot_168h_comparison(models, scaler):
     ax2.set_xlabel('Days', fontsize=14)
     
     # 添加统计信息
-    lstm_rmse = np.sqrt(np.mean(lstm_error ** 2))
-    gru_rmse = np.sqrt(np.mean(gru_error ** 2))
-    lstm_mae = np.mean(lstm_error)
-    gru_mae = np.mean(gru_error)
+    lstm_rmse = np.sqrt(np.mean(np.array(lstm_errors) ** 2))
+    gru_rmse = np.sqrt(np.mean(np.array(gru_errors) ** 2))
+    lstm_mae = np.mean(lstm_errors)
+    gru_mae = np.mean(gru_errors)
     
     stats_text = f'LSTM: RMSE={lstm_rmse:.3f}, MAE={lstm_mae:.3f}\nGRU: RMSE={gru_rmse:.3f}, MAE={gru_mae:.3f}'
     axes[0].text(0.02, 0.98, stats_text, transform=axes[0].transAxes, 
@@ -419,17 +451,17 @@ def plot_168h_comparison(models, scaler):
                  fontsize=11)
     
     plt.tight_layout()
-    save_path = 'improved_lstm_gru_comparison_168h.png'
+    save_path = 'improved_lstm_gru_comparison_7days.png'
     plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.show()
     
-    print(f"✅ 168小时连续预测对比图已保存为: {save_path}")
+    print(f"✅ 7天连续预测对比图已保存为: {save_path}")
     print(f"📊 LSTM统计: RMSE={lstm_rmse:.3f}, MAE={lstm_mae:.3f}")
     print(f"📊 GRU统计: RMSE={gru_rmse:.3f}, MAE={gru_mae:.3f}")
 
 def main():
     """主函数"""
-    print("🚀 测试改进的RNN模型 - 168小时预测 (7天预测)")
+    print("🚀 测试改进的RNN模型 - 7天预测 (7个24小时预测)")
     print("=" * 70)
     
     # 检查GPU可用性
@@ -513,7 +545,7 @@ def main():
     plt.plot(models['GRU']['val_losses'], label='GRU Val', color='red', linestyle='--', linewidth=2)
     plt.xlabel('Epoch', fontsize=12)
     plt.ylabel('Loss', fontsize=12)
-    plt.title('Training Progress Comparison (168h)', fontsize=14, fontweight='bold')
+    plt.title('Training Progress Comparison (7 Days)', fontsize=14, fontweight='bold')
     plt.legend(fontsize=11)
     plt.grid(True, alpha=0.3)
     
@@ -531,7 +563,7 @@ def main():
     
     plt.bar(['LSTM', 'GRU'], [np.mean(lstm_rmse), np.mean(gru_rmse)], color=['blue', 'red'], alpha=0.7)
     plt.ylabel('Average RMSE (Capacity Factor)', fontsize=12)
-    plt.title('Prediction Accuracy Comparison (168h)', fontsize=14, fontweight='bold')
+    plt.title('Prediction Accuracy Comparison (7 Days)', fontsize=14, fontweight='bold')
     plt.grid(True, alpha=0.3)
     
     # 参数数量对比
@@ -545,27 +577,27 @@ def main():
     plt.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    save_path = 'improved_rnn_comparison_168h.png'
+    save_path = 'improved_rnn_comparison_7days.png'
     plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.show()
     
     print(f"✅ 模型对比图已保存为: {save_path}")
     
-    # 绘制168小时预测对比图
-    print("\n📊 绘制168小时预测对比图...")
-    plot_168h_comparison(models, scaler)
+    # 绘制7天预测对比图
+    print("\n📊 绘制7天预测对比图...")
+    plot_7days_comparison(models, scaler)
     
     print("\n🎯 改进效果总结:")
     print("   - 使用残差连接，改善梯度流和训练稳定性")
     print("   - 优化激活函数组合 (ReLU + Sigmoid)，解决周期性问题")
     print("   - 统一了LSTM和GRU的架构配置")
-    print("   - 配置：72小时输入 → 168小时预测 (7天)")
+    print("   - 配置：72小时输入 → 24小时预测 (按照yaml low complexity配置)")
+    print("   - 7个24小时预测连续展示，形成7天预测效果")
     print("   - 梯度裁剪防止梯度爆炸问题")
     print("   - 使用真实Project1140数据训练，目标变量为Capacity Factor (0-100整数)")
     print("   - 特征组合：PV + NWP预测 + 历史天气 + 时间编码")
     print("   - 时间特征使用正余弦编码，提高周期性建模能力")
     print("   - Capacity Factor不进行标准化，保持0-100整数范围")
-    print("   - 增加模型复杂度以适应168小时长序列预测")
     print("   - 所有图表使用英文标签，便于国际交流")
 
 if __name__ == "__main__":
