@@ -31,13 +31,13 @@ def get_weather_features_by_category(weather_category):
     根据天气特征类别返回天气特征
     
     Args:
-        weather_category: 'irradiance', 'all_weather'
+        weather_category: 'none', 'all_weather'
     
     Returns:
         list: 选中的天气特征列表
     """
-    if weather_category == 'irradiance':
-        return IRRADIANCE_FEATURES
+    if weather_category == 'none':
+        return []  # 不返回任何天气特征
     elif weather_category == 'all_weather':
         return ALL_WEATHER_FEATURES
     else:
@@ -131,7 +131,7 @@ def preprocess_features(df: pd.DataFrame, config: dict):
     fcst_feats = []
 
     # 获取天气特征类别
-    weather_category = config.get('weather_category', 'irradiance')
+    weather_category = config.get('weather_category', 'none')
 
     # PV特征（历史发电量）
     if config.get('use_pv', False):

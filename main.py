@@ -49,8 +49,8 @@ def main():
                        help="Use historical PV power data")
     parser.add_argument("--use_hist_weather", type=str, choices=["true", "false"])
     parser.add_argument("--use_forecast", type=str, choices=["true", "false"])
-    parser.add_argument("--weather_category", type=str, choices=["irradiance", "all_weather"],
-                       help="Weather feature category: irradiance or all_weather")
+    parser.add_argument("--weather_category", type=str, choices=["none", "all_weather"],
+                       help="Weather feature category: none or all_weather")
     parser.add_argument("--use_time_encoding", type=str, choices=["true", "false"],
                        help="Use time encoding features (month/hour sin/cos)")
     parser.add_argument("--use_ideal_nwp", type=str, choices=["true", "false"],
@@ -211,7 +211,7 @@ def main():
     use_pv = config.get("use_pv", True)
     use_hist_weather = config.get("use_hist_weather", False)
     use_forecast = config.get("use_forecast", False)
-    weather_category = config.get("weather_category", "irradiance")
+    weather_category = config.get("weather_category", "none")
     use_time_encoding = config.get("use_time_encoding", True)
     past_days = config.get("past_days", 3)
     model_complexity = config.get("model_complexity", "low")
