@@ -475,11 +475,15 @@ def main():
     print(f"🎯 GPU: {gpu_name} ({gpu_memory:.1f}GB)")
     
     # 根据GPU内存设置并行数量
-    if gpu_memory >= 20:  # 20GB+
+    if gpu_memory >= 40:  # 40GB+ (A100等)
+        max_parallel = 6
+    elif gpu_memory >= 24:  # 24GB+ (RTX 4090, RTX 3090等)
+        max_parallel = 5
+    elif gpu_memory >= 16:  # 16GB+ (RTX 4080, T4等)
+        max_parallel = 4
+    elif gpu_memory >= 12:  # 12GB+ (RTX 4070等)
         max_parallel = 3
-    elif gpu_memory >= 12:  # 12GB+
-        max_parallel = 2
-    else:  # 8GB
+    else:  # 8GB+ (RTX 3070等)
         max_parallel = 2
     
     print(f"📊 设置并行数: {max_parallel}")
