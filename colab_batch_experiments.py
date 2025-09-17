@@ -321,8 +321,8 @@ def parse_experiment_output(output, config_file, duration, config):
             'use_time_encoding': time_encoding,
             'past_days': past_days,
             'model_complexity': complexity,
-            'epochs': config.get('epochs', 50 if complexity == 'high' else 15) if is_dl_model else 0,
-            'batch_size': config.get('train_params', {}).get('batch_size', 32) if is_dl_model else 0,
+            'epochs': config.get('epochs', 80 if complexity == 'high' else 50) if is_dl_model else 0,
+            'batch_size': config.get('train_params', {}).get('batch_size', 64) if is_dl_model else 0,
             'learning_rate': config.get('train_params', {}).get('learning_rate', 0.001) if has_learning_rate else 0.0,
             'use_ideal_nwp': use_ideal_nwp,
             'train_time_sec': round(duration, 4),  # 使用传入的duration参数
