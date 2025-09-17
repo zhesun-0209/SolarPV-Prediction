@@ -21,7 +21,7 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 class Transformer(nn.Module):
-    """PV forecasting Transformer model."""
+    """PV forecasting Transformer model with improved Encoder-Decoder architecture."""
     def __init__(
         self,
         hist_dim: int,
@@ -35,7 +35,6 @@ class Transformer(nn.Module):
         # Projection layers
         self.hist_proj = nn.Linear(hist_dim, d_model)
         self.fcst_proj = nn.Linear(fcst_dim, d_model) if fcst_dim > 0 else None
-
 
         # Positional encoding
         self.pos_enc = PositionalEncoding(d_model)
@@ -66,8 +65,6 @@ class Transformer(nn.Module):
         self.query_embeddings = nn.Parameter(
             torch.randn(config['future_hours'], d_model)
         )
-        
-        # 移除复杂的交叉注意力机制，保持简单性
         
         self.head = nn.Sequential(
             nn.Linear(d_model, config['hidden_dim']),
