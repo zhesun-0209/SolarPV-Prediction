@@ -53,6 +53,8 @@ def main():
                        help="Weather feature category: irradiance or all_weather")
     parser.add_argument("--use_time_encoding", type=str, choices=["true", "false"],
                        help="Use time encoding features (month/hour sin/cos)")
+    parser.add_argument("--use_ideal_nwp", type=str, choices=["true", "false"],
+                       help="Use ideal NWP features (without _pred suffix)")
     parser.add_argument("--no_hist_power", type=str, choices=["true", "false"], 
                        help="Only use forecast weather, no historical power data")
     parser.add_argument("--model_complexity", type=str, choices=["low", "high"])
@@ -123,6 +125,7 @@ def main():
     if args.use_forecast: config["use_forecast"] = str2bool(args.use_forecast)
     if args.weather_category: config["weather_category"] = args.weather_category
     if args.use_time_encoding: config["use_time_encoding"] = str2bool(args.use_time_encoding)
+    if args.use_ideal_nwp: config["use_ideal_nwp"] = str2bool(args.use_ideal_nwp)
     if args.no_hist_power: config["no_hist_power"] = str2bool(args.no_hist_power)
     if args.train_ratio: config["train_ratio"] = args.train_ratio
     if args.val_ratio: config["val_ratio"] = args.val_ratio

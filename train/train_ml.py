@@ -46,9 +46,21 @@ def train_ml_model(
         'LGBM':   ['n_estimators', 'max_depth', 'learning_rate', 'random_state'],
         'Linear': []  # Linear Regression has no hyperparameters
     }
+    # 根据模型复杂度选择参数
+    complexity = config.get('model_complexity', 'low')
     all_params = config.get('model_params', {})
+    
+    # 选择对应复杂度的参数
+    if complexity == 'high' and 'ml_high' in all_params:
+        model_params = all_params['ml_high']
+    elif complexity == 'low' and 'ml_low' in all_params:
+        model_params = all_params['ml_low']
+    else:
+        # 回退到直接使用model_params中的参数
+        model_params = all_params
+    
     allowed_keys = ml_param_keys.get(name, [])
-    params = {k: all_params[k] for k in allowed_keys if k in all_params}
+    params = {k: model_params[k] for k in allowed_keys if k in model_params}
 
     if 'learning_rate' in params:
         params['learning_rate'] = float(params['learning_rate'])

@@ -155,12 +155,21 @@ def train_and_predict_single_model(df, project_id, model_name):
             from contextlib import redirect_stdout, redirect_stderr
             f = io.StringIO()
             with redirect_stdout(f), redirect_stderr(f):
+                # 根据复杂度选择参数
+                complexity = config.get('model_complexity', 'low')
+                if complexity == 'high' and 'ml_high' in config['model_params']:
+                    ml_params = config['model_params']['ml_high']
+                elif complexity == 'low' and 'ml_low' in config['model_params']:
+                    ml_params = config['model_params']['ml_low']
+                else:
+                    ml_params = config['model_params']  # 回退
+                
                 if model_name == 'RF':
-                    model = train_rf(X_tr, y_tr, config['model_params']['ml_low'])
+                    model = train_rf(X_tr, y_tr, ml_params)
                 elif model_name == 'XGB':
-                    model = train_xgb(X_tr, y_tr, config['model_params']['ml_low'])
+                    model = train_xgb(X_tr, y_tr, ml_params)
                 elif model_name == 'LGBM':
-                    model = train_lgbm(X_tr, y_tr, config['model_params']['ml_low'])
+                    model = train_lgbm(X_tr, y_tr, ml_params)
             
             # 预测
             y_pred = model.predict(X_te)
