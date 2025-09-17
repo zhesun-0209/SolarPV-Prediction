@@ -234,51 +234,56 @@ def parse_experiment_output(output, config_file, duration, config):
         print(f"⚠️ 解析实验结果失败: {e}")
         return None
 
-def save_results_to_drive(results, drive_path):
-    """保存结果到Google Drive"""
+def create_project_csv(project_id, drive_path):
+    """为项目创建CSV文件"""
+    csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
+    
+    if not os.path.exists(csv_file):
+        # 创建CSV文件头
+        columns = [
+            'model', 'use_pv', 'use_hist_weather', 'use_forecast', 'weather_category',
+            'use_time_encoding', 'past_days', 'model_complexity', 'epochs', 'batch_size',
+            'learning_rate', 'use_ideal_nwp', 'input_category', 'train_time_sec', 'inference_time_sec', 'param_count',
+            'samples_count', 'best_epoch', 'final_lr', 'mse', 'rmse', 'mae', 'nrmse',
+            'r_square', 'smape', 'gpu_memory_used', 'config_file'
+        ]
+        
+        df = pd.DataFrame(columns=columns)
+        df.to_csv(csv_file, index=False)
+        print(f"📄 创建项目CSV文件: {csv_file}")
+        return True
+    else:
+        print(f"📄 项目CSV文件已存在: {csv_file}")
+        return True
+
+def save_single_result_to_csv(result_row, project_id, drive_path):
+    """保存单个结果到项目CSV文件"""
     try:
-        print(f"🔍 调试: 准备保存 {len(results)} 个结果到 {drive_path}")
+        csv_file = os.path.join(drive_path, f"{project_id}_results.csv")
         
-        results_dir = os.path.join(drive_path, "SolarPV_Results")
-        print(f"🔍 调试: 结果目录: {results_dir}")
-        
-        # 确保目录存在
-        os.makedirs(results_dir, exist_ok=True)
-        print(f"🔍 调试: 目录创建成功: {os.path.exists(results_dir)}")
-        
-        # 保存到CSV
-        results_file = os.path.join(results_dir, "all_results.csv")
-        print(f"🔍 调试: CSV文件路径: {results_file}")
-        
-        if os.path.exists(results_file):
-            print(f"🔍 调试: 读取现有CSV文件")
-            # 读取现有结果
-            existing_df = pd.read_csv(results_file)
-            print(f"🔍 调试: 现有结果数量: {len(existing_df)}")
-            new_df = pd.DataFrame(results)
-            print(f"🔍 调试: 新结果数量: {len(new_df)}")
-            combined_df = pd.concat([existing_df, new_df], ignore_index=True)
-            print(f"🔍 调试: 合并后结果数量: {len(combined_df)}")
+        # 读取现有CSV
+        if os.path.exists(csv_file):
+            df = pd.read_csv(csv_file)
         else:
-            print(f"🔍 调试: 创建新的CSV文件")
-            combined_df = pd.DataFrame(results)
-            print(f"🔍 调试: 新结果数量: {len(combined_df)}")
+            df = pd.DataFrame()
+        
+        # 添加新行
+        new_row_df = pd.DataFrame([result_row])
+        df = pd.concat([df, new_row_df], ignore_index=True)
         
         # 保存CSV
-        combined_df.to_csv(results_file, index=False)
-        print(f"✅ 结果已保存到: {results_file}")
-        print(f"🔍 调试: 文件大小: {os.path.getsize(results_file)} 字节")
+        df.to_csv(csv_file, index=False)
+        print(f"💾 结果已保存到: {csv_file}")
+        print(f"📊 CSV文件当前行数: {len(df)}")
+        print(f"📊 最新实验: {result_row['model']} - {result_row['mse']:.4f}")
         
-        # 保存到Excel
-        excel_file = os.path.join(results_dir, "all_results.xlsx")
-        combined_df.to_excel(excel_file, index=False)
-        print(f"✅ Excel结果已保存到: {excel_file}")
-        print(f"🔍 调试: Excel文件大小: {os.path.getsize(excel_file)} 字节")
+        return True
         
     except Exception as e:
-        print(f"❌ 保存结果失败: {e}")
+        print(f"❌ 保存单个结果失败: {e}")
         import traceback
         print(f"🔍 调试: 详细错误信息: {traceback.format_exc()}")
+        return False
 
 def main():
     """主函数"""
@@ -289,7 +294,9 @@ def main():
     if not check_drive_mount():
         return
     
-    drive_path = "/content/drive/MyDrive"
+    # 设置路径
+    drive_path = "/content/drive/MyDrive/Solar PV electricity/ablation results"
+    os.makedirs(drive_path, exist_ok=True)
     
     # 获取数据文件
     print("📁 扫描数据文件...")
@@ -344,10 +351,20 @@ def main():
             print(f"⚠️ 项目 {project_id} 没有配置文件，跳过")
             continue
         
-        # 显示一些已完成的实验示例（用于调试）
-        if completed_configs:
-            sample_completed = list(completed_configs)[:5]  # 显示前5个
-            print(f"🔍 已完成实验示例: {sample_completed}")
+        # 创建项目CSV文件
+        if not create_project_csv(project_id, drive_path):
+            print(f"❌ 无法为项目 {project_id} 创建CSV文件")
+            continue
+        
+        # 检查已完成的实验
+        completed_count = 0
+        if os.path.exists(os.path.join(drive_path, f"{project_id}_results.csv")):
+            try:
+                df = pd.read_csv(os.path.join(drive_path, f"{project_id}_results.csv"))
+                completed_count = len(df)
+                print(f"📊 已完成实验: {completed_count} 个")
+            except:
+                completed_count = 0
         
         project_results = []
         skipped_count = 0
@@ -379,10 +396,10 @@ def main():
                     print(f"🔍 调试: 解析成功，结果字段: {list(result_row.keys())}")
                     print(f"🔍 调试: 当前project_results数量: {len(project_results)}")
                     
-                    # 立即保存到CSV
-                    print(f"💾 立即保存结果到CSV...")
-                    save_results_to_drive([result_row], drive_path)
-                    print(f"✅ 结果已保存到CSV")
+                    # 立即保存到项目CSV
+                    print(f"💾 立即保存结果到项目CSV...")
+                    save_single_result_to_csv(result_row, project_id, drive_path)
+                    print(f"✅ 结果已保存到项目CSV")
                 else:
                     failed_experiments += 1
                     print(f"⚠️ 无法解析实验结果: {config_name}")
@@ -396,17 +413,8 @@ def main():
         if skipped_count > 5:
             print(f"⏭️ ... 还有 {skipped_count - 5} 个已完成的实验被跳过")
         
-        # 保存项目结果
-        print(f"🔍 调试: 准备保存项目 {project_id} 的结果")
-        print(f"🔍 调试: project_results数量: {len(project_results)}")
-        if project_results:
-            print(f"🔍 调试: 开始保存 {len(project_results)} 个结果到Drive")
-            save_results_to_drive(project_results, drive_path)
-            all_results.extend(project_results)
-            print(f"💾 项目 {project_id} 完成，保存了 {len(project_results)} 个结果")
-        else:
-            print(f"⚠️ 项目 {project_id} 没有结果需要保存")
-        
+        # 项目完成统计
+        print(f"✅ 项目 {project_id} 完成!")
         print(f"📊 项目 {project_id} 统计:")
         print(f"   总实验: {len(project_configs)}")
         print(f"   跳过: {skipped_count}")
