@@ -384,23 +384,17 @@ class SingleGPUParallelExecutor:
                         if model_name in ['Transformer']:
                             if complexity == 'high':
                                 actual_gpu_memory = 2000  # 2GB
-                            elif complexity == 'medium':
-                                actual_gpu_memory = 1500  # 1.5GB
-                            else:
+                            else:  # low
                                 actual_gpu_memory = 1000  # 1GB
                         elif model_name in ['LSTM', 'GRU']:
                             if complexity == 'high':
                                 actual_gpu_memory = 1200  # 1200MB (注意力机制增加内存)
-                            elif complexity == 'medium':
-                                actual_gpu_memory = 900   # 900MB (注意力机制增加内存)
-                            else:
+                            else:  # low
                                 actual_gpu_memory = 600   # 600MB (注意力机制增加内存)
                         elif model_name in ['TCN']:
                             if complexity == 'high':
                                 actual_gpu_memory = 1200  # 1.2GB
-                            elif complexity == 'medium':
-                                actual_gpu_memory = 900   # 900MB
-                            else:
+                            else:  # low
                                 actual_gpu_memory = 600   # 600MB
                         else:  # XGB, LGBM等
                             actual_gpu_memory = 200  # 200MB
