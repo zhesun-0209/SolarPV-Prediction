@@ -170,6 +170,14 @@ def train_and_predict_single_model(df, project_id, model_name):
         y_pred_orig = y_pred
         
         print(f"✅ {model_name} 模型训练完成")
+        
+        # 输出168个timestep的预测值（仅对LSTM和GRU）
+        if model_name in ['LSTM', 'GRU']:
+            print(f"📊 {model_name} 168个timestep预测值:")
+            print("Ground Truth:", y_te_orig[:168].flatten()[:20], "...")  # 显示前20个值
+            print("Prediction:  ", y_pred_orig[:168].flatten()[:20], "...")  # 显示前20个值
+            print(f"完整数据形状: GT={y_te_orig[:168].flatten().shape}, Pred={y_pred_orig[:168].flatten().shape}")
+        
         return y_te_orig, y_pred_orig, model_name
         
     except Exception as e:

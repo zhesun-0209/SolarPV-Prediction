@@ -47,7 +47,7 @@ class RNNBase(nn.Module):
 
 
 class LSTM(nn.Module):
-    """改进的LSTM forecasting model - 使用残差连接解决周期性问题"""
+    """改进的LSTM forecasting model - 使用残差连接和注意力机制解决周期性问题"""
     def __init__(self, hist_dim: int, fcst_dim: int, config: dict):
         super().__init__()
         self.cfg = config
@@ -61,6 +61,10 @@ class LSTM(nn.Module):
         self.lstm = nn.LSTM(hidden, hidden, num_layers=layers,
                            batch_first=True, dropout=config['dropout'])
 
+        # 添加注意力机制来打破周期性
+        self.attention = nn.MultiheadAttention(hidden, num_heads=4, batch_first=True)
+        self.norm1 = nn.LayerNorm(hidden)
+        
         # 改进：添加残差连接和更复杂的输出头
         self.head1 = nn.Sequential(
             nn.Linear(hidden, hidden),
@@ -93,6 +97,10 @@ class LSTM(nn.Module):
         seq = torch.cat(seqs, dim=1)
         out, _ = self.lstm(seq)
         
+        # 添加注意力机制来打破周期性
+        attn_out, _ = self.attention(out, out, out)
+        out = self.norm1(out + attn_out)  # 残差连接 + 层归一化
+        
         last_output = out[:, -1, :]
         
         # 残差连接 - 关键改进
@@ -104,7 +112,7 @@ class LSTM(nn.Module):
         return result * 100
 
 class GRU(nn.Module):
-    """改进的GRU forecasting model - 使用残差连接解决周期性问题"""
+    """改进的GRU forecasting model - 使用残差连接和注意力机制解决周期性问题"""
     def __init__(self, hist_dim: int, fcst_dim: int, config: dict):
         super().__init__()
         self.cfg = config
@@ -117,6 +125,10 @@ class GRU(nn.Module):
         # GRU层保持不变
         self.gru = nn.GRU(hidden, hidden, num_layers=layers,
                           batch_first=True, dropout=config['dropout'])
+
+        # 添加注意力机制来打破周期性
+        self.attention = nn.MultiheadAttention(hidden, num_heads=4, batch_first=True)
+        self.norm1 = nn.LayerNorm(hidden)
 
         # 改进：添加残差连接和更复杂的输出头（与LSTM一致）
         self.head1 = nn.Sequential(
@@ -149,6 +161,10 @@ class GRU(nn.Module):
 
         seq = torch.cat(seqs, dim=1)
         out, _ = self.gru(seq)
+        
+        # 添加注意力机制来打破周期性
+        attn_out, _ = self.attention(out, out, out)
+        out = self.norm1(out + attn_out)  # 残差连接 + 层归一化
         
         last_output = out[:, -1, :]
         
