@@ -58,7 +58,8 @@ def train_dl_model(
         tensors.append(torch.tensor(y, dtype=torch.float32))
         return DataLoader(TensorDataset(*tensors), batch_size=bs, shuffle=shuffle)
 
-    bs = int(config['train_params']['batch_size'])
+    # 增加batch size以解决周期性问题
+    bs = max(int(config['train_params']['batch_size']), 64)  # 至少使用64的batch size
     train_loader = make_loader(Xh_tr, Xf_tr, y_tr, hrs_tr, bs, shuffle=True)
     val_loader   = make_loader(Xh_va, Xf_va, y_va, hrs_va, bs)
     test_loader  = make_loader(Xh_te, Xf_te, y_te, hrs_te, bs)
@@ -103,16 +104,21 @@ def train_dl_model(
     )
     sched = get_scheduler(opt, train_params)
     
-    # 根据模型复杂度获取epoch数
+    # 根据模型复杂度获取epoch数 - 增加训练轮数以解决周期性问题
     complexity = config.get('model_complexity', 'low')
-    epoch_params = config.get('epoch_params', {'low': 30, 'high': 60})
-    epochs = epoch_params.get(complexity, 30)
+    epoch_params = config.get('epoch_params', {'low': 50, 'high': 80})  # 增加epochs
+    epochs = epoch_params.get(complexity, 50)
 
     mse_fn = torch.nn.MSELoss()
     logs = []
     total_time = 0.0
     total_train_time = 0.0
     total_inference_time = 0.0
+    
+    # 早停机制 - 解决周期性问题
+    best_val_loss = float('inf')
+    patience = 15
+    patience_counter = 0
 
     for ep in range(1, epochs + 1):
         model.train()
@@ -134,6 +140,8 @@ def train_dl_model(
 
             opt.zero_grad()
             loss.backward()
+            # 梯度裁剪 - 解决周期性问题
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             opt.step()
             train_loss += loss.item()
             
@@ -159,7 +167,14 @@ def train_dl_model(
                 val_loss += mse_fn(preds, yb).item()
 
         val_loss /= len(val_loader)
-        sched.step()
+        sched.step(val_loss)  # ReduceLROnPlateau需要传入验证损失
+        
+        # 早停检查
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+        else:
+            patience_counter += 1
         
         # Fix time calculation: separate epoch time from cumulative time
         epoch_time = time.time() - epoch_start
@@ -172,6 +187,11 @@ def train_dl_model(
             'epoch_time': epoch_time,
             'cum_time': total_time
         })
+        
+        # 早停
+        if patience_counter >= patience:
+            print(f"早停于第 {ep} 轮，验证损失: {val_loss:.4f}")
+            break
 
     # Test phase
     model.eval()

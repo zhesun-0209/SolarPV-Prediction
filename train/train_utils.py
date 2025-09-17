@@ -27,18 +27,22 @@ def get_optimizer(
 def get_scheduler(
     optimizer: torch.optim.Optimizer,
     train_params: dict
-) -> torch.optim.lr_scheduler.StepLR:
+) -> torch.optim.lr_scheduler.ReduceLROnPlateau:
     """
-    Create a StepLR scheduler for learning rate decay.
+    Create a ReduceLROnPlateau scheduler for learning rate decay.
+    更好的学习率调度策略，解决周期性问题
 
     Args:
         optimizer: optimizer to wrap
         train_params: dict containing training parameters
     """
-    return torch.optim.lr_scheduler.StepLR(
+    return torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
-        step_size=15,  # 每15个epoch衰减一次
-        gamma=0.8      # 学习率衰减到80%
+        mode='min',
+        factor=0.5,     # 学习率减半
+        patience=8,     # 8个epoch没有改善就降低学习率
+        min_lr=1e-6,    # 最小学习率
+        verbose=True
     )
 
 
