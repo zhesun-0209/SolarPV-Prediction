@@ -41,8 +41,7 @@ def get_scheduler(
         mode='min',
         factor=0.5,     # 学习率减半
         patience=8,     # 8个epoch没有改善就降低学习率
-        min_lr=1e-6,    # 最小学习率
-        verbose=True
+        min_lr=1e-6     # 最小学习率
     )
 
 
