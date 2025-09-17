@@ -9,7 +9,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from models.rnn_models import LSTM, GRU
 
 def load_real_data():
@@ -190,19 +189,12 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
     print("🔄 开始训练循环...")
     print("=" * 60)
     
-    # 创建epoch进度条
-    epoch_pbar = tqdm(range(config['epochs']), desc="训练进度", unit="epoch")
-    
-    for epoch in epoch_pbar:
+    for epoch in range(config['epochs']):
         # 训练阶段
         model.train()
         train_loss = 0.0
         
-        # 创建batch进度条
-        batch_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{config['epochs']}", 
-                         leave=False, unit="batch")
-        
-        for batch_X, batch_y in batch_pbar:
+        for batch_X, batch_y in train_loader:
             optimizer.zero_grad()
             
             # 分离历史数据和预测数据
@@ -215,7 +207,7 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
             
             # 检查NaN
             if torch.isnan(loss):
-                tqdm.write(f"❌ Epoch {epoch+1} 出现NaN损失，跳过此批次")
+                print(f"❌ Epoch {epoch+1} 出现NaN损失，跳过此批次")
                 continue
             
             # 反向传播
@@ -224,13 +216,6 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
             optimizer.step()
             
             train_loss += loss.item()
-            
-            # 更新batch进度条
-            batch_pbar.set_postfix({
-                'Loss': f'{loss.item():.6f}',
-                'Avg Loss': f'{train_loss/(batch_pbar.n+1):.6f}',
-                'GPU': f'{torch.cuda.memory_allocated()/1024**3:.1f}GB' if torch.cuda.is_available() else 'CPU'
-            })
         
         # 验证阶段
         model.eval()
@@ -251,29 +236,20 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
         else:
             patience_counter += 1
         
-        # 更新epoch进度条
-        current_lr = optimizer.param_groups[0]['lr']
-        epoch_pbar.set_postfix({
-            'Train Loss': f'{avg_train_loss:.6f}',
-            'Val Loss': f'{val_loss:.6f}',
-            'LR': f'{current_lr:.2e}',
-            'Patience': f'{patience_counter}/{config["patience"]}'
-        })
-        
-        # 详细训练进程输出
+        # 每5个epoch输出一次信息
         if epoch % 5 == 0 or epoch == config['epochs'] - 1:
-            tqdm.write(f"Epoch {epoch+1:3d}/{config['epochs']:3d} | "
-                      f"Train Loss: {avg_train_loss:.6f} | "
-                      f"Val Loss: {val_loss:.6f} | "
-                      f"LR: {current_lr:.2e} | "
-                      f"Patience: {patience_counter}/{config['patience']}")
+            current_lr = optimizer.param_groups[0]['lr']
+            gpu_memory = f"{torch.cuda.memory_allocated()/1024**3:.1f}GB" if torch.cuda.is_available() else "CPU"
+            print(f"Epoch {epoch+1:3d}/{config['epochs']:3d} | "
+                  f"Train Loss: {avg_train_loss:.6f} | "
+                  f"Val Loss: {val_loss:.6f} | "
+                  f"LR: {current_lr:.2e} | "
+                  f"Patience: {patience_counter}/{config['patience']} | "
+                  f"GPU: {gpu_memory}")
         
         if patience_counter >= config['patience']:
-            tqdm.write(f"🛑 早停于第 {epoch+1} 轮")
+            print(f"🛑 早停于第 {epoch+1} 轮")
             break
-    
-    # 关闭进度条
-    epoch_pbar.close()
     
     print("=" * 60)
     print(f"✅ {config['model']}训练完成!")
