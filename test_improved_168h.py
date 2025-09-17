@@ -29,12 +29,12 @@ def load_real_data():
     # 选择特征列 - 按照colab_batch_experiments的NWP+特征组合
     feature_cols = []
     
-    # 目标变量 - Electricity Generated (标准化)
-    if 'Electricity Generated' in df.columns:
-        feature_cols.append('Electricity Generated')
-        print("✅ 目标变量: Electricity Generated")
+    # 目标变量 - Capacity Factor (0-100范围，不标准化)
+    if 'Capacity Factor' in df.columns:
+        feature_cols.append('Capacity Factor')
+        print("✅ 目标变量: Capacity Factor (范围0-100)")
     else:
-        print("❌ 未找到'Electricity Generated'列")
+        print("❌ 未找到'Capacity Factor'列")
         return None
     
     # PV特征 - Electricity Generated (作为输入特征)
@@ -101,41 +101,37 @@ def load_real_data():
     
     print(f"✅ 最终数据形状: {data.shape}")
     print(f"✅ 数据范围: {data.min():.2f} - {data.max():.2f}")
-    print(f"✅ Electricity Generated范围: {data[:, 0].min():.2f} - {data[:, 0].max():.2f}")
+    print(f"✅ Capacity Factor范围: {data[:, 0].min():.2f} - {data[:, 0].max():.2f}")
     
     return data
 
 def prepare_sequences(data, past_hours=72, future_hours=24):
-    """准备序列数据，Electricity Generated作为目标变量，按照colab_batch_experiments配置"""
+    """准备序列数据，Capacity Factor作为目标变量，按照colab_batch_experiments配置"""
     print("🔧 准备序列数据...")
     print(f"📊 输入长度: {past_hours}小时, 预测长度: {future_hours}小时")
     
     # 分离目标变量和特征
-    electricity_generated = data[:, 0:1]  # Electricity Generated (需要标准化)
+    capacity_factor = data[:, 0:1]  # Capacity Factor (0-100范围，不标准化)
     features = data[:, 1:]  # 其他特征 (需要标准化)
     
-    # 对所有特征进行标准化
+    # 只对特征进行标准化
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features)
     
-    # 对目标变量也进行标准化
-    target_scaler = StandardScaler()
-    electricity_scaled = target_scaler.fit_transform(electricity_generated)
-    
-    # 重新组合数据
-    data_scaled = np.column_stack([electricity_scaled, features_scaled])
+    # 重新组合数据 - Capacity Factor不标准化
+    data_scaled = np.column_stack([capacity_factor, features_scaled])
     
     X, y = [], []
     for i in range(past_hours, len(data_scaled) - future_hours + 1):
         X.append(data_scaled[i-past_hours:i])  # 输入序列：所有特征
-        y.append(data_scaled[i:i+future_hours, 0])  # 目标序列：Electricity Generated (第一列，标准化)
+        y.append(data_scaled[i:i+future_hours, 0])  # 目标序列：Capacity Factor (第一列，未标准化)
     
     X = np.array(X, dtype=np.float32)
     y = np.array(y, dtype=np.float32)
     
     print(f"✅ 序列数据形状: X={X.shape}, y={y.shape}")
-    print(f"✅ 目标变量范围 (Electricity Generated): {y.min():.2f} - {y.max():.2f}")
+    print(f"✅ 目标变量范围 (Capacity Factor): {y.min():.2f} - {y.max():.2f}")
     
     # 分割数据
     train_size = int(0.8 * len(X))
@@ -150,7 +146,7 @@ def prepare_sequences(data, past_hours=72, future_hours=24):
     
     print(f"✅ 训练集: {X_train.shape}, 验证集: {X_val.shape}, 测试集: {X_test.shape}")
     
-    return (X_train, y_train, X_val, y_val, X_test, y_test), scaler, target_scaler
+    return (X_train, y_train, X_val, y_val, X_test, y_test), scaler
 
 def train_model(model, X_train, y_train, X_val, y_val, config):
     """训练模型"""
@@ -336,7 +332,7 @@ def generate_predictions(model, X_test, y_test, config, model_name):
     
     return predictions, ground_truths
 
-def plot_24h_comparison(models, target_scaler):
+def plot_24h_comparison(models, scaler):
     """绘制24小时预测对比图"""
     print("📊 绘制24小时预测对比图...")
     
@@ -348,23 +344,20 @@ def plot_24h_comparison(models, target_scaler):
     gru_pred = models['GRU']['predictions'][sample_idx]
     y_true = models['LSTM']['ground_truths'][sample_idx]
     
-    # 反标准化目标变量
-    def denormalize_target(pred, target_scaler):
-        return target_scaler.inverse_transform(pred.reshape(-1, 1)).flatten()
-    
-    lstm_pred_denorm = denormalize_target(lstm_pred, target_scaler)
-    gru_pred_denorm = denormalize_target(gru_pred, target_scaler)
-    y_true_denorm = denormalize_target(y_true, target_scaler)
+    # Capacity Factor不需要反标准化，已经是0-100范围
+    lstm_pred_denorm = lstm_pred
+    gru_pred_denorm = gru_pred
+    y_true_denorm = y_true
     
     # 绘制预测结果
     time_steps = range(24)
-    axes[0].plot(time_steps, y_true_denorm, 'b-', label='真实值 (Electricity Generated)', linewidth=2)
+    axes[0].plot(time_steps, y_true_denorm, 'b-', label='真实值 (Capacity Factor)', linewidth=2)
     axes[0].plot(time_steps, lstm_pred_denorm, 'r--', label='LSTM预测', linewidth=2)
     axes[0].plot(time_steps, gru_pred_denorm, 'g--', label='GRU预测', linewidth=2)
     
-    axes[0].set_title('LSTM vs GRU 预测对比 (24小时) - Electricity Generated', fontsize=14, fontweight='bold')
+    axes[0].set_title('LSTM vs GRU 预测对比 (24小时) - Capacity Factor', fontsize=14, fontweight='bold')
     axes[0].set_xlabel('时间 (小时)')
-    axes[0].set_ylabel('Electricity Generated (MW)')
+    axes[0].set_ylabel('Capacity Factor (%)')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
     
@@ -375,9 +368,9 @@ def plot_24h_comparison(models, target_scaler):
     axes[1].plot(time_steps, lstm_error, 'r-', label='LSTM误差', linewidth=2)
     axes[1].plot(time_steps, gru_error, 'g-', label='GRU误差', linewidth=2)
     
-    axes[1].set_title('预测误差对比 (Electricity Generated)', fontsize=14, fontweight='bold')
+    axes[1].set_title('预测误差对比 (Capacity Factor)', fontsize=14, fontweight='bold')
     axes[1].set_xlabel('时间 (小时)')
-    axes[1].set_ylabel('绝对误差 (MW)')
+    axes[1].set_ylabel('绝对误差 (%)')
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
     
@@ -417,7 +410,7 @@ def main():
         return
     
     # 准备序列数据
-    data_splits, scaler, target_scaler = prepare_sequences(data, config['past_hours'], config['future_hours'])
+    data_splits, scaler = prepare_sequences(data, config['past_hours'], config['future_hours'])
     X_train, y_train, X_val, y_val, X_test, y_test = data_splits
     
     # 测试LSTM和GRU
@@ -469,27 +462,17 @@ def main():
     # 预测精度对比 (反标准化后)
     plt.subplot(1, 3, 2)
     
-    # 反标准化预测结果和真实值
-    def denormalize_predictions(predictions, ground_truths, target_scaler):
-        denorm_preds = []
-        denorm_gts = []
-        for pred, gt in zip(predictions, ground_truths):
-            # 使用target_scaler反标准化目标变量
-            denorm_pred = target_scaler.inverse_transform(pred.reshape(-1, 1)).flatten()
-            denorm_gt = target_scaler.inverse_transform(gt.reshape(-1, 1)).flatten()
-            
-            denorm_preds.append(denorm_pred)
-            denorm_gts.append(denorm_gt)
-        return denorm_preds, denorm_gts
-    
-    lstm_preds_denorm, lstm_gts_denorm = denormalize_predictions(models['LSTM']['predictions'], models['LSTM']['ground_truths'], target_scaler)
-    gru_preds_denorm, gru_gts_denorm = denormalize_predictions(models['GRU']['predictions'], models['GRU']['ground_truths'], target_scaler)
+    # Capacity Factor不需要反标准化，已经是0-100范围
+    lstm_preds_denorm = models['LSTM']['predictions']
+    lstm_gts_denorm = models['LSTM']['ground_truths']
+    gru_preds_denorm = models['GRU']['predictions']
+    gru_gts_denorm = models['GRU']['ground_truths']
     
     lstm_rmse = [np.sqrt(np.mean((pred - gt) ** 2)) for pred, gt in zip(lstm_preds_denorm, lstm_gts_denorm)]
     gru_rmse = [np.sqrt(np.mean((pred - gt) ** 2)) for pred, gt in zip(gru_preds_denorm, gru_gts_denorm)]
     
     plt.bar(['LSTM', 'GRU'], [np.mean(lstm_rmse), np.mean(gru_rmse)], color=['blue', 'red'], alpha=0.7)
-    plt.ylabel('Average RMSE (Electricity Generated)')
+    plt.ylabel('Average RMSE (Capacity Factor)')
     plt.title('Prediction Accuracy Comparison')
     plt.grid(True, alpha=0.3)
     
@@ -509,7 +492,7 @@ def main():
     
     # 绘制24小时预测对比图
     print("\n📊 绘制24小时预测对比图...")
-    plot_24h_comparison(models, target_scaler)
+    plot_24h_comparison(models, scaler)
     
     print("\n🎯 改进效果总结:")
     print("   - 使用残差连接，改善梯度流和训练稳定性")
@@ -517,9 +500,10 @@ def main():
     print("   - 统一了LSTM和GRU的架构配置")
     print("   - 按照colab_batch_experiments配置：72小时输入 → 24小时预测")
     print("   - 梯度裁剪防止梯度爆炸问题")
-    print("   - 使用真实Project1140数据训练，目标变量为Electricity Generated")
+    print("   - 使用真实Project1140数据训练，目标变量为Capacity Factor (0-100%)")
     print("   - 特征组合：PV + NWP预测 + 历史天气 + 时间编码")
     print("   - 时间特征使用正余弦编码，提高周期性建模能力")
+    print("   - Capacity Factor不进行标准化，保持0-100范围")
 
 if __name__ == "__main__":
     main()
