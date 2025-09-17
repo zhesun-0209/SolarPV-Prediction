@@ -156,11 +156,21 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
     print(f"⚙️ 模型配置: hidden_dim={config['hidden_dim']}, num_layers={config['num_layers']}, dropout={config['dropout']}")
     print(f"📈 训练参数: epochs={config['epochs']}, batch_size={config['batch_size']}, lr={config['learning_rate']}")
     
-    # 转换为PyTorch张量
-    X_train_tensor = torch.FloatTensor(X_train)
-    y_train_tensor = torch.FloatTensor(y_train)
-    X_val_tensor = torch.FloatTensor(X_val)
-    y_val_tensor = torch.FloatTensor(y_val)
+    # 检查GPU可用性
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"🖥️ 使用设备: {device}")
+    if torch.cuda.is_available():
+        print(f"🚀 GPU型号: {torch.cuda.get_device_name(0)}")
+        print(f"💾 GPU内存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+    
+    # 将模型移动到GPU
+    model = model.to(device)
+    
+    # 转换为PyTorch张量并移动到GPU
+    X_train_tensor = torch.FloatTensor(X_train).to(device)
+    y_train_tensor = torch.FloatTensor(y_train).to(device)
+    X_val_tensor = torch.FloatTensor(X_val).to(device)
+    y_val_tensor = torch.FloatTensor(y_val).to(device)
     
     # 创建数据加载器
     train_dataset = torch.utils.data.TensorDataset(X_train_tensor, y_train_tensor)
@@ -218,7 +228,8 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
             # 更新batch进度条
             batch_pbar.set_postfix({
                 'Loss': f'{loss.item():.6f}',
-                'Avg Loss': f'{train_loss/(batch_pbar.n+1):.6f}'
+                'Avg Loss': f'{train_loss/(batch_pbar.n+1):.6f}',
+                'GPU': f'{torch.cuda.memory_allocated()/1024**3:.1f}GB' if torch.cuda.is_available() else 'CPU'
             })
         
         # 验证阶段
@@ -269,12 +280,22 @@ def train_model(model, X_train, y_train, X_val, y_val, config):
     print(f"📈 最佳验证损失: {best_val_loss:.6f}")
     print(f"📊 最终训练损失: {train_losses[-1]:.6f}")
     print(f"📊 最终验证损失: {val_losses[-1]:.6f}")
+    
+    # 清理GPU内存
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        print(f"🧹 GPU内存已清理: {torch.cuda.memory_allocated()/1024**3:.1f}GB")
+    
     print("=" * 60)
     return train_losses, val_losses
 
 def generate_predictions(model, X_test, y_test, config, model_name):
     """生成预测并可视化"""
-    print(f"🎨 生成{model_name}的168小时预测...")
+    print(f"🎨 生成{model_name}的24小时预测...")
+    
+    # 检查设备
+    device = next(model.parameters()).device
+    print(f"🖥️ 使用设备: {device}")
     
     # 选择几个测试样本
     n_samples = min(3, len(X_test))
@@ -286,8 +307,8 @@ def generate_predictions(model, X_test, y_test, config, model_name):
         ground_truths = []
         
         for idx in sample_indices:
-            # 准备输入数据
-            X_sample = torch.FloatTensor(X_test[idx:idx+1])
+            # 准备输入数据并移动到GPU
+            X_sample = torch.FloatTensor(X_test[idx:idx+1]).to(device)
             hist_data = X_sample[:, :config['past_hours']]
             fcst_data = X_sample[:, config['past_hours']:]
             
@@ -383,6 +404,17 @@ def plot_24h_comparison(models, scaler):
 def main():
     """主函数"""
     print("🚀 测试改进的RNN模型 - 24小时预测 (按照colab_batch_experiments配置)")
+    print("=" * 70)
+    
+    # 检查GPU可用性
+    print(f"🖥️ PyTorch版本: {torch.__version__}")
+    print(f"🔧 CUDA可用: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"🚀 GPU型号: {torch.cuda.get_device_name(0)}")
+        print(f"💾 GPU内存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        print(f"🔥 CUDA版本: {torch.version.cuda}")
+    else:
+        print("⚠️ 未检测到GPU，将使用CPU训练（速度较慢）")
     print("=" * 70)
     
     # 创建配置 - 参考colab_batch_experiments的low复杂度设置
