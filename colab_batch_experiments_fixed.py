@@ -56,19 +56,23 @@ def get_config_files():
     
     return all_config_files
 
-def get_completed_experiments(drive_path):
-    """获取已完成的实验列表"""
+def get_completed_experiments_for_project(project_id, drive_path):
+    """获取指定项目已完成的实验列表"""
     completed_configs = set()
     
     try:
-        results_file = os.path.join(drive_path, "SolarPV_Results", "all_results.csv")
-        if os.path.exists(results_file):
-            df = pd.read_csv(results_file)
+        project_csv = os.path.join(drive_path, f"{project_id}_results.csv")
+        if os.path.exists(project_csv):
+            df = pd.read_csv(project_csv)
             if 'config_file' in df.columns:
                 completed_configs = set(df['config_file'].tolist())
-                print(f"📊 发现 {len(completed_configs)} 个已完成的实验")
+                print(f"📊 项目 {project_id} 已完成实验: {len(completed_configs)} 个")
+            else:
+                print(f"⚠️ 项目 {project_id} CSV文件缺少config_file列")
+        else:
+            print(f"📄 项目 {project_id} 结果文件不存在，将从头开始")
     except Exception as e:
-        print(f"⚠️ 无法读取现有结果文件: {e}")
+        print(f"⚠️ 无法读取项目 {project_id} 结果文件: {e}")
     
     return completed_configs
 
@@ -389,9 +393,6 @@ def main():
             print(f"❌ 配置文件生成异常: {e}")
             return
     
-    # 获取已完成的实验
-    completed_configs = get_completed_experiments(drive_path)
-    
     # 开始实验
     all_results = []
     total_experiments = 0
@@ -415,15 +416,8 @@ def main():
             print(f"❌ 无法为项目 {project_id} 创建CSV文件")
             continue
         
-        # 检查已完成的实验
-        completed_count = 0
-        if os.path.exists(os.path.join(drive_path, f"{project_id}_results.csv")):
-            try:
-                df = pd.read_csv(os.path.join(drive_path, f"{project_id}_results.csv"))
-                completed_count = len(df)
-                print(f"📊 已完成实验: {completed_count} 个")
-            except:
-                completed_count = 0
+        # 获取该项目已完成的实验
+        completed_configs = get_completed_experiments_for_project(project_id, drive_path)
         
         project_results = []
         skipped_count = 0
