@@ -42,16 +42,25 @@ def get_data_files():
     return csv_files
 
 def get_config_files():
-    """获取所有配置文件"""
+    """获取所有配置文件，过滤掉非实验配置文件"""
     config_dir = "config/projects"
     all_config_files = []
+    
+    # 需要跳过的非实验配置文件
+    skip_files = {
+        'config_index.yaml',
+        'global_index.yaml', 
+        'index.yaml',
+        'README.yaml',
+        'readme.yaml'
+    }
     
     if os.path.exists(config_dir):
         for project_dir in sorted(os.listdir(config_dir)):
             project_path = os.path.join(config_dir, project_dir)
             if os.path.isdir(project_path):
                 for config_file in sorted(os.listdir(project_path)):
-                    if config_file.endswith('.yaml'):
+                    if config_file.endswith('.yaml') and config_file not in skip_files:
                         all_config_files.append(os.path.join(project_path, config_file))
     
     return all_config_files
