@@ -223,10 +223,22 @@ def generate_configs_for_plant(plant_id):
     config_count = 0
     
     for model_name, model_config in models.items():
-        for scenario_name, scenario_config in scenarios.items():
-            for lookback in lookbacks:
-                for te in te_options:
-                    for complexity in complexities:
+        # Linear模型只有NWP和NWP+场景，有TE选项，没有复杂度和lookback参数
+        if model_name == 'Linear':
+            model_scenarios = {k: v for k, v in scenarios.items() if k in ['NWP', 'NWP_plus']}
+            model_lookbacks = [24]  # 固定24小时
+            model_te_options = te_options  # 有2个TE选项
+            model_complexities = ['low']  # 固定低复杂度
+        else:
+            model_scenarios = scenarios
+            model_lookbacks = lookbacks
+            model_te_options = te_options
+            model_complexities = complexities
+            
+        for scenario_name, scenario_config in model_scenarios.items():
+            for lookback in model_lookbacks:
+                for te in model_te_options:
+                    for complexity in model_complexities:
                         # 生成配置文件名
                         te_str = 'TE' if te else 'noTE'
                         config_filename = f"{model_name}_{complexity}_{scenario_name}_{lookback}h_{te_str}.yaml"
