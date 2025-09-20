@@ -54,9 +54,17 @@ def load_and_preprocess_data(data_path, past_hours, future_hours, train_ratio, v
     )
     
     # 分割数据
-    train_data, val_data, test_data, scalers = split_data(
+    Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr, \
+    Xh_va, Xf_va, y_va, hrs_va, dates_va, \
+    Xh_te, Xf_te, y_te, hrs_te, dates_te = split_data(
         X_hist, X_fcst, y, hours, dates, train_ratio, val_ratio
     )
+    
+    # 组织数据为训练函数期望的格式
+    train_data = (Xh_tr, Xf_tr, y_tr, hrs_tr, dates_tr)
+    val_data = (Xh_va, Xf_va, y_va, hrs_va, dates_va)
+    test_data = (Xh_te, Xf_te, y_te, hrs_te, dates_te)
+    scalers = (scaler_hist, scaler_fcst, scaler_target)
     
     return train_data, val_data, test_data, scalers
 
