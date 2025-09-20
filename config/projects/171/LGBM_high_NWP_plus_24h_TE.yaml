@@ -1,4 +1,4 @@
-data_path: data/Project1140.csv
+data_path: data/Project171.csv
 end_date: '2024-09-28'
 epoch_params:
   high: 80
@@ -9,17 +9,19 @@ model: LGBM
 model_complexity: high
 model_params:
   high:
-    d_model: 256
-    dropout: 0.3
-    hidden_dim: 128
-    num_heads: 16
-    num_layers: 18
+    colsample_bytree: 0.8
+    learning_rate: 0.1
+    max_depth: 10
+    n_estimators: 200
+    random_state: 42
+    subsample: 0.8
   low:
-    d_model: 64
-    dropout: 0.1
-    hidden_dim: 32
-    num_heads: 4
-    num_layers: 6
+    colsample_bytree: 0.9
+    learning_rate: 0.1
+    max_depth: 6
+    n_estimators: 100
+    random_state: 42
+    subsample: 0.9
 past_days: 3
 past_hours: 24
 plot_days: 7
@@ -41,4 +43,4 @@ use_ideal_nwp: true
 use_pv: false
 use_time_encoding: true
 val_ratio: 0.1
-weather_category: all_weather
+weather_category: nwp_plus

@@ -32,6 +32,8 @@ drive.mount('/content/drive')
 !python /content/SolarPV-Prediction/colab_multi_plant_predictions.py
 ```
 
+**注意**：确保在运行步骤3之前，已经完成了步骤1和步骤2。
+
 ## 预期结果
 
 脚本将：

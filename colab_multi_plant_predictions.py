@@ -6,14 +6,14 @@ Colab环境下的多Plant预测结果保存脚本
 
 使用方法：
 1. 在Colab中先运行以下命令：
-   !pip install -q pyyaml pandas numpy scikit-learn xgboost lightgbm
-   from google.colab import drive
-   drive.mount('/content/drive')
-   !git clone https://github.com/zhesun-0209/SolarPV-Prediction.git /content/SolarPV-Prediction
-   !python /content/SolarPV-Prediction/generate_multi_plant_configs.py
+   # !pip install -q pyyaml pandas numpy scikit-learn xgboost lightgbm
+   # from google.colab import drive
+   # drive.mount('/content/drive')
+   # !git clone https://github.com/zhesun-0209/SolarPV-Prediction.git /content/SolarPV-Prediction
+   # !python /content/SolarPV-Prediction/generate_multi_plant_configs.py
 
 2. 然后运行此脚本：
-   !python /content/SolarPV-Prediction/colab_multi_plant_predictions.py
+   # !python /content/SolarPV-Prediction/colab_multi_plant_predictions.py
 """
 
 import os
@@ -29,6 +29,13 @@ import numpy as np
 import io
 from pathlib import Path
 from contextlib import redirect_stdout, redirect_stderr
+
+# 检查是否在Colab环境中
+try:
+    from google.colab import drive
+    IN_COLAB = True
+except ImportError:
+    IN_COLAB = False
 
 # 导入训练模块
 from train.train_dl import train_lstm, train_gru, train_tcn, train_transformer
@@ -343,24 +350,24 @@ def process_plant(plant_id, drive_path):
     
     print(f"✅ Plant {plant_id} 处理完成！")
 
-# 主执行部分
-print("🚀 多Plant预测结果保存到Google Drive...")
+def main():
+    """主函数"""
+    print("🚀 多Plant预测结果保存到Google Drive...")
+    
+    # Google Drive路径
+    drive_path = "/content/drive/MyDrive/Solar PV electricity/plot"
+    
+    # 确保Drive路径存在
+    os.makedirs(drive_path, exist_ok=True)
+    
+    # 要处理的Plant列表
+    plant_ids = [171, 172, 186]
+    
+    for plant_id in plant_ids:
+        process_plant(plant_id, drive_path)
+    
+    print(f"\n🎉 所有Plant处理完成！")
+    print(f"📁 结果保存在: {drive_path}")
 
-# Google Drive路径
-drive_path = "/content/drive/MyDrive/Solar PV electricity/plot"
-
-# 确保Drive路径存在
-os.makedirs(drive_path, exist_ok=True)
-
-# 要处理的Plant列表
-plant_ids = [171, 172, 186]
-
-# 首先生成配置文件
-print("📝 生成配置文件...")
-!python generate_multi_plant_configs.py
-
-for plant_id in plant_ids:
-    process_plant(plant_id, drive_path)
-
-print(f"\n🎉 所有Plant处理完成！")
-print(f"📁 结果保存在: {drive_path}")
+if __name__ == "__main__":
+    main()
