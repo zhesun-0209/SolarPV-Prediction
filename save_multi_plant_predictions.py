@@ -29,6 +29,15 @@ def load_and_preprocess_data(data_path, past_hours, future_hours, train_ratio, v
     # 加载原始数据
     df = load_raw_data(data_path)
     
+    # 映射weather_category到data_utils期望的值
+    weather_category_mapping = {
+        'none': 'none',
+        'hist_weather': 'all_weather',
+        'nwp': 'all_weather',
+        'nwp_plus': 'all_weather'
+    }
+    mapped_weather_category = weather_category_mapping.get(weather_category, 'none')
+    
     # 预处理特征
     df_processed = preprocess_features(df, {
         'use_pv': use_pv,
@@ -36,7 +45,7 @@ def load_and_preprocess_data(data_path, past_hours, future_hours, train_ratio, v
         'use_hist_weather': use_hist_weather,
         'use_ideal_nwp': use_ideal_nwp,
         'use_time_encoding': use_time_encoding,
-        'weather_category': weather_category
+        'weather_category': mapped_weather_category
     })
     
     # 获取特征列表
