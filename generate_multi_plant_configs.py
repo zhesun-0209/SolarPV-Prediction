@@ -150,69 +150,53 @@ def get_model_configs():
         },
         'RF': {
             'model_params': {
-                'high': {
+                'ml_high': {
                     'n_estimators': 200,
-                    'max_depth': 20,
-                    'min_samples_split': 2,
-                    'min_samples_leaf': 1,
-                    'random_state': 42
+                    'max_depth': 12,
+                    'learning_rate': 0.01
                 },
-                'low': {
-                    'n_estimators': 100,
-                    'max_depth': 10,
-                    'min_samples_split': 5,
-                    'min_samples_leaf': 2,
-                    'random_state': 42
+                'ml_low': {
+                    'n_estimators': 50,
+                    'max_depth': 5,
+                    'learning_rate': 0.1
                 }
             }
         },
         'XGB': {
             'model_params': {
-                'high': {
+                'ml_high': {
                     'n_estimators': 200,
-                    'max_depth': 10,
-                    'learning_rate': 0.1,
-                    'subsample': 0.8,
-                    'colsample_bytree': 0.8,
-                    'random_state': 42
+                    'max_depth': 12,
+                    'learning_rate': 0.01
                 },
-                'low': {
-                    'n_estimators': 100,
-                    'max_depth': 6,
-                    'learning_rate': 0.1,
-                    'subsample': 0.9,
-                    'colsample_bytree': 0.9,
-                    'random_state': 42
+                'ml_low': {
+                    'n_estimators': 50,
+                    'max_depth': 5,
+                    'learning_rate': 0.1
                 }
             }
         },
         'LGBM': {
             'model_params': {
-                'high': {
+                'ml_high': {
                     'n_estimators': 200,
-                    'max_depth': 10,
-                    'learning_rate': 0.1,
-                    'subsample': 0.8,
-                    'colsample_bytree': 0.8,
-                    'random_state': 42
+                    'max_depth': 12,
+                    'learning_rate': 0.01
                 },
-                'low': {
-                    'n_estimators': 100,
-                    'max_depth': 6,
-                    'learning_rate': 0.1,
-                    'subsample': 0.9,
-                    'colsample_bytree': 0.9,
-                    'random_state': 42
+                'ml_low': {
+                    'n_estimators': 50,
+                    'max_depth': 5,
+                    'learning_rate': 0.1
                 }
             }
         },
         'Linear': {
             'model_params': {
-                'high': {
+                'ml_high': {
                     'fit_intercept': True,
                     'normalize': False
                 },
-                'low': {
+                'ml_low': {
                     'fit_intercept': True,
                     'normalize': False
                 }
@@ -260,6 +244,15 @@ def generate_configs_for_plant(plant_id):
                         config_filename = f"{model_name}_{complexity}_{scenario_name}_{lookback}h_{te_str}.yaml"
                         config_path = os.path.join(config_dir, config_filename)
                         
+                        # 根据模型类型选择正确的参数键
+                        if model_name in ['RF', 'XGB', 'LGBM', 'Linear']:
+                            # 机器学习模型使用ml_high/ml_low
+                            ml_complexity = f'ml_{complexity}'
+                            model_params = {ml_complexity: model_config['model_params'][ml_complexity]}
+                        else:
+                            # 深度学习模型使用high/low
+                            model_params = model_config['model_params']
+                        
                         # 生成配置内容
                         config = {
                             'data_path': f'data/Project{plant_id}.csv',
@@ -272,7 +265,7 @@ def generate_configs_for_plant(plant_id):
                             'future_hours': 24,
                             'model': model_name,
                             'model_complexity': complexity,
-                            'model_params': model_config['model_params'],
+                            'model_params': model_params,
                             'past_days': 3,
                             'past_hours': lookback,
                             'plot_days': 7,
