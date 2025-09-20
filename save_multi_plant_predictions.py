@@ -198,8 +198,56 @@ def train_single_model(config_path, plant_id):
         print(f"❌ 模型训练失败: {e}")
         return None
 
+def save_single_experiment_to_csv(result, plant_id, drive_path, experiment_id):
+    """保存单个实验的结果到CSV文件（增量保存）"""
+    if result is None:
+        return
+    
+    # 创建Plant专用目录
+    plant_dir = os.path.join(drive_path, f'Plant_{plant_id}')
+    os.makedirs(plant_dir, exist_ok=True)
+    
+    # 取前168小时的数据（7天）
+    y_true = result['y_true'][:168].flatten()
+    y_pred = result['y_pred'][:168].flatten()
+    
+    # 确保长度一致
+    min_len = min(len(y_true), len(y_pred))
+    y_true = y_true[:min_len]
+    y_pred = y_pred[:min_len]
+    
+    # 创建时间序列数据
+    experiment_data = []
+    for j in range(min_len):
+        experiment_data.append({
+            'experiment_id': experiment_id,
+            'model': result['model_name'],
+            'scenario': result['scenario'],
+            'lookback': result['lookback'],
+            'te': result['te'],
+            'complexity': result['complexity'],
+            'timestep': j,
+            'ground_truth': y_true[j],
+            'prediction': y_pred[j],
+            'config_file': os.path.basename(result['config_path'])
+        })
+    
+    # 保存到CSV文件（追加模式）
+    csv_path = os.path.join(plant_dir, f'Plant_{plant_id}_predictions.csv')
+    experiment_df = pd.DataFrame(experiment_data)
+    
+    # 检查文件是否存在，如果不存在则写入表头
+    if not os.path.exists(csv_path):
+        experiment_df.to_csv(csv_path, index=False)
+        print(f"📁 创建新的CSV文件: {csv_path}")
+    else:
+        # 追加数据（不包含表头）
+        experiment_df.to_csv(csv_path, mode='a', header=False, index=False)
+    
+    print(f"💾 实验 {experiment_id} 结果已保存到CSV")
+
 def save_predictions_to_drive(results, plant_id, drive_path):
-    """保存预测结果到Google Drive"""
+    """保存预测结果到Google Drive（批量保存，用于最终汇总）"""
     print(f"💾 保存Plant {plant_id}的预测结果到Google Drive...")
     
     # 创建Plant专用目录
@@ -365,7 +413,7 @@ def process_plant(plant_id, drive_path):
     config_files = [f for f in os.listdir(config_dir) if f.endswith('.yaml')]
     print(f"📁 找到 {len(config_files)} 个配置文件")
     
-    # 训练所有模型
+    # 训练所有模型（增量保存）
     results = []
     for i, config_file in enumerate(config_files):
         config_path = os.path.join(config_dir, config_file)
@@ -373,8 +421,16 @@ def process_plant(plant_id, drive_path):
         
         result = train_single_model(config_path, plant_id)
         results.append(result)
+        
+        # 立即保存单个实验的结果（增量保存）
+        if result is not None:
+            save_single_experiment_to_csv(result, plant_id, drive_path, i + 1)
+        
+        # 每10个实验显示一次进度
+        if (i + 1) % 10 == 0:
+            print(f"🔄 已完成 {i+1}/{len(config_files)} 个实验")
     
-    # 保存结果到Google Drive
+    # 保存最终汇总结果到Google Drive
     save_predictions_to_drive(results, plant_id, drive_path)
     
     print(f"✅ Plant {plant_id} 处理完成！")
