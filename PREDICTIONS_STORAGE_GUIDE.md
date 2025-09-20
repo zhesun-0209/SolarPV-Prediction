@@ -20,8 +20,7 @@
 ├── RF_predictions.csv              # RF模型结果
 ├── XGB_predictions.csv             # XGB模型结果
 ├── LGBM_predictions.csv            # LGBM模型结果
-├── Linear_predictions.csv          # Linear模型结果
-└── LSR_predictions.csv             # LSR模型结果
+└── Linear_predictions.csv          # Linear模型结果（包含LSR）
 ```
 
 ## 文件格式说明
@@ -71,7 +70,7 @@
 ### 数据量估算
 - **汇总文件**: 340个实验 × 168个时间步 = 57,120行
 - **场景文件**: 平均每个场景约9,520行
-- **模型文件**: 平均每个模型约6,720行
+- **模型文件**: 平均每个模型约7,140行（8个模型）
 
 ## 使用方法
 

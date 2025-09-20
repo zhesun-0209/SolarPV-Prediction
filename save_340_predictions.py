@@ -134,7 +134,7 @@ def train_and_predict_single_model(df, config_path):
                     model = train_xgb(X_tr, y_tr, ml_params)
                 elif model_name == 'LGBM':
                     model = train_lgbm(X_tr, y_tr, ml_params)
-                elif model_name == 'Linear':
+                elif model_name in ['Linear', 'LSR']:
                     from sklearn.linear_model import LinearRegression
                     model = LinearRegression()
                     model.fit(X_tr, y_tr)
@@ -148,12 +148,15 @@ def train_and_predict_single_model(df, config_path):
         te = config.get('use_time_encoding', False)
         complexity = config.get('model_complexity', 'low')
         
+        # 模型名称映射：LSR -> Linear
+        model_name_mapped = 'Linear' if model_name == 'LSR' else model_name
+        
         print(f"✅ {model_name} 模型训练完成 - {scenario}")
         
         return {
             'y_true': y_te,
             'y_pred': y_pred,
-            'model_name': model_name,
+            'model_name': model_name_mapped,
             'scenario': scenario,
             'lookback': lookback,
             'te': te,
@@ -271,7 +274,7 @@ def save_predictions_to_csv(results, output_dir):
             print(f"✅ {scenario} CSV已保存: {scenario_path}")
     
     # 3. 按模型保存CSV文件
-    models = ['LSTM', 'GRU', 'TCN', 'Transformer', 'RF', 'XGB', 'LGBM', 'Linear', 'LSR']
+    models = ['LSTM', 'GRU', 'TCN', 'Transformer', 'RF', 'XGB', 'LGBM', 'Linear']
     
     for model in models:
         model_data = []
