@@ -40,7 +40,40 @@ except ImportError:
 # 导入训练模块
 from train.train_dl import train_dl_model
 from train.train_ml import train_ml_model
-from data.data_utils import load_and_preprocess_data
+from data.data_utils import load_raw_data, preprocess_features, create_sliding_windows, split_data
+
+def load_and_preprocess_data(data_path, past_hours, future_hours, train_ratio, val_ratio, 
+                            use_pv, use_forecast, use_hist_weather, use_ideal_nwp, 
+                            use_time_encoding, weather_category):
+    """加载和预处理数据"""
+    # 加载原始数据
+    df = load_raw_data(data_path)
+    
+    # 预处理特征
+    df_processed = preprocess_features(df, {
+        'use_pv': use_pv,
+        'use_forecast': use_forecast,
+        'use_hist_weather': use_hist_weather,
+        'use_ideal_nwp': use_ideal_nwp,
+        'use_time_encoding': use_time_encoding,
+        'weather_category': weather_category
+    })
+    
+    # 获取特征列表
+    hist_feats = df_processed.columns[df_processed.columns.str.contains('hist_')].tolist()
+    fcst_feats = df_processed.columns[df_processed.columns.str.contains('fcst_')].tolist()
+    
+    # 创建滑动窗口
+    X_hist, X_fcst, y, hours, dates = create_sliding_windows(
+        df_processed, past_hours, future_hours, hist_feats, fcst_feats
+    )
+    
+    # 分割数据
+    train_data, val_data, test_data, scalers = split_data(
+        X_hist, X_fcst, y, hours, dates, train_ratio, val_ratio
+    )
+    
+    return train_data, val_data, test_data, scalers
 
 def get_scenario_name(config):
     """根据配置获取场景名称"""
@@ -81,7 +114,6 @@ def train_single_model(config_path, plant_id):
             return None
         
         # 使用现有的数据加载函数
-        from data.data_utils import load_and_preprocess_data
         train_data, val_data, test_data, scalers = load_and_preprocess_data(
             data_path=data_path,
             past_hours=config['past_hours'],
