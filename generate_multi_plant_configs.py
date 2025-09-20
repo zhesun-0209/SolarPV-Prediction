@@ -64,17 +64,21 @@ def get_model_configs():
             'model_params': {
                 'high': {
                     'd_model': 256,
-                    'dropout': 0.3,
-                    'hidden_dim': 128,
                     'num_heads': 16,
-                    'num_layers': 18
+                    'num_layers': 18,
+                    'hidden_dim': 128,
+                    'dropout': 0.3,
+                    'tcn_channels': [128, 128, 64, 32],
+                    'kernel_size': 3
                 },
                 'low': {
                     'd_model': 64,
-                    'dropout': 0.1,
-                    'hidden_dim': 32,
                     'num_heads': 4,
-                    'num_layers': 6
+                    'num_layers': 6,
+                    'hidden_dim': 32,
+                    'dropout': 0.1,
+                    'tcn_channels': [64, 64, 32],
+                    'kernel_size': 3
                 }
             }
         },
@@ -82,17 +86,21 @@ def get_model_configs():
             'model_params': {
                 'high': {
                     'd_model': 256,
-                    'dropout': 0.3,
-                    'hidden_dim': 128,
                     'num_heads': 16,
-                    'num_layers': 18
+                    'num_layers': 18,
+                    'hidden_dim': 128,
+                    'dropout': 0.3,
+                    'tcn_channels': [128, 128, 64, 32],
+                    'kernel_size': 3
                 },
                 'low': {
                     'd_model': 64,
-                    'dropout': 0.1,
-                    'hidden_dim': 32,
                     'num_heads': 4,
-                    'num_layers': 6
+                    'num_layers': 6,
+                    'hidden_dim': 32,
+                    'dropout': 0.1,
+                    'tcn_channels': [64, 64, 32],
+                    'kernel_size': 3
                 }
             }
         },
@@ -122,17 +130,21 @@ def get_model_configs():
             'model_params': {
                 'high': {
                     'd_model': 256,
-                    'dropout': 0.3,
-                    'hidden_dim': 128,
                     'num_heads': 16,
-                    'num_layers': 18
+                    'num_layers': 18,
+                    'hidden_dim': 128,
+                    'dropout': 0.3,
+                    'tcn_channels': [128, 128, 64, 32],
+                    'kernel_size': 3
                 },
                 'low': {
                     'd_model': 64,
-                    'dropout': 0.1,
-                    'hidden_dim': 32,
                     'num_heads': 4,
-                    'num_layers': 6
+                    'num_layers': 6,
+                    'hidden_dim': 32,
+                    'dropout': 0.1,
+                    'tcn_channels': [64, 64, 32],
+                    'kernel_size': 3
                 }
             }
         },
