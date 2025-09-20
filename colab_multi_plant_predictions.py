@@ -153,8 +153,8 @@ def train_single_model(config_path, plant_id):
                     test_data=test_data,
                     scalers=scalers
                 )
-                y_pred = metrics['y_pred_inv']
-                y_true = metrics['y_true_inv']
+                y_pred = metrics['predictions']
+                y_true = metrics['y_true']
                 dates_te = test_data[4]  # dates from test_data
             else:
                 # 机器学习模型
@@ -173,8 +173,8 @@ def train_single_model(config_path, plant_id):
                     dates_test=dates_te,
                     scaler_target=scaler_target
                 )
-                y_pred = metrics['y_pred_inv']
-                y_true = metrics['y_true_inv']
+                y_pred = metrics['predictions']
+                y_true = metrics['y_true']
         
         # 获取配置信息
         scenario = get_scenario_name(config)
