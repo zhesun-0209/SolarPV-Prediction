@@ -59,7 +59,7 @@ def load_and_preprocess_data(data_path, past_hours, future_hours, train_ratio, v
     mapped_weather_category = weather_category_mapping.get(weather_category, 'none')
     
     # 预处理特征
-    df_processed = preprocess_features(df, {
+    df_processed, hist_feats, fcst_feats, scaler_hist, scaler_fcst, scaler_target = preprocess_features(df, {
         'use_pv': use_pv,
         'use_forecast': use_forecast,
         'use_hist_weather': use_hist_weather,
@@ -67,10 +67,6 @@ def load_and_preprocess_data(data_path, past_hours, future_hours, train_ratio, v
         'use_time_encoding': use_time_encoding,
         'weather_category': mapped_weather_category
     })
-    
-    # 获取特征列表
-    hist_feats = df_processed.columns[df_processed.columns.str.contains('hist_')].tolist()
-    fcst_feats = df_processed.columns[df_processed.columns.str.contains('fcst_')].tolist()
     
     # 创建滑动窗口
     X_hist, X_fcst, y, hours, dates = create_sliding_windows(
