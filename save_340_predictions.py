@@ -238,6 +238,10 @@ def save_predictions_to_csv(results, output_dir):
     # 2. 按场景保存CSV文件
     scenarios = ['PV', 'PV+NWP', 'PV+NWP+', 'PV+HW', 'NWP', 'NWP+']
     
+    # 创建by_scenario子目录
+    by_scenario_dir = os.path.join(output_dir, 'by_scenario')
+    os.makedirs(by_scenario_dir, exist_ok=True)
+    
     for scenario in scenarios:
         scenario_data = []
         
@@ -269,12 +273,16 @@ def save_predictions_to_csv(results, output_dir):
         
         if scenario_data:
             scenario_df = pd.DataFrame(scenario_data)
-            scenario_path = os.path.join(output_dir, f'{scenario}_predictions.csv')
+            scenario_path = os.path.join(by_scenario_dir, f'{scenario}_predictions.csv')
             scenario_df.to_csv(scenario_path, index=False)
             print(f"✅ {scenario} CSV已保存: {scenario_path}")
     
     # 3. 按模型保存CSV文件
     models = ['LSTM', 'GRU', 'TCN', 'Transformer', 'RF', 'XGB', 'LGBM', 'Linear']
+    
+    # 创建by_model子目录
+    by_model_dir = os.path.join(output_dir, 'by_model')
+    os.makedirs(by_model_dir, exist_ok=True)
     
     for model in models:
         model_data = []
@@ -307,7 +315,7 @@ def save_predictions_to_csv(results, output_dir):
         
         if model_data:
             model_df = pd.DataFrame(model_data)
-            model_path = os.path.join(output_dir, f'{model}_predictions.csv')
+            model_path = os.path.join(by_model_dir, f'{model}_predictions.csv')
             model_df.to_csv(model_path, index=False)
             print(f"✅ {model} CSV已保存: {model_path}")
     

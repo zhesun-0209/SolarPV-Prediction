@@ -7,20 +7,22 @@
 340_predictions_results/
 ├── all_predictions_summary.csv      # 汇总文件（所有结果）
 ├── experiment_configs.csv           # 实验配置汇总
-├── PV_predictions.csv              # PV场景结果
-├── PV+NWP_predictions.csv          # PV+NWP场景结果
-├── PV+NWP+_predictions.csv         # PV+NWP+场景结果
-├── PV+HW_predictions.csv           # PV+HW场景结果
-├── NWP_predictions.csv             # NWP场景结果
-├── NWP+_predictions.csv            # NWP+场景结果
-├── LSTM_predictions.csv            # LSTM模型结果
-├── GRU_predictions.csv             # GRU模型结果
-├── TCN_predictions.csv             # TCN模型结果
-├── Transformer_predictions.csv     # Transformer模型结果
-├── RF_predictions.csv              # RF模型结果
-├── XGB_predictions.csv             # XGB模型结果
-├── LGBM_predictions.csv            # LGBM模型结果
-└── Linear_predictions.csv          # Linear模型结果（包含LSR）
+├── by_scenario/                     # 按场景分组
+│   ├── PV_predictions.csv
+│   ├── PV+NWP_predictions.csv
+│   ├── PV+NWP+_predictions.csv
+│   ├── PV+HW_predictions.csv
+│   ├── NWP_predictions.csv
+│   └── NWP+_predictions.csv
+└── by_model/                        # 按模型分组
+    ├── LSTM_predictions.csv
+    ├── GRU_predictions.csv
+    ├── TCN_predictions.csv
+    ├── Transformer_predictions.csv
+    ├── RF_predictions.csv
+    ├── XGB_predictions.csv
+    ├── LGBM_predictions.csv
+    └── Linear_predictions.csv       # Linear模型结果（包含LSR）
 ```
 
 ## 文件格式说明
