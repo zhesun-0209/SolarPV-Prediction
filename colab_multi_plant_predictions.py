@@ -3,21 +3,21 @@
 """
 Colab环境下的多Plant预测结果保存脚本
 为Plant 171、172、186生成配置并保存预测结果到Google Drive
+
+使用方法：
+1. 在Colab中先运行以下命令：
+   !pip install -q pyyaml pandas numpy scikit-learn xgboost lightgbm
+   from google.colab import drive
+   drive.mount('/content/drive')
+   !git clone https://github.com/zhesun-0209/SolarPV-Prediction.git /content/SolarPV-Prediction
+   !python /content/SolarPV-Prediction/generate_multi_plant_configs.py
+
+2. 然后运行此脚本：
+   !python /content/SolarPV-Prediction/colab_multi_plant_predictions.py
 """
 
-# 安装依赖
-!pip install -q pyyaml pandas numpy scikit-learn xgboost lightgbm
-
-# 挂载Google Drive
-from google.colab import drive
-drive.mount('/content/drive')
-
-# 克隆仓库
-!git clone https://github.com/zhesun-0209/SolarPV-Prediction.git /content/SolarPV-Prediction
-
-# 切换到项目目录
 import os
-os.chdir('/content/SolarPV-Prediction')
+import sys
 
 # 导入必要的库
 import sys
