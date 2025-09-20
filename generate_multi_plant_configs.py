@@ -99,18 +99,22 @@ def get_model_configs():
         'TCN': {
             'model_params': {
                 'high': {
-                    'tcn_channels': [64, 128, 256, 128, 64],
-                    'kernel_size': 3,
-                    'dropout': 0.3,
+                    'd_model': 256,
+                    'num_heads': 16,
+                    'num_layers': 18,
                     'hidden_dim': 128,
-                    'num_layers': 5
+                    'dropout': 0.3,
+                    'tcn_channels': [128, 128, 64, 32],
+                    'kernel_size': 3
                 },
                 'low': {
-                    'tcn_channels': [32, 64, 32],
-                    'kernel_size': 3,
-                    'dropout': 0.1,
+                    'd_model': 64,
+                    'num_heads': 4,
+                    'num_layers': 6,
                     'hidden_dim': 32,
-                    'num_layers': 3
+                    'dropout': 0.1,
+                    'tcn_channels': [64, 64, 32],
+                    'kernel_size': 3
                 }
             }
         },
