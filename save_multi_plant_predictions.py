@@ -18,8 +18,8 @@ from contextlib import redirect_stdout, redirect_stderr
 sys.path.append('/content/SolarPV-Prediction')
 
 # 导入训练模块
-from train.train_dl import train_lstm, train_gru, train_tcn, train_transformer
-from train.train_ml import train_rf, train_xgb, train_lgbm
+from train.train_dl import train_dl_model
+from train.train_ml import train_ml_model
 from data.data_utils import load_and_preprocess_data
 
 def get_scenario_name(config):
@@ -74,54 +74,55 @@ def train_single_model(config_path, plant_id):
             weather_category=config['weather_category']
         )
         
-        # 训练模型
-        if model_name in ['LSTM', 'GRU', 'TCN', 'Transformer']:
-            # 深度学习模型
-            from contextlib import redirect_stdout, redirect_stderr
-            f = io.StringIO()
-            with redirect_stdout(f), redirect_stderr(f):
-                complexity = config.get('model_complexity', 'low')
-                if complexity == 'high' and 'ml_high' in config['model_params']:
-                    dl_params = config['model_params']['ml_high']
-                elif complexity == 'low' and 'ml_low' in config['model_params']:
-                    dl_params = config['model_params']['ml_low']
-                else:
-                    dl_params = config['model_params']
-                
-                if model_name == 'LSTM':
-                    model = train_lstm(X_tr, y_tr, dl_params)
-                elif model_name == 'GRU':
-                    model = train_gru(X_tr, y_tr, dl_params)
-                elif model_name == 'TCN':
-                    model = train_tcn(X_tr, y_tr, dl_params)
-                elif model_name == 'Transformer':
-                    model = train_transformer(X_tr, y_tr, dl_params)
-        else:
-            # 机器学习模型
-            from contextlib import redirect_stdout, redirect_stderr
-            f = io.StringIO()
-            with redirect_stdout(f), redirect_stderr(f):
-                complexity = config.get('model_complexity', 'low')
-                if complexity == 'high' and 'ml_high' in config['model_params']:
-                    ml_params = config['model_params']['ml_high']
-                elif complexity == 'low' and 'ml_low' in config['model_params']:
-                    ml_params = config['model_params']['ml_low']
-                else:
-                    ml_params = config['model_params']
-                
-                if model_name == 'RF':
-                    model = train_rf(X_tr, y_tr, ml_params)
-                elif model_name == 'XGB':
-                    model = train_xgb(X_tr, y_tr, ml_params)
-                elif model_name == 'LGBM':
-                    model = train_lgbm(X_tr, y_tr, ml_params)
-                elif model_name in ['Linear', 'LSR']:
-                    from sklearn.linear_model import LinearRegression
-                    model = LinearRegression()
-                    model.fit(X_tr, y_tr)
+        # 使用现有的数据加载函数
+        train_data, val_data, test_data, scalers = load_and_preprocess_data(
+            data_path=data_path,
+            past_hours=config['past_hours'],
+            future_hours=config['future_hours'],
+            train_ratio=config['train_ratio'],
+            val_ratio=config['val_ratio'],
+            use_pv=config['use_pv'],
+            use_forecast=config['use_forecast'],
+            use_hist_weather=config['use_hist_weather'],
+            use_ideal_nwp=config['use_ideal_nwp'],
+            use_time_encoding=config['use_time_encoding'],
+            weather_category=config['weather_category']
+        )
         
-        # 预测
-        y_pred = model.predict(X_te)
+        # 训练模型
+        f = io.StringIO()
+        with redirect_stdout(f), redirect_stderr(f):
+            if model_name in ['LSTM', 'GRU', 'TCN', 'Transformer']:
+                # 深度学习模型
+                model, metrics = train_dl_model(
+                    config=config,
+                    train_data=train_data,
+                    val_data=val_data,
+                    test_data=test_data,
+                    scalers=scalers
+                )
+                y_pred = metrics['y_pred_inv']
+                y_true = metrics['y_true_inv']
+                dates_te = test_data[4]  # dates from test_data
+            else:
+                # 机器学习模型
+                Xh_train, Xf_train, y_train, _, _ = train_data
+                Xh_test, Xf_test, y_test, _, dates_te = test_data
+                scaler_target = scalers[2]
+                
+                model, metrics = train_ml_model(
+                    config=config,
+                    Xh_train=Xh_train,
+                    Xf_train=Xf_train,
+                    y_train=y_train,
+                    Xh_test=Xh_test,
+                    Xf_test=Xf_test,
+                    y_test=y_test,
+                    dates_test=dates_te,
+                    scaler_target=scaler_target
+                )
+                y_pred = metrics['y_pred_inv']
+                y_true = metrics['y_true_inv']
         
         # 获取配置信息
         scenario = get_scenario_name(config)
@@ -135,7 +136,7 @@ def train_single_model(config_path, plant_id):
         print(f"✅ {model_name} 模型训练完成 - {scenario}")
         
         return {
-            'y_true': y_te,
+            'y_true': y_true,
             'y_pred': y_pred,
             'model_name': model_name_mapped,
             'scenario': scenario,
