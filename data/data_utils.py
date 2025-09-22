@@ -25,13 +25,19 @@ ALL_WEATHER_FEATURES = [
     'precipitation',              # 降水
 ]
 
+# 敏感性分析天气特征定义
+SOLAR_IRRADIANCE_FEATURES = ['global_tilted_irradiance']
+HIGH_WEATHER_FEATURES = ['global_tilted_irradiance', 'vapour_pressure_deficit', 'relative_humidity_2m']
+MEDIUM_WEATHER_FEATURES = HIGH_WEATHER_FEATURES + ['temperature_2m', 'wind_gusts_10m', 'cloud_cover_low', 'wind_speed_100m']
+LOW_WEATHER_FEATURES = MEDIUM_WEATHER_FEATURES + ['snow_depth', 'dew_point_2m', 'surface_pressure', 'precipitation']
+
 # 根据天气特征类别选择特征
 def get_weather_features_by_category(weather_category):
     """
     根据天气特征类别返回天气特征
     
     Args:
-        weather_category: 'none', 'all_weather'
+        weather_category: 'none', 'all_weather', 'solar_irradiance_only', 'high_weather', 'medium_weather', 'low_weather'
     
     Returns:
         list: 选中的天气特征列表
@@ -40,6 +46,14 @@ def get_weather_features_by_category(weather_category):
         return []  # 不返回任何天气特征
     elif weather_category == 'all_weather':
         return ALL_WEATHER_FEATURES
+    elif weather_category == 'solar_irradiance_only':
+        return SOLAR_IRRADIANCE_FEATURES
+    elif weather_category == 'high_weather':
+        return HIGH_WEATHER_FEATURES
+    elif weather_category == 'medium_weather':
+        return MEDIUM_WEATHER_FEATURES
+    elif weather_category == 'low_weather':
+        return LOW_WEATHER_FEATURES
     else:
         raise ValueError(f"Invalid weather_category: {weather_category}")
 
