@@ -57,7 +57,7 @@ def main():
                        help="Use ideal NWP features (without _pred suffix)")
     parser.add_argument("--no_hist_power", type=str, choices=["true", "false"], 
                        help="Only use forecast weather, no historical power data")
-    parser.add_argument("--model_complexity", type=str, choices=["low", "high"])
+    parser.add_argument("--model_complexity", type=str, choices=["low", "high", "level1", "level2", "level3", "level4"])
     parser.add_argument("--train_ratio", type=float)
     parser.add_argument("--val_ratio", type=float)
     parser.add_argument("--plot_days", type=int)
@@ -139,11 +139,21 @@ def main():
     
     if is_dl:
         # 深度学习模型参数
-        dl_params = config["model_params"].get(complexity, config["model_params"]["low"])
+        if complexity.startswith("level"):
+            # 四档复杂度：level1, level2, level3, level4
+            dl_params = config["model_params"].get(complexity, config["model_params"]["level2"])
+        else:
+            # 兼容旧的两档复杂度：low, high
+            dl_params = config["model_params"].get(complexity, config["model_params"]["low"])
         config["model_params"] = dl_params
     else:
         # 机器学习模型参数
-        ml_params = config["model_params"].get(f"ml_{complexity}", config["model_params"]["ml_low"])
+        if complexity.startswith("level"):
+            # 四档复杂度：ml_level1, ml_level2, ml_level3, ml_level4
+            ml_params = config["model_params"].get(f"ml_{complexity}", config["model_params"]["ml_level2"])
+        else:
+            # 兼容旧的两档复杂度：ml_low, ml_high
+            ml_params = config["model_params"].get(f"ml_{complexity}", config["model_params"]["ml_low"])
         config["model_params"] = ml_params
     
     # 仍然允许CLI覆盖

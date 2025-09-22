@@ -122,8 +122,10 @@ def create_model_complexity_config(model, complexity_level):
         config['model_complexity'] = 'level2'  # LSR固定为level2
         config['epochs'] = 1
         config['model_params'] = {
-            'ml_low': {'learning_rate': 0.001},
-            'ml_high': {'learning_rate': 0.001}
+            'ml_level1': {'learning_rate': 0.001},
+            'ml_level2': {'learning_rate': 0.001},
+            'ml_level3': {'learning_rate': 0.001},
+            'ml_level4': {'learning_rate': 0.001}
         }
     elif model in ['RF', 'XGB', 'LGBM']:
         config['model_complexity'] = f'level{complexity_level}'
@@ -132,8 +134,10 @@ def create_model_complexity_config(model, complexity_level):
         if complexity_level == 1:
             # Level 1: 最简单的设置
             config['model_params'] = {
-                'ml_low': {'n_estimators': 20, 'max_depth': 3, 'learning_rate': 0.2},
-                'ml_high': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
+                'ml_level1': {'n_estimators': 20, 'max_depth': 3, 'learning_rate': 0.2},
+                'ml_level2': {'n_estimators': 50, 'max_depth': 5, 'learning_rate': 0.1},
+                'ml_level3': {'n_estimators': 100, 'max_depth': 8, 'learning_rate': 0.05},
+                'ml_level4': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
             }
             config['train_params'].update({
                 'n_estimators': 20, 'max_depth': 3, 'learning_rate': 0.2
@@ -141,8 +145,10 @@ def create_model_complexity_config(model, complexity_level):
         elif complexity_level == 2:
             # Level 2: 原low设置
             config['model_params'] = {
-                'ml_low': {'n_estimators': 50, 'max_depth': 5, 'learning_rate': 0.1},
-                'ml_high': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
+                'ml_level1': {'n_estimators': 20, 'max_depth': 3, 'learning_rate': 0.2},
+                'ml_level2': {'n_estimators': 50, 'max_depth': 5, 'learning_rate': 0.1},
+                'ml_level3': {'n_estimators': 100, 'max_depth': 8, 'learning_rate': 0.05},
+                'ml_level4': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
             }
             config['train_params'].update({
                 'n_estimators': 50, 'max_depth': 5, 'learning_rate': 0.1
@@ -150,8 +156,10 @@ def create_model_complexity_config(model, complexity_level):
         elif complexity_level == 3:
             # Level 3: 中等设置
             config['model_params'] = {
-                'ml_low': {'n_estimators': 100, 'max_depth': 8, 'learning_rate': 0.05},
-                'ml_high': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
+                'ml_level1': {'n_estimators': 20, 'max_depth': 3, 'learning_rate': 0.2},
+                'ml_level2': {'n_estimators': 50, 'max_depth': 5, 'learning_rate': 0.1},
+                'ml_level3': {'n_estimators': 100, 'max_depth': 8, 'learning_rate': 0.05},
+                'ml_level4': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
             }
             config['train_params'].update({
                 'n_estimators': 100, 'max_depth': 8, 'learning_rate': 0.05
@@ -159,8 +167,10 @@ def create_model_complexity_config(model, complexity_level):
         else:  # complexity_level == 4
             # Level 4: 原high设置
             config['model_params'] = {
-                'ml_low': {'n_estimators': 50, 'max_depth': 5, 'learning_rate': 0.1},
-                'ml_high': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
+                'ml_level1': {'n_estimators': 20, 'max_depth': 3, 'learning_rate': 0.2},
+                'ml_level2': {'n_estimators': 50, 'max_depth': 5, 'learning_rate': 0.1},
+                'ml_level3': {'n_estimators': 100, 'max_depth': 8, 'learning_rate': 0.05},
+                'ml_level4': {'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01}
             }
             config['train_params'].update({
                 'n_estimators': 200, 'max_depth': 12, 'learning_rate': 0.01
@@ -173,49 +183,65 @@ def create_model_complexity_config(model, complexity_level):
             # Level 1: 最简单的设置
             if model == 'TCN':
                 config['model_params'] = {
-                    'low': {'tcn_channels': [16, 32], 'kernel_size': 2, 'dropout': 0.05},
-                    'high': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
+                    'level1': {'tcn_channels': [16, 32], 'kernel_size': 2, 'dropout': 0.05},
+                    'level2': {'tcn_channels': [32, 64], 'kernel_size': 3, 'dropout': 0.1},
+                    'level3': {'tcn_channels': [48, 96], 'kernel_size': 4, 'dropout': 0.2},
+                    'level4': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
                 }
             else:
                 config['model_params'] = {
-                    'low': {'d_model': 32, 'num_heads': 2, 'num_layers': 3, 'hidden_dim': 16, 'dropout': 0.05},
-                    'high': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
+                    'level1': {'d_model': 32, 'num_heads': 2, 'num_layers': 3, 'hidden_dim': 16, 'dropout': 0.05},
+                    'level2': {'d_model': 64, 'num_heads': 4, 'num_layers': 6, 'hidden_dim': 32, 'dropout': 0.1},
+                    'level3': {'d_model': 128, 'num_heads': 8, 'num_layers': 12, 'hidden_dim': 64, 'dropout': 0.2},
+                    'level4': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
                 }
         elif complexity_level == 2:
             # Level 2: 原low设置
             if model == 'TCN':
                 config['model_params'] = {
-                    'low': {'tcn_channels': [32, 64], 'kernel_size': 3, 'dropout': 0.1},
-                    'high': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
+                    'level1': {'tcn_channels': [16, 32], 'kernel_size': 2, 'dropout': 0.05},
+                    'level2': {'tcn_channels': [32, 64], 'kernel_size': 3, 'dropout': 0.1},
+                    'level3': {'tcn_channels': [48, 96], 'kernel_size': 4, 'dropout': 0.2},
+                    'level4': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
                 }
             else:
                 config['model_params'] = {
-                    'low': {'d_model': 64, 'num_heads': 4, 'num_layers': 6, 'hidden_dim': 32, 'dropout': 0.1},
-                    'high': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
+                    'level1': {'d_model': 32, 'num_heads': 2, 'num_layers': 3, 'hidden_dim': 16, 'dropout': 0.05},
+                    'level2': {'d_model': 64, 'num_heads': 4, 'num_layers': 6, 'hidden_dim': 32, 'dropout': 0.1},
+                    'level3': {'d_model': 128, 'num_heads': 8, 'num_layers': 12, 'hidden_dim': 64, 'dropout': 0.2},
+                    'level4': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
                 }
         elif complexity_level == 3:
             # Level 3: 中等设置
             if model == 'TCN':
                 config['model_params'] = {
-                    'low': {'tcn_channels': [48, 96], 'kernel_size': 4, 'dropout': 0.2},
-                    'high': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
+                    'level1': {'tcn_channels': [16, 32], 'kernel_size': 2, 'dropout': 0.05},
+                    'level2': {'tcn_channels': [32, 64], 'kernel_size': 3, 'dropout': 0.1},
+                    'level3': {'tcn_channels': [48, 96], 'kernel_size': 4, 'dropout': 0.2},
+                    'level4': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
                 }
             else:
                 config['model_params'] = {
-                    'low': {'d_model': 128, 'num_heads': 8, 'num_layers': 12, 'hidden_dim': 64, 'dropout': 0.2},
-                    'high': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
+                    'level1': {'d_model': 32, 'num_heads': 2, 'num_layers': 3, 'hidden_dim': 16, 'dropout': 0.05},
+                    'level2': {'d_model': 64, 'num_heads': 4, 'num_layers': 6, 'hidden_dim': 32, 'dropout': 0.1},
+                    'level3': {'d_model': 128, 'num_heads': 8, 'num_layers': 12, 'hidden_dim': 64, 'dropout': 0.2},
+                    'level4': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
                 }
         else:  # complexity_level == 4
             # Level 4: 原high设置
             if model == 'TCN':
                 config['model_params'] = {
-                    'low': {'tcn_channels': [32, 64], 'kernel_size': 3, 'dropout': 0.1},
-                    'high': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
+                    'level1': {'tcn_channels': [16, 32], 'kernel_size': 2, 'dropout': 0.05},
+                    'level2': {'tcn_channels': [32, 64], 'kernel_size': 3, 'dropout': 0.1},
+                    'level3': {'tcn_channels': [48, 96], 'kernel_size': 4, 'dropout': 0.2},
+                    'level4': {'tcn_channels': [64, 128, 256], 'kernel_size': 5, 'dropout': 0.3}
                 }
             else:
                 config['model_params'] = {
-                    'low': {'d_model': 64, 'num_heads': 4, 'num_layers': 6, 'hidden_dim': 32, 'dropout': 0.1},
-                    'high': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
+                    'level1': {'d_model': 32, 'num_heads': 2, 'num_layers': 3, 'hidden_dim': 16, 'dropout': 0.05},
+                    'level2': {'d_model': 64, 'num_heads': 4, 'num_layers': 6, 'hidden_dim': 32, 'dropout': 0.1},
+                    'level3': {'d_model': 128, 'num_heads': 8, 'num_layers': 12, 'hidden_dim': 64, 'dropout': 0.2},
+                    'level4': {'d_model': 256, 'num_heads': 16, 'num_layers': 18, 'hidden_dim': 128, 'dropout': 0.3}
                 }
         
         if model == 'TCN':
