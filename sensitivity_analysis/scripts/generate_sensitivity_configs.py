@@ -10,6 +10,9 @@ import itertools
 from pathlib import Path
 import re
 
+# 全局变量存储数据目录路径
+DATA_DIR = None
+
 def generate_base_config():
     """生成基础配置模板"""
     return {
@@ -313,7 +316,11 @@ def generate_sensitivity_configs(project_id):
             
             # 生成基础配置
             base_config = generate_base_config()
-            base_config['data_path'] = f"data/Project{project_id}.csv"
+            # 使用检测到的数据目录路径
+            if DATA_DIR:
+                base_config['data_path'] = f"{DATA_DIR}/Project{project_id}.csv"
+            else:
+                base_config['data_path'] = f"data/Project{project_id}.csv"
             base_config['save_dir'] = f"sensitivity_analysis/results/{project_id}/{config_name}"
             
             # 添加特征配置
@@ -363,7 +370,11 @@ def generate_sensitivity_configs(project_id):
             
             # 生成基础配置
             base_config = generate_base_config()
-            base_config['data_path'] = f"data/Project{project_id}.csv"
+            # 使用检测到的数据目录路径
+            if DATA_DIR:
+                base_config['data_path'] = f"{DATA_DIR}/Project{project_id}.csv"
+            else:
+                base_config['data_path'] = f"data/Project{project_id}.csv"
             base_config['save_dir'] = f"sensitivity_analysis/results/{project_id}/{config_name}"
             
             # 添加特征配置（默认所有天气特征）
@@ -421,7 +432,11 @@ def generate_sensitivity_configs(project_id):
             
             # 生成基础配置
             base_config = generate_base_config()
-            base_config['data_path'] = f"data/Project{project_id}.csv"
+            # 使用检测到的数据目录路径
+            if DATA_DIR:
+                base_config['data_path'] = f"{DATA_DIR}/Project{project_id}.csv"
+            else:
+                base_config['data_path'] = f"data/Project{project_id}.csv"
             base_config['save_dir'] = f"sensitivity_analysis/results/{project_id}/{config_name}"
             
             # 添加特征配置（默认所有天气特征）
@@ -468,7 +483,11 @@ def generate_sensitivity_configs(project_id):
             
             # 生成基础配置
             base_config = generate_base_config()
-            base_config['data_path'] = f"data/Project{project_id}.csv"
+            # 使用检测到的数据目录路径
+            if DATA_DIR:
+                base_config['data_path'] = f"{DATA_DIR}/Project{project_id}.csv"
+            else:
+                base_config['data_path'] = f"data/Project{project_id}.csv"
             base_config['save_dir'] = f"sensitivity_analysis/results/{project_id}/{config_name}"
             
             # 添加特征配置（默认所有天气特征）
@@ -546,12 +565,32 @@ def save_sensitivity_configs(project_id, configs):
 
 def detect_project_files():
     """检测data目录中的Project文件"""
-    data_dir = Path("data")
-    if not data_dir.exists():
+    global DATA_DIR
+    
+    # 尝试多个可能的data目录路径
+    possible_data_dirs = [
+        "data",  # 本地路径
+        "/content/SolarPV-Prediction/data",  # Colab路径
+        "/content/drive/MyDrive/Solar PV electricity/data",  # Google Drive路径
+    ]
+    
+    data_dir = None
+    for dir_path in possible_data_dirs:
+        if Path(dir_path).exists():
+            data_dir = Path(dir_path)
+            DATA_DIR = str(data_dir)  # 设置全局变量
+            print(f"📁 找到数据目录: {dir_path}")
+            break
+    
+    if data_dir is None:
+        print("❌ 未找到数据目录，尝试的路径:")
+        for dir_path in possible_data_dirs:
+            print(f"   - {dir_path}")
         return []
     
     # 查找所有Project*.csv文件
     csv_files = list(data_dir.glob("Project*.csv"))
+    print(f"📊 在 {data_dir} 中找到 {len(csv_files)} 个Project文件")
     
     # 提取Project ID
     project_ids = []
@@ -562,7 +601,11 @@ def detect_project_files():
             project_id = match.group(1)
             project_ids.append(project_id)
     
-    return sorted(project_ids)
+    # 按Project ID排序（数字排序）
+    project_ids = sorted(project_ids, key=int)
+    print(f"📋 检测到的Project ID: {project_ids[:10]}{'...' if len(project_ids) > 10 else ''}")
+    
+    return project_ids
 
 def main():
     """主函数"""
