@@ -86,12 +86,13 @@ class Transformer(nn.Module):
         return result * 100  # 乘以100转换为百分比
 
 class LocalPositionalEncoding(nn.Module):
-    """局部位置编码"""
-    def __init__(self, d_model, max_len=100):
+    """局部位置编码 - 支持更长的序列"""
+    def __init__(self, d_model, max_len=200):  # 增加到200以支持168小时lookback
         super().__init__()
         self.d_model = d_model
+        self.max_len = max_len
         
-        # 创建局部位置编码
+        # 创建位置编码
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * 
@@ -101,5 +102,17 @@ class LocalPositionalEncoding(nn.Module):
         self.register_buffer('pe', pe.unsqueeze(0))
 
     def forward(self, x):
-        return x + self.pe[:, :x.size(1)]
+        # 如果序列长度超过max_len，动态扩展位置编码
+        seq_len = x.size(1)
+        if seq_len > self.max_len:
+            # 动态创建更长的位置编码
+            pe = torch.zeros(seq_len, self.d_model, device=x.device)
+            position = torch.arange(0, seq_len, dtype=torch.float, device=x.device).unsqueeze(1)
+            div_term = torch.exp(torch.arange(0, self.d_model, 2).float() * 
+                               (-math.log(10000.0) / self.d_model))
+            pe[:, 0::2] = torch.sin(position * div_term)
+            pe[:, 1::2] = torch.cos(position * div_term)
+            return x + pe.unsqueeze(0)
+        else:
+            return x + self.pe[:, :seq_len]
 
