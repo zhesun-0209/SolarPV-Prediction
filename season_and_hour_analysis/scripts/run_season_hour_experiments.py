@@ -489,11 +489,9 @@ def main():
                     save_single_result_to_summary_csv(result_row, project_id, drive_path)
                     print(f"✅ season and hour analysis结果已保存到项目summary CSV")
                     
-                    # 提取并保存预测结果
-                    predictions, dates = extract_predictions_from_output(stdout, config)
-                    if predictions and dates:
-                        model_name = result_row['model']
-                        save_predictions_csv(predictions, dates, project_id, model_name, drive_path)
+                    # 注意：prediction.csv已经在main.py中通过save_season_hour_results()函数创建
+                    # 这里不需要额外处理，因为save_season_hour_results()会直接保存到Drive
+                    print(f"💾 预测结果已在main.py中保存到Drive")
                 else:
                     failed_experiments += 1
                     print(f"⚠️ 无法解析season and hour analysis实验结果: {config_name}")
