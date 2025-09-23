@@ -56,7 +56,7 @@ def create_linear_config():
         'use_forecast': True,
         'use_ideal_nwp': False,
         'use_time_encoding': False,
-        'weather_category': 'nwp_only',
+        'weather_category': 'low_weather',
         'selected_weather_features': [
             'global_tilted_irradiance_pred', 'vapour_pressure_deficit_pred', 'relative_humidity_2m_pred',
             'temperature_2m_pred', 'wind_gusts_10m_pred', 'cloud_cover_low_pred', 'wind_speed_100m_pred',
@@ -86,7 +86,7 @@ def create_other_model_config(model_name):
         'use_forecast': True,
         'use_ideal_nwp': False,
         'use_time_encoding': False,
-        'weather_category': 'pv_nwp',
+        'weather_category': 'low_weather',
         'selected_weather_features': [
             'global_tilted_irradiance_pred', 'vapour_pressure_deficit_pred', 'relative_humidity_2m_pred',
             'temperature_2m_pred', 'wind_gusts_10m_pred', 'cloud_cover_low_pred', 'wind_speed_100m_pred',
@@ -190,7 +190,7 @@ def generate_season_hour_configs(project_id):
             'lookback_hours': 24,
             'complexity_level': 2,
             'dataset_scale': '80%',
-            'weather_setup': 'nwp_only' if model_name == 'Linear' else 'pv_nwp'
+            'weather_setup': 'low_weather_all_features'
         }
         configs.append(config_info)
     
