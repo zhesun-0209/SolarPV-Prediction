@@ -26,7 +26,7 @@ from data.data_utils import (
 )
 from train.train_dl import train_dl_model
 from train.train_ml import train_ml_model
-from eval.eval_utils import save_results
+from eval.eval_utils import save_results, save_season_hour_results
 
 def str2bool(v: str) -> bool:
     return v.lower() in ("true", "1", "yes")
@@ -324,7 +324,15 @@ def main():
         cfg["plant_id"] = str(pid)  # 设置plant_id为ProjectID
         print(f"🔍 调试: 准备调用save_results，plant_id={cfg['plant_id']}")
         print(f"🔍 调试: cfg['train_params'] = {cfg.get('train_params', 'NOT_FOUND')}")
-        save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
+        
+        # 根据实验类型选择保存函数
+        experiment_type = cfg.get('experiment_type', 'default')
+        if experiment_type == 'season_hour_analysis':
+            print(f"🔍 调试: 使用season and hour analysis保存模式")
+            save_season_hour_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
+        else:
+            print(f"🔍 调试: 使用默认保存模式")
+            save_results(model, metrics, dates_te, y_te, Xh_te, Xf_te, cfg)
         print(f"🔍 调试: save_results调用完成")
         print(f"[INFO] Project {pid} | {cfg['model']} done, mse={metrics['mse']:.4f}, rmse={metrics['rmse']:.4f}, mae={metrics['mae']:.4f}, r_square={metrics.get('r_square', 0):.4f}")
         print(f"[METRICS] inference_time={metrics.get('inference_time_sec', 0):.4f}, param_count={metrics.get('param_count', 0)}, samples_count={metrics.get('samples_count', 0)}")
