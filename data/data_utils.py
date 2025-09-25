@@ -167,11 +167,17 @@ def preprocess_features(df: pd.DataFrame, config: dict):
             # 理想NWP：使用目标日的HW特征（不带_pred后缀）
             base_weather_features = get_weather_features_by_category(weather_category)
             fcst_feats += base_weather_features
+            # 添加时间编码特征到预测特征
+            if use_time_encoding:
+                fcst_feats += TIME_FEATURES
         else:
             # 普通NWP：使用带_pred后缀的预测特征
             base_weather_features = get_weather_features_by_category(weather_category)
             forecast_features = [f + '_pred' for f in base_weather_features]
             fcst_feats += forecast_features
+            # 添加时间编码特征到预测特征
+            if use_time_encoding:
+                fcst_feats += TIME_FEATURES
 
     # 确保所有特征都存在
     available_hist_feats = [f for f in hist_feats if f in df_clean.columns]
