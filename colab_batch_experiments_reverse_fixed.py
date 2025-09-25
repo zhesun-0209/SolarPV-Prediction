@@ -40,6 +40,9 @@ def get_data_files():
             csv_files.append((project_id, os.path.join(data_dir, file)))
     
     csv_files.sort(key=lambda x: int(x[0]), reverse=True)  # 逆序排序
+    # 限制为后50个plant（逆序的前50个）
+    csv_files = csv_files[:50]
+    print(f"🔢 限制为后50个plant: {[x[0] for x in csv_files]}")
     return csv_files
 
 def get_config_files():
@@ -360,7 +363,7 @@ def save_single_result_to_csv(result_row, project_id, drive_path):
 
 def main():
     """主函数"""
-    print("🌟 SolarPV项目 - 批量实验脚本 (逆序修复版本)")
+    print("🌟 SolarPV项目 - 批量实验脚本 (逆序修复版本 - 后50个plant)")
     print("=" * 60)
     
     # 检查Google Drive
