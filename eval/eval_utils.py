@@ -37,8 +37,8 @@ def save_results(
         y_true, Xh_test, Xf_test: Used for legacy or optional plots
         config:  Dictionary with keys like 'save_dir', 'model', 'plot_days', 'scaler_target'
     """
-    # 硬编码Drive路径，删除本地保存
-    save_dir = "/content/drive/MyDrive/Solar PV electricity/ablation results"
+    # 使用配置中的保存路径
+    save_dir = config['save_dir']
     os.makedirs(save_dir, exist_ok=True)
 
     # Extract predictions and ground truth

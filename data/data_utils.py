@@ -253,8 +253,12 @@ def create_sliding_windows(df, past_hours, future_hours, hist_feats, fcst_feats,
             hours.append(fut_win['Hour'].values)
             dates.append(fut_win['Datetime'].iloc[-1])
             
-            # 对于无历史发电量模式，X_hist为空
-            X_hist.append(np.array([]).reshape(0, len(hist_feats)) if hist_feats else np.array([]).reshape(0, 0))
+            # 对于无历史发电量模式，如果有时间编码等历史特征，使用预测日的数据
+            if hist_feats:
+                # 使用预测日的时间编码特征作为"历史"特征
+                X_hist.append(fut_win[hist_feats].values)
+            else:
+                X_hist.append(np.array([]).reshape(0, 0))
         else:
             # 正常模式：使用历史数据
             # 收集历史数据（前n天）
